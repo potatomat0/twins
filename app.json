@@ -4,23 +4,32 @@
     "slug": "twins",
     "version": "0.1.0",
     "orientation": "portrait",
-    
     "userInterfaceStyle": "automatic",
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#0B0B0E"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.twins.app",
+      "versionCode": 1,
+      "minSdkVersion": 23,
       "adaptiveIcon": {
         "backgroundColor": "#0B0B0E"
       }
     },
     "web": {
       "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c7de163b-1e0b-402d-8797-03097e2a74c2"
+      }
     }
   }
 }
