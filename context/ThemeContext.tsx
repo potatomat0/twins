@@ -1,0 +1,27 @@
+import React, { createContext, useContext, useMemo, useState } from 'react';
+import { themes, ThemeName, ThemeSpec } from '@themes/index';
+
+type ThemeContextType = {
+  theme: ThemeSpec;
+  name: ThemeName;
+  setTheme: (name: ThemeName) => void;
+};
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [name, setName] = useState<ThemeName>('dark');
+  const value = useMemo(
+    () => ({ theme: themes[name], name, setTheme: setName }),
+    [name]
+  );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+};
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+  return ctx;
+}
+

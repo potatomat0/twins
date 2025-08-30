@@ -1,0 +1,115 @@
+import React, { useMemo, useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '@context/ThemeContext';
+
+type Option = { label: string; value: string } | string;
+
+type Props = {
+  options: Option[];
+  value?: string;
+  placeholder?: string;
+  onChange: (value: string) => void;
+};
+
+const Dropdown: React.FC<Props> = ({ options, value, placeholder = 'Select…', onChange }) => {
+  const { theme } = useTheme();
+  const [open, setOpen] = useState(false);
+  const items = useMemo(
+    () =>
+      options.map((o) =>
+        typeof o === 'string' ? { label: o, value: o } : { label: o.label, value: o.value }
+      ),
+    [options]
+  );
+
+  const currentLabel = items.find((i) => i.value === value)?.label;
+
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [
+          styles.input,
+          {
+            backgroundColor: '#191a1f',
+            borderColor: 'rgba(255,255,255,0.08)',
+            opacity: pressed ? 0.9 : 1,
+          },
+        ]}
+      >
+        <Text style={{ color: value ? '#fff' : '#888' }}>
+          {currentLabel ?? placeholder}
+        </Text>
+      </Pressable>
+
+      <Modal visible={open} animationType="fade" transparent onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
+        <View
+          style={[
+            styles.sheet,
+            { backgroundColor: `rgb(${theme.colors['--dark-card']})`, borderColor: 'rgba(255,255,255,0.08)' },
+          ]}
+        >
+          {items.map((it) => {
+            const selected = it.value === value;
+            return (
+              <Pressable
+                key={it.value}
+                style={({ pressed }) => [
+                  styles.row,
+                  {
+                    backgroundColor: selected
+                      ? 'rgba(99,102,241,0.18)'
+                      : pressed
+                      ? 'rgba(255,255,255,0.04)'
+                      : 'transparent',
+                  },
+                ]}
+                onPress={() => {
+                  onChange(it.value);
+                  setOpen(false);
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 16 }}>{it.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Modal>
+    </>
+  );
+};
+
+const styles = StyleSheet.create({
+  input: {
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  sheet: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 24,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  row: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+});
+
+export default Dropdown;
+

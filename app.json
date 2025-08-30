@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Twins",
+    "slug": "twins",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0B0E"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0B0E"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
