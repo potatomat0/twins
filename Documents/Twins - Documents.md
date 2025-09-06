@@ -35,17 +35,18 @@ Any inconrrect field will print out a warning. The Start Questionaire will only 
 
 ### Questionaire screen 
 
-- layout format: list out all 50 given questions. each separeted evenly and user can scroll and comeback to the question to change their answer. Show progress bar that increments as user clicks on the likert answers.
-- format of each questions is {questionNumber}. + I + {question}. for example. 15. I am proactive in romance. 
-- the scale of the questions is coded in 1 to 5 scale. but the UI would render the buttons like this:
-	- 1. Disagree (button color: Red)
-	- 2. Slightly Disagree (button color: dark orange)
-	- 3. Neutral (button color: grey)
-	- 4. Slightly agree (button color: Cyan)
-	- 5. Agree (button color: Blue)
-- highlight the selected answer that user chose with a light rounded shadow off of its own button color.
-- question list: more detail in the questionare detail section.
-- user can skip the questionaire early, but the button will be dark orange with the text "finish anyway", a modal will show up and warn that the result might not be fully accuarte and affects future matching, if user accepts this, then it will lead to the result screen. If user has finished answering all questions, then render it blue with the text "See your result"
+- layout format: one question at a time (stepper). The user navigates with "Previous" and "Next". A progress bar and counters (e.g., "Question X/50" and "answered Y/50") reflect completion.
+- question format: `{number}. I {question}` (e.g., `15. I am proactive in romance.`)
+- scale: coded 1–5, rendered horizontally as buttons:
+	- 1. Disagree (Red)
+	- 2. Slightly Disagree (Dark Orange)
+	- 3. Neutral (Gray)
+	- 4. Slightly Agree (Cyan)
+	- 5. Agree (Blue)
+- selection state: highlight the chosen answer with a soft glow of the button’s color and a bold label.
+- responsiveness: on small screens, long labels use smaller font or abbreviated text (e.g., "Slightly Dis.", "Slightly Ag.") to keep all five options visible.
+- completion requirement: users must answer all 50 questions to access the result screen. No early finish is allowed. At the final step, if any question is unanswered, a helper action jumps to the first unanswered item.
+ - final-step UX: when the user reaches question 50 with incomplete answers, show a notification modal explaining that all questions must be completed. The right button at question 50 is labeled "Go back" and cycles through unanswered items. Once all questions are answered, the button label changes to "See result" to proceed.
 
 ### Result Screen 
 
@@ -96,6 +97,12 @@ prop buttons:
 - Routing style: current standard expo routing 
 - backend: google cloud + firebase 
 - model type: tensorflow lite 
+
+### UI primitives & system behaviors
+
+- NotificationModal: reusable, compact modal for system messages and guidance. Used in the questionnaire to inform users at question 50 that all questions must be answered before viewing results. Optimizes text space and keeps context without full-screen takeovers.
+- KeyboardDismissable: wrapper that dismisses the virtual keyboard when tapping outside input areas (no haptics on dismiss).
+- Haptics: powered by Expo Haptics; generally minimal/subtle. A single subtle selection cue fires only when the final unanswered item is completed.
 
 ## Development note 
 
@@ -650,4 +657,3 @@ In contrast, individuals who score low on openness to experience tend to be more
 Research has shown that openness to experience is linked to a range of outcomes, including creativity, innovation, and cultural competence. For example, individuals who score high on openness to experience tend to be more creative and innovative, and may be more successful in careers that require these skills. Additionally, they tend to be more open-minded and accepting of diverse cultures and perspectives.
 
 However, it is important to note that excessively high levels of openness to experience can also have negative consequences, such as being overly impulsive or having difficulty with routine tasks.
-

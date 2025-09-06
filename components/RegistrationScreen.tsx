@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
@@ -7,6 +7,7 @@ import { toRgb } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import Dropdown from '@components/common/Dropdown';
+import KeyboardDismissable from '@components/common/KeyboardDismissable';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Registration'>;
 
@@ -27,8 +28,20 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
 
   const canStart = usernameValid && emailValid && ageGroup && gender;
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}>
+    <KeyboardDismissable>
+      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}>        
+        <ScrollView
+          contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
       <Card>
         <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome to Twins</Text>
         <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Let’s create your temporary profile</Text>
@@ -82,12 +95,14 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
           style={{ marginTop: 8 }}
         />
       </Card>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardDismissable>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
+  container: { flex: 1 },
   title: { fontSize: 28, fontWeight: '700', marginBottom: 8 },
   subtitle: { fontSize: 14, marginBottom: 20 },
   input: {

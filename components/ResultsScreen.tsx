@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, useWindowDimensions } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, useWindowDimensions, ScrollView, RefreshControl } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
@@ -8,6 +8,7 @@ import { toRgb } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import RadarChart from '@components/charts/RadarChart';
+import KeyboardDismissable from '@components/common/KeyboardDismissable';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Results'>;
 type Route = RouteProp<RootStackParamList, 'Results'>;
@@ -39,42 +40,61 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
     .sort((a,b) => b[1]-a[1])
     .slice(0,3), [scores]);
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}>
-      {/* Full-width chart */}
-      <View style={{ width: '100%', alignItems: 'center', marginBottom: 12 }}>
-        <RadarChart
-          data={chartData}
-          color={theme.colors['--brand-primary']}
-          iconColor={theme.colors['--accent-cyan']}
-          closeColor={theme.colors['--danger']}
-        />
-      </View>
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  };
 
-      <Card>
-        <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>
-          Here's your final result, {username}!
-        </Text>
-        <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>
-          Top strengths:
-        </Text>
-        {top3.map(([k, v]) => (
-          <Text key={k} style={{ color: '#fff', marginBottom: 4 }}>
-            • {k}: {v}
-          </Text>
-        ))}
-        <View style={{ height: 12 }} />
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Button title="Start Over" variant="neutral" onPress={() => navigation.replace('Registration')} />
-          <Button title="Complete your profile" onPress={() => { /* TODO: push Final Registration */ }} />
-        </View>
-      </Card>
-    </SafeAreaView>
+  return (
+    <KeyboardDismissable>
+      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}> 
+        <ScrollView
+          contentContainerStyle={{ padding: 16, alignItems: 'center' }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {/* Full-width chart */}
+          <View style={{ width: '100%', alignItems: 'center', marginBottom: 12 }}>
+            <RadarChart
+              data={chartData}
+              color={theme.colors['--brand-primary']}
+              iconColor={theme.colors['--accent-cyan']}
+              closeColor={theme.colors['--danger']}
+            />
+          </View>
+
+          <Card>
+            <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>
+              Here's your final result, {username}!
+            </Text>
+            <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>
+              Top strengths:
+            </Text>
+            {top3.map(([k, v]) => (
+              <Text key={k} style={{ color: '#fff', marginBottom: 4 }}>
+                • {k}: {v}
+              </Text>
+            ))}
+            <View style={{ height: 12 }} />
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <Button
+                title="Start Over"
+                variant="neutral"
+                onPress={() =>
+                  navigation.reset({ index: 0, routes: [{ name: 'Registration' as any }] })
+                }
+              />
+              <Button title="Create Accoutn" onPress={() => { /* TODO: push Final Registration */ }} />
+            </View>
+          </Card>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardDismissable>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
+  container: { flex: 1 },
   title: { fontSize: 22, fontWeight: '700' },
   subtitle: { marginTop: 8, marginBottom: 8 },
 });

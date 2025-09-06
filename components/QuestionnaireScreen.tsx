@@ -1,5 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, Pressable, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, Pressable, useWindowDimensions, ScrollView, RefreshControl } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
@@ -8,6 +8,9 @@ import { toRgb } from '@themes/index';
 import { QUESTIONS } from '@data/questions';
 import Button from '@components/common/Button';
 import { AnswerMap, computeBigFiveScores, normalizeScoresTo100 } from '@services/profileAnalyzer';
+import KeyboardDismissable from '@components/common/KeyboardDismissable';
+import NotificationModal from '@components/common/NotificationModal';
+import haptics from '@services/haptics';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Questionnaire'>;
 type Route = RouteProp<RootStackParamList, 'Questionnaire'>;
@@ -32,21 +35,56 @@ const OPTION_LABELS: Record<1|2|3|4|5, string> = {
 const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [answers, setAnswers] = useState<AnswerMap>({});
-  const listRef = useRef<FlatList>(null);
-  const offsetsRef = useRef<Record<number, number>>({});
-  const heightsRef = useRef<Record<number, number>>({});
-  const scrollYRef = useRef(0);
+  const [index, setIndex] = useState(0);
+  const { width: windowWidth } = useWindowDimensions();
+  const isSmall = windowWidth < 380;
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [cycleCursor, setCycleCursor] = useState(0);
+  const [incompleteModalShown, setIncompleteModalShown] = useState(false);
 
-  const progress = useMemo(() => Math.round((Object.keys(answers).length / QUESTIONS.length) * 100), [answers]);
+  const total = QUESTIONS.length;
+  const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
+  const progress = useMemo(() => Math.round((answeredCount / total) * 100), [answeredCount, total]);
 
-  const onSelect = (id: number, value: 1|2|3|4|5) => {
-    setAnswers(prev => ({ ...prev, [id]: value }));
-    // Always scroll down by the height of the current question block
-    setTimeout(() => {
-      const h = heightsRef.current[id] ?? 280;
-      const nextOffset = scrollYRef.current + h + 16; // include gap
-      if (listRef.current) listRef.current.scrollToOffset({ offset: nextOffset, animated: true });
-    }, 10);
+  const current = QUESTIONS[index];
+  const currentValue = answers[current.Item_Number];
+
+  const onSelect = (id: number, value: 1 | 2 | 3 | 4 | 5) => {
+    setAnswers((prev) => {
+      const hadPrev = !!prev[id];
+      const prevCount = Object.keys(prev).length;
+      const next = { ...prev, [id]: value } as AnswerMap;
+      // Subtle haptic only when this selection completes the last remaining answer
+      if (!hadPrev && prevCount === total - 1) {
+        // fire and forget
+        haptics.selection();
+      }
+      return next;
+    });
+  };
+
+  const findFirstUnansweredIndex = () => {
+    for (let i = 0; i < total; i++) {
+      if (!answers[QUESTIONS[i].Item_Number]) return i;
+    }
+    return -1;
+  };
+
+  const onNext = () => {
+    if (index < total - 1) {
+      setIndex((i) => i + 1);
+    } else {
+      // At last question: if all answered, finish; otherwise jump to first unanswered
+      if (answeredCount === total) {
+        onFinish();
+      } else {
+        setShowIncompleteModal(true);
+      }
+    }
+  };
+
+  const onPrev = () => {
+    if (index > 0) setIndex((i) => i - 1);
   };
 
   const onFinish = () => {
@@ -55,101 +93,168 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
     navigation.navigate('Results', { username: route.params?.username ?? 'Friend', scores: normalized });
   };
 
+  // When user reaches the last question without completing all, show guidance modal once
+  React.useEffect(() => {
+    if (index === total - 1 && answeredCount !== total && !incompleteModalShown) {
+      setShowIncompleteModal(true);
+      setIncompleteModalShown(true);
+      setCycleCursor(0);
+    }
+  }, [index, answeredCount, total, incompleteModalShown]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  };
+
   return (
+    <KeyboardDismissable>
     <SafeAreaView style={[styles.container, { backgroundColor: `rgb(${theme.colors['--dark-bg']})` }]}>
-      <View style={styles.header}> 
+      <View style={styles.header}>
         <Text style={[styles.title, { color: `rgb(${theme.colors['--text-primary']})` }]}>Personality Questionnaire</Text>
+        <Text style={{ color: '#bbb', marginBottom: 8 }}>Question {index + 1} / {total}</Text>
         <View style={styles.progressWrap}>
           <View style={[styles.progressBar, { width: `${progress}%`, backgroundColor: `rgb(${theme.colors['--brand-primary']})` }]} />
         </View>
-        <Text style={{ color: '#bbb', marginTop: 6 }}>{progress}% completed</Text>
+        <Text style={{ color: '#bbb', marginTop: 6 }}>{answeredCount}/{total} answered</Text>
       </View>
 
-      <FlatList
-        ref={listRef}
-        data={QUESTIONS}
-        keyExtractor={(q) => String(q.Item_Number)}
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-        onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
-          scrollYRef.current = e.nativeEvent.contentOffset.y;
-        }}
-        scrollEventThrottle={16}
-        renderItem={({ item }) => {
-          const current = answers[item.Item_Number];
-          return (
-            <View
-              style={[styles.question, { borderColor: 'rgba(255,255,255,0.06)' }]}
-              onLayout={(e) => {
-                offsetsRef.current[item.Item_Number] = e.nativeEvent.layout.y;
-                heightsRef.current[item.Item_Number] = e.nativeEvent.layout.height;
+      <ScrollView
+        contentContainerStyle={styles.stage}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <View style={[styles.question, { borderColor: 'rgba(255,255,255,0.06)' }]}> 
+          <Text style={[styles.qtext, { color: toRgb(theme.colors['--text-primary']) }]}>
+            {current.Item_Number}. I {current.Question}
+          </Text>
+
+          {/* Vertical Likert scale */}
+          <View style={styles.optionsCol}>
+            {[1, 2, 3, 4, 5].map((v) => {
+              const selected = currentValue === (v as 1 | 2 | 3 | 4 | 5);
+              const color = OPTION_COLORS[v as 1 | 2 | 3 | 4 | 5];
+              const label = isSmall
+                ? (v === 2 ? 'Slightly Dis.' : v === 4 ? 'Slightly Ag.' : OPTION_LABELS[v as 1|2|3|4|5])
+                : OPTION_LABELS[v as 1|2|3|4|5];
+              return (
+                <Pressable
+                  key={v}
+                  onPress={() => onSelect(current.Item_Number, v as 1 | 2 | 3 | 4 | 5)}
+                  style={({ pressed }) => [
+                    styles.optionV,
+                    {
+                      borderColor: selected ? `rgb(${color})` : 'rgba(255,255,255,0.12)',
+                      borderWidth: selected ? 2 : 1,
+                      backgroundColor: '#14151a',
+                      transform: [{ scale: selected ? 1.04 : pressed ? 0.98 : 1 }],
+                      shadowColor: `rgb(${color})`,
+                      shadowOpacity: selected ? 0.35 : 0,
+                      shadowRadius: selected ? 10 : 0,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${OPTION_LABELS[v as 1 | 2 | 3 | 4 | 5]}`}
+                  accessibilityState={{ selected }}
+                >
+                  <Text
+                    style={{
+                      color: toRgb(color),
+                      fontWeight: selected ? '800' : '600',
+                      textAlign: 'left',
+                      fontSize: isSmall ? 14 : 16,
+                    }}
+                    numberOfLines={2}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Footer navigation: no early finish allowed */}
+      <View style={styles.footerRow}>
+        <View style={{ flex: 1 }}>
+          <Button title="Previous" variant="neutral" onPress={onPrev} disabled={index === 0} />
+        </View>
+        <View style={{ width: 12 }} />
+        <View style={{ flex: 1 }}>
+          {index < total - 1 ? (
+            <Button title="Next" onPress={onNext} />
+          ) : answeredCount === total ? (
+            <Button title="See result" onPress={onNext} />
+          ) : (
+            <Button
+              title="Go back"
+              variant="warning"
+              onPress={() => {
+                // Cycle through unanswered questions
+                const unanswered = QUESTIONS
+                  .map((q, i) => (!answers[q.Item_Number] ? i : -1))
+                  .filter((i) => i >= 0);
+                if (unanswered.length) {
+                  const target = unanswered[cycleCursor % unanswered.length];
+                  setIndex(target);
+                  setCycleCursor((c) => (c + 1) % unanswered.length);
+                } else {
+                  setShowIncompleteModal(false);
+                }
               }}
-            >
-              <Text style={[styles.qtext, { color: toRgb(theme.colors['--text-primary']) }]}>
-                {item.Item_Number}. I {item.Question}
-              </Text>
-              <View style={styles.optionsCol}>
-                {[1,2,3,4,5].map((v) => {
-                  const selected = current === v;
-                  const color = OPTION_COLORS[v as 1|2|3|4|5];
-                  return (
-                    <Pressable
-                      key={v}
-                      onPress={() => onSelect(item.Item_Number, v as 1|2|3|4|5)}
-                      style={({ pressed }) => [
-                        styles.option,
-                        {
-                          backgroundColor: '#14151a',
-                          borderColor: selected ? `rgb(${color})` : 'rgba(255,255,255,0.12)',
-                          borderWidth: selected ? 2 : 1,
-                          transform: [{ scale: selected ? 1.04 : pressed ? 0.98 : 1 }],
-                          shadowColor: `rgb(${color})`,
-                          shadowOpacity: selected ? 0.35 : 0,
-                          shadowRadius: selected ? 10 : 0,
-                        },
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${OPTION_LABELS[v as 1|2|3|4|5]}`}
-                      accessibilityState={{ selected }}
-                    >
-                      <Text style={{ color: toRgb(color), fontWeight: selected ? '800' : '600' }}>
-                        {OPTION_LABELS[v as 1|2|3|4|5]}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.04)', marginTop: 12 }} />
-            </View>
-          );
-        }}
-      />
-
-      <View style={styles.footer}>
-        {Object.keys(answers).length < QUESTIONS.length ? (
-          <Button
-            title="Finish anyway"
-            variant="warning"
-            onPress={onFinish}
-          />
-        ) : (
-          <Button title="See your result" onPress={onFinish} />
-        )}
+            />
+          )}
+        </View>
       </View>
+
+      {index === total - 1 && answeredCount !== total && (
+        <Text style={styles.finishHint}>Please answer all questions to finish.</Text>
+      )}
+      {index === total - 1 && (total - answeredCount) > 0 && (
+        <Text style={styles.remainingHint}>{total - answeredCount} remaining</Text>
+      )}
+
+      {/* Incomplete modal on reaching last question without all answers */}
+      <NotificationModal
+        visible={showIncompleteModal}
+        title="Almost there"
+        message={`You still have ${total - answeredCount} unanswered question(s). Please complete all 50 to see your result.`}
+        primaryText="Go back"
+        onPrimary={() => {
+          const unanswered = QUESTIONS
+            .map((q, i) => (!answers[q.Item_Number] ? i : -1))
+            .filter((i) => i >= 0);
+          if (unanswered.length) {
+            setIndex(unanswered[0]);
+            setCycleCursor(1 % unanswered.length);
+          }
+          setShowIncompleteModal(false);
+        }}
+        secondaryText="Close"
+        onSecondary={() => setShowIncompleteModal(false)}
+        onRequestClose={() => setShowIncompleteModal(false)}
+      />
     </SafeAreaView>
+    </KeyboardDismissable>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 16, paddingTop: 12 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 12 },
+  title: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
   progressWrap: { height: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 6, overflow: 'hidden' },
   progressBar: { height: '100%' },
-  question: { marginBottom: 16, borderWidth: 1, borderRadius: 12, padding: 12, backgroundColor: '#14151a' },
-  qtext: { fontSize: 16, marginBottom: 12 },
-  optionsCol: { flexDirection: 'column', gap: 8 },
-  option: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1 },
-  footer: { position: 'absolute', bottom: 20, left: 16, right: 16 },
+  stage: { flexGrow: 1, padding: 24, justifyContent: 'center' },
+  question: { borderWidth: 1, borderRadius: 12, padding: 32, backgroundColor: '#14151a' },
+  qtext: { fontSize: 18, marginBottom: 20, fontWeight: '600' },
+  optionsCol: { flexDirection: 'column', gap: 10 },
+  optionV: { paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10, alignItems: 'flex-start', justifyContent: 'center' },
+  footerRow: { position: 'absolute', bottom: 20, left: 16, right: 16, flexDirection: 'row' },
+  finishHint: { position: 'absolute', bottom: 68, left: 16, right: 16, textAlign: 'center', color: '#f59e0b' },
+  remainingHint: { position: 'absolute', bottom: 92, left: 16, right: 16, textAlign: 'center', color: '#bbb' },
 });
 
 export default QuestionnaireScreen;
