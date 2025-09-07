@@ -9,7 +9,6 @@ import { QUESTIONS } from '@data/questions';
 import Button from '@components/common/Button';
 import { AnswerMap, computeBigFiveScores, normalizeScoresTo100 } from '@services/profileAnalyzer';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
-import NotificationModal from '@components/common/NotificationModal';
 import haptics from '@services/haptics';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Questionnaire'>;
@@ -38,9 +37,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const [index, setIndex] = useState(0);
   const { width: windowWidth } = useWindowDimensions();
   const isSmall = windowWidth < 380;
-  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
-  const [cycleCursor, setCycleCursor] = useState(0);
-  const [incompleteModalShown, setIncompleteModalShown] = useState(false);
+  // Gating flow: no need for modals or cycling state
 
   const total = QUESTIONS.length;
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
@@ -63,24 +60,9 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
     });
   };
 
-  const findFirstUnansweredIndex = () => {
-    for (let i = 0; i < total; i++) {
-      if (!answers[QUESTIONS[i].Item_Number]) return i;
-    }
-    return -1;
-  };
-
   const onNext = () => {
-    if (index < total - 1) {
-      setIndex((i) => i + 1);
-    } else {
-      // At last question: if all answered, finish; otherwise jump to first unanswered
-      if (answeredCount === total) {
-        onFinish();
-      } else {
-        setShowIncompleteModal(true);
-      }
-    }
+    if (index < total - 1) setIndex((i) => i + 1);
+    else onFinish();
   };
 
   const onPrev = () => {
@@ -93,14 +75,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
     navigation.navigate('Results', { username: route.params?.username ?? 'Friend', scores: normalized });
   };
 
-  // When user reaches the last question without completing all, show guidance modal once
-  React.useEffect(() => {
-    if (index === total - 1 && answeredCount !== total && !incompleteModalShown) {
-      setShowIncompleteModal(true);
-      setIncompleteModalShown(true);
-      setCycleCursor(0);
-    }
-  }, [index, answeredCount, total, incompleteModalShown]);
+  // No incomplete modal needed with gating
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = () => {
@@ -184,58 +159,14 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={{ width: 12 }} />
         <View style={{ flex: 1 }}>
           {index < total - 1 ? (
-            <Button title="Next" onPress={onNext} />
-          ) : answeredCount === total ? (
-            <Button title="See result" onPress={onNext} />
+            <Button title="Next" onPress={onNext} disabled={!currentValue} />
           ) : (
-            <Button
-              title="Go back"
-              variant="warning"
-              onPress={() => {
-                // Cycle through unanswered questions
-                const unanswered = QUESTIONS
-                  .map((q, i) => (!answers[q.Item_Number] ? i : -1))
-                  .filter((i) => i >= 0);
-                if (unanswered.length) {
-                  const target = unanswered[cycleCursor % unanswered.length];
-                  setIndex(target);
-                  setCycleCursor((c) => (c + 1) % unanswered.length);
-                } else {
-                  setShowIncompleteModal(false);
-                }
-              }}
-            />
+            <Button title="See result" onPress={onNext} disabled={!currentValue} />
           )}
         </View>
       </View>
 
-      {index === total - 1 && answeredCount !== total && (
-        <Text style={styles.finishHint}>Please answer all questions to finish.</Text>
-      )}
-      {index === total - 1 && (total - answeredCount) > 0 && (
-        <Text style={styles.remainingHint}>{total - answeredCount} remaining</Text>
-      )}
-
-      {/* Incomplete modal on reaching last question without all answers */}
-      <NotificationModal
-        visible={showIncompleteModal}
-        title="Almost there"
-        message={`You still have ${total - answeredCount} unanswered question(s). Please complete all 50 to see your result.`}
-        primaryText="Go back"
-        onPrimary={() => {
-          const unanswered = QUESTIONS
-            .map((q, i) => (!answers[q.Item_Number] ? i : -1))
-            .filter((i) => i >= 0);
-          if (unanswered.length) {
-            setIndex(unanswered[0]);
-            setCycleCursor(1 % unanswered.length);
-          }
-          setShowIncompleteModal(false);
-        }}
-        secondaryText="Close"
-        onSecondary={() => setShowIncompleteModal(false)}
-        onRequestClose={() => setShowIncompleteModal(false)}
-      />
+      {/* With gating enabled, hints are unnecessary here */}
     </SafeAreaView>
     </KeyboardDismissable>
   );
@@ -253,8 +184,6 @@ const styles = StyleSheet.create({
   optionsCol: { flexDirection: 'column', gap: 10 },
   optionV: { paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10, alignItems: 'flex-start', justifyContent: 'center' },
   footerRow: { position: 'absolute', bottom: 20, left: 16, right: 16, flexDirection: 'row' },
-  finishHint: { position: 'absolute', bottom: 68, left: 16, right: 16, textAlign: 'center', color: '#f59e0b' },
-  remainingHint: { position: 'absolute', bottom: 92, left: 16, right: 16, textAlign: 'center', color: '#bbb' },
 });
 
 export default QuestionnaireScreen;

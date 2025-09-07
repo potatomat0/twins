@@ -46,7 +46,7 @@ Any inconrrect field will print out a warning. The Start Questionaire will only 
 - selection state: highlight the chosen answer with a soft glow of the button’s color and a bold label.
 - responsiveness: on small screens, long labels use smaller font or abbreviated text (e.g., "Slightly Dis.", "Slightly Ag.") to keep all five options visible.
 - completion requirement: users must answer all 50 questions to access the result screen. No early finish is allowed. At the final step, if any question is unanswered, a helper action jumps to the first unanswered item.
- - final-step UX: when the user reaches question 50 with incomplete answers, show a notification modal explaining that all questions must be completed. The right button at question 50 is labeled "Go back" and cycles through unanswered items. Once all questions are answered, the button label changes to "See result" to proceed.
+- navigation gating: the "Next" button is disabled until the current question has an answer. Users cannot advance without selecting a response. At question 50, the button label reads "See result" and is enabled only after answering the final item.
 
 ### Result Screen 
 
