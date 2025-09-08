@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 
@@ -9,9 +9,15 @@ type Props = {
   value?: string;
   placeholder?: string;
   onChange: (value: string) => void;
+  onCommit?: () => void; // called after a selection is made and modal closes
 };
 
-const Dropdown: React.FC<Props> = ({ options, value, placeholder = 'Select…', onChange }) => {
+export type DropdownHandle = {
+  open: () => void;
+  close: () => void;
+};
+
+const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholder = 'Select…', onChange, onCommit }, ref) => {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
   const items = useMemo(
@@ -23,6 +29,11 @@ const Dropdown: React.FC<Props> = ({ options, value, placeholder = 'Select…', 
   );
 
   const currentLabel = items.find((i) => i.value === value)?.label;
+
+  useImperativeHandle(ref, () => ({
+    open: () => setOpen(true),
+    close: () => setOpen(false),
+  }));
 
   return (
     <>
@@ -69,6 +80,8 @@ const Dropdown: React.FC<Props> = ({ options, value, placeholder = 'Select…', 
                 onPress={() => {
                   onChange(it.value);
                   setOpen(false);
+                  // defer onCommit slightly to allow modal to close
+                  setTimeout(() => onCommit?.(), 0);
                 }}
               >
                 <Text style={{ color: '#fff', fontSize: 16 }}>{it.label}</Text>
@@ -79,7 +92,7 @@ const Dropdown: React.FC<Props> = ({ options, value, placeholder = 'Select…', 
       </Modal>
     </>
   );
-};
+});
 
 const styles = StyleSheet.create({
   input: {
@@ -112,4 +125,3 @@ const styles = StyleSheet.create({
 });
 
 export default Dropdown;
-

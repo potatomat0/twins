@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
@@ -19,6 +19,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const emailRef = useRef<TextInput>(null as any);
+  const passwordRef = useRef<TextInput>(null as any);
 
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const canLogin = emailValid && password.length >= 1;
@@ -34,6 +36,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Card>
@@ -48,6 +51,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               style={styles.input}
               value={email}
               onChangeText={setEmail}
+              ref={emailRef}
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus?.()}
             />
             {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
@@ -58,6 +64,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              ref={passwordRef}
+              returnKeyType="done"
+              onSubmitEditing={() => { if (canLogin) setModal(true); }}
             />
 
             <View style={{ height: 12 }} />
@@ -102,4 +111,3 @@ const styles = StyleSheet.create({
   },
   warn: { color: '#f59e0b', marginTop: -8, marginBottom: 8 },
 });
-

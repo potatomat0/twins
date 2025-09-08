@@ -1,13 +1,13 @@
 import React from 'react';
-import { Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { Keyboard, Pressable } from 'react-native';
 
 type Props = { children: React.ReactNode };
 
 const KeyboardDismissable: React.FC<Props> = ({ children }) => {
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss} android_disableSound>
       {children}
-    </TouchableWithoutFeedback>
+    </Pressable>
   );
 };
 

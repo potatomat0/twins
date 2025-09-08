@@ -32,8 +32,8 @@ const SocialButton: React.FC<Props> = ({ provider, title, onPress, style }) => {
       accessibilityLabel={`Sign in with ${cfg.label}`}
     >
       <View style={styles.row}>
-        <FontAwesome5 name={cfg.icon as any} size={16} color="#fff" style={{ marginRight: 8 }} />
-        <Text style={styles.text}>{title ?? cfg.label}</Text>
+        <FontAwesome5 name={cfg.icon as any} size={16} color="#fff" style={{ marginRight: 0 }} />
+        <Text style={styles.text}>{title}</Text>
       </View>
     </Pressable>
   );

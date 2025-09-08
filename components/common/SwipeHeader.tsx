@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, PanResponder, GestureResponderEvent, PanResponderGestureState } from 'react-native';
+import { View, Text, StyleSheet, PanResponder, GestureResponderEvent, PanResponderGestureState, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
   title?: string;
@@ -25,7 +26,11 @@ const SwipeHeader: React.FC<Props> = ({ title = '', onBack }) => {
 
   return (
     <View style={styles.wrap} {...responder.panHandlers}>
+      <Pressable accessibilityRole="button" onPress={onBack} style={styles.backBtn}>
+        <Ionicons name="chevron-back" size={22} color="#fff" />
+      </Pressable>
       <Text style={styles.title} numberOfLines={1}>{title}</Text>
+      <View style={{ width: 40 }} />
     </View>
   );
 };
@@ -41,7 +46,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
+    flexDirection: 'row',
   },
-  title: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  title: { color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, textAlign: 'center' },
+  backBtn: { position: 'absolute', left: 8, height: 56, width: 40, alignItems: 'center', justifyContent: 'center' },
 });
-

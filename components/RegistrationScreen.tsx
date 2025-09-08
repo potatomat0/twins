@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
@@ -6,7 +6,7 @@ import { useTheme } from '@context/ThemeContext';
 import { toRgb } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
-import Dropdown from '@components/common/Dropdown';
+import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Registration'>;
@@ -22,6 +22,10 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [ageGroup, setAgeGroup] = useState('');
   const [gender, setGender] = useState('');
+  const usernameRef = useRef<TextInput>(null as any);
+  const emailRef = useRef<TextInput>(null as any);
+  const ageRef = useRef<DropdownHandle>(null);
+  const genderRef = useRef<DropdownHandle>(null);
 
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const usernameValid = useMemo(() => username.trim().length >= 2, [username]);
@@ -40,6 +44,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
       <Card>
@@ -52,6 +57,8 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.input}
           value={username}
           onChangeText={setUsername}
+          returnKeyType="next"
+          onSubmitEditing={() => emailRef.current?.focus?.()}
         />
         {!usernameValid && username.length > 0 && (
           <Text style={styles.warn}>Username must be longer than 2 characters.</Text>
@@ -65,20 +72,26 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.input}
           value={email}
           onChangeText={setEmail}
+          ref={emailRef}
+          returnKeyType="next"
+          onSubmitEditing={() => ageRef.current?.open()}
         />
         {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
         <Dropdown
           options={ageGroups}
           value={ageGroup}
-          onChange={setAgeGroup}
+          onChange={(v) => setAgeGroup(v)}
           placeholder="Select Your Age Group"
+          ref={ageRef}
+          onCommit={() => genderRef.current?.open()}
         />
         <Dropdown
           options={genders}
           value={gender}
-          onChange={setGender}
+          onChange={(v) => setGender(v)}
           placeholder="Select Your Gender"
+          ref={genderRef}
         />
 
         <Button

@@ -113,6 +113,7 @@ prop buttons:
 - Haptics: powered by Expo Haptics; generally minimal/subtle. A single subtle selection cue fires only when the final unanswered item is completed.
 - SocialButton: provider-colored sign-in buttons (Google, Facebook, Apple, Microsoft) with brand icons. Currently mocked; to be wired with Firebase Auth providers.
 - Terms/Privacy Acknowledgment: a mandatory checkbox row before account creation to confirm acceptance of Terms and Privacy Policy. Submission is disabled until acknowledged.
+ - Auto-advance inputs: text inputs move focus to the next field on return/enter; Dropdowns auto-open the next selector or focus the next input after a choice. Final fields submit if valid.
 
 ## Development note 
 

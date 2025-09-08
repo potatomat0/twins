@@ -117,7 +117,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
               const selected = currentValue === (v as 1 | 2 | 3 | 4 | 5);
               const color = OPTION_COLORS[v as 1 | 2 | 3 | 4 | 5];
               const label = isSmall
-                ? (v === 2 ? 'Slightly Dis.' : v === 4 ? 'Slightly Ag.' : OPTION_LABELS[v as 1|2|3|4|5])
+                ? (v === 2 ? 'Slightly Disagree' : v === 4 ? 'Slightly Agree' : OPTION_LABELS[v as 1|2|3|4|5])
                 : OPTION_LABELS[v as 1|2|3|4|5];
               return (
                 <Pressable

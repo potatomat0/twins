@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
@@ -7,7 +7,7 @@ import { useTheme } from '@context/ThemeContext';
 import { toRgb } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
-import Dropdown from '@components/common/Dropdown';
+import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import NotificationModal from '@components/common/NotificationModal';
 import SocialButton from '@components/common/SocialButton';
@@ -57,6 +57,11 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const emailRef = useRef<TextInput>(null as any);
+  const genderRef = useRef<DropdownHandle>(null);
+  const ageRef = useRef<DropdownHandle>(null);
+  const passwordRef = useRef<TextInput>(null as any);
+  const confirmRef = useRef<TextInput>(null as any);
 
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const usernameValid = useMemo(() => username.trim().length >= 3, [username]);
@@ -77,6 +82,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Card>
@@ -90,6 +96,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               style={styles.input}
               value={username}
               onChangeText={setUsername}
+              returnKeyType="next"
+              onSubmitEditing={() => emailRef.current?.focus?.()}
             />
             {!usernameValid && username.length > 0 && (
               <Text style={styles.warn}>Username must be at least 3 characters.</Text>
@@ -103,11 +111,28 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               style={styles.input}
               value={email}
               onChangeText={setEmail}
+              ref={emailRef}
+              returnKeyType="next"
+              onSubmitEditing={() => genderRef.current?.open()}
             />
             {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
-            <Dropdown options={genders} value={gender} onChange={setGender} placeholder="Select Your Gender" />
-            <Dropdown options={ageGroups} value={ageGroup} onChange={setAgeGroup} placeholder="Select Your Age Group" />
+            <Dropdown
+              options={genders}
+              value={gender}
+              onChange={(v) => setGender(v)}
+              placeholder="Select Your Gender"
+              ref={genderRef}
+              onCommit={() => ageRef.current?.open()}
+            />
+            <Dropdown
+              options={ageGroups}
+              value={ageGroup}
+              onChange={(v) => setAgeGroup(v)}
+              placeholder="Select Your Age Group"
+              ref={ageRef}
+              onCommit={() => passwordRef.current?.focus?.()}
+            />
 
             {/* TODO: enforce stronger password policies per product requirements */}
             <View style={styles.inputWrap}>
@@ -119,6 +144,9 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 onChangeText={setPassword}
                 secureTextEntry={!showPw}
                 autoCapitalize="none"
+                ref={passwordRef}
+                returnKeyType="next"
+                onSubmitEditing={() => confirmRef.current?.focus?.()}
               />
               <Pressable
                 accessibilityRole="button"
@@ -146,6 +174,11 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 onChangeText={setConfirm}
                 secureTextEntry={!showConfirm}
                 autoCapitalize="none"
+                ref={confirmRef}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (canSubmit) setShowModal(true);
+                }}
               />
               <Pressable
                 accessibilityRole="button"
@@ -177,13 +210,21 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 {agreed ? <Text style={styles.checkmark}>✓</Text> : null}
               </Pressable>
               <Text style={{ color: '#bbb', flex: 1 }}>
-                I agree to the <Text style={{ color: '#fff', fontWeight: '700' }}>Terms</Text> and <Text style={{ color: '#fff', fontWeight: '700' }}>Privacy Policy</Text>
+                I agree to the 
+                <Text
+                  style={{ color: '#fff', fontWeight: '700' }}
+                  onPress={() => setShowModal(true)}
+                > Terms</Text> and 
+                <Text
+                  style={{ color: '#fff', fontWeight: '700' }}
+                  onPress={() => setShowModal(true)}
+                > Privacy Policy</Text>
               </Text>
             </View>
 
             <View style={{ height: 12 }} />
             <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
-              <Button title="Cancel" variant="neutral" onPress={() => navigation.goBack()} />
+	    {/*<Button title="Cancel" variant="neutral" onPress={() => navigation.goBack()} />*/}
               <Button
                 title="Create Account"
                 onPress={() => setShowModal(true)}

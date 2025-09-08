@@ -54,6 +54,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
       <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}> 
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center' }}
+          keyboardDismissMode="on-drag"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           {/* Full-width chart */}
