@@ -11,6 +11,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "react-native-get-random-values": "^1.11.0",
+    "react-native-url-polyfill": "^2.0.0",
+    "expo-constants": "~16.0.2",
     "expo-haptics": "~14.1.4",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/stack": "^6.3.29",

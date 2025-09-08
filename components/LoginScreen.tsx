@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
@@ -8,6 +8,7 @@ import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
+import supabase from '@services/supabase';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 type Props = { navigation: Nav };
@@ -24,11 +25,31 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const canLogin = emailValid && password.length >= 1;
+  const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
 
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 600);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Lightweight HEAD-like request to test connectivity
+        const { error } = await supabase
+          .from('User')
+          .select('id', { head: true, count: 'exact' })
+          .limit(1);
+        if (!cancelled) setSupabaseOk(!error);
+      } catch {
+        if (!cancelled) setSupabaseOk(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <KeyboardDismissable>
@@ -40,7 +61,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Card>
-            <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome back</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+              <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome back</Text>
+              {supabaseOk ? (
+                <Text style={{ color: '#22c55e', fontWeight: '700' }}>· Powered by Supabase</Text>
+              ) : supabaseOk === false ? null : null}
+            </View>
             <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Sign in to continue</Text>
 
             <TextInput
