@@ -25,13 +25,19 @@ _____
 
 ### User onboarding
 
-- once user has downloaded and opened the app, they are greeted with a temporary registration screen that asks them to fill the following fields: 
+- On app launch, users land on the Login screen:
 
-	1. Username: Required | Text | Validation: longer than 3 characters | placeholder: "How would you want to be called?" | post submit: trim 
-	2. Email: Required | Email | Standard Email validation regex | Placeholder: "Enter your email" | post submit: trim  
-	3. Age Group: Required | Dropdown [<18, 18-24, 25-35, 35-44, 45+] | Placeholder: "Select Your Age Group"
-	4. Gender: Required | Dropdown [Male, Female, Non-Binary, Prefer Not To Say] | Placeholder: "Select Your Gender"
-Any inconrrect field will print out a warning. The Start Questionaire will only start once it is a valid onboarding info. 
+	- Email (required) | Password (required) | Login (mocked for prototype)
+	- Below: a button "Start Personality Quiz" with helper text "Or, start our personality quiz to start making an account" which navigates to the Questionnaire.
+
+- Create Account (after Results via "Complete your profile"):
+
+	- Prefilled: Username, Email, Gender, Age Group (from the flow where available)
+	- Password + Confirm with strength indicator and show/hide toggles
+	- Mandatory Terms/Privacy acknowledgment before submission
+	- Mock fingerprint value derived from quiz results (to be replaced by TF Lite)
+	- Social sign-in placeholders (Google/Facebook/Apple/Microsoft)
+	- Button to go back to Login
 
 ### Questionaire screen 
 
@@ -46,6 +52,8 @@ Any inconrrect field will print out a warning. The Start Questionaire will only 
 - selection state: highlight the chosen answer with a soft glow of the button’s color and a bold label.
 - responsiveness: on small screens, long labels use smaller font or abbreviated text (e.g., "Slightly Dis.", "Slightly Ag.") to keep all five options visible.
 - completion requirement: users must answer all 50 questions to access the result screen. No early finish is allowed. At the final step, if any question is unanswered, a helper action jumps to the first unanswered item.
+ - navigation gating: Next is disabled until the current question is answered. At the last question, the button shows "See result" and is enabled only after selecting the final answer.
+ - header & gestures: this screen shows a stack header; swiping left on the header moves back to the previous screen.
 - navigation gating: the "Next" button is disabled until the current question has an answer. Users cannot advance without selecting a response. At question 50, the button label reads "See result" and is enabled only after answering the final item.
 
 ### Result Screen 
@@ -103,6 +111,8 @@ prop buttons:
 - NotificationModal: reusable, compact modal for system messages and guidance. Used in the questionnaire to inform users at question 50 that all questions must be answered before viewing results. Optimizes text space and keeps context without full-screen takeovers.
 - KeyboardDismissable: wrapper that dismisses the virtual keyboard when tapping outside input areas (no haptics on dismiss).
 - Haptics: powered by Expo Haptics; generally minimal/subtle. A single subtle selection cue fires only when the final unanswered item is completed.
+- SocialButton: provider-colored sign-in buttons (Google, Facebook, Apple, Microsoft) with brand icons. Currently mocked; to be wired with Firebase Auth providers.
+- Terms/Privacy Acknowledgment: a mandatory checkbox row before account creation to confirm acceptance of Terms and Privacy Policy. Submission is disabled until acknowledged.
 
 ## Development note 
 

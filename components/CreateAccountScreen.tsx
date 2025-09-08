@@ -10,6 +10,7 @@ import Button from '@components/common/Button';
 import Dropdown from '@components/common/Dropdown';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import NotificationModal from '@components/common/NotificationModal';
+import SocialButton from '@components/common/SocialButton';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
 type Route = RouteProp<RootStackParamList, 'CreateAccount'>;
@@ -55,12 +56,13 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const usernameValid = useMemo(() => username.trim().length >= 3, [username]);
   const strength = useMemo(() => passwordStrength(password), [password]);
   const confirmValid = useMemo(() => confirm.length > 0 && confirm === password, [confirm, password]);
-  const canSubmit = usernameValid && emailValid && ageGroup && gender && password.length >= 8 && confirmValid;
+  const canSubmit = usernameValid && emailValid && ageGroup && gender && password.length >= 8 && confirmValid && agreed;
 
   const fp = mockFingerprint(route.params?.scores);
 
@@ -164,13 +166,33 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               <Text style={{ color: '#fff', fontWeight: '700' }}>{fp}</Text>
             </View>
 
+            {/* Terms / Privacy acknowledgment */}
+            <View style={styles.termsRow}>
+              <Pressable
+                onPress={() => setAgreed((v) => !v)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: agreed }}
+                style={[styles.checkbox, { borderColor: agreed ? '#22c55e' : 'rgba(255,255,255,0.2)' }]}
+              >
+                {agreed ? <Text style={styles.checkmark}>✓</Text> : null}
+              </Pressable>
+              <Text style={{ color: '#bbb', flex: 1 }}>
+                I agree to the <Text style={{ color: '#fff', fontWeight: '700' }}>Terms</Text> and <Text style={{ color: '#fff', fontWeight: '700' }}>Privacy Policy</Text>
+              </Text>
+            </View>
+
             <View style={{ height: 12 }} />
-            <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
               <Button title="Cancel" variant="neutral" onPress={() => navigation.goBack()} />
               <Button
                 title="Create Account"
                 onPress={() => setShowModal(true)}
                 disabled={!canSubmit}
+              />
+              <Button
+                title="Back to Login"
+                variant="neutral"
+                onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })}
               />
             </View>
 
@@ -178,10 +200,10 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={{ height: 16 }} />
             <Text style={{ color: '#bbb', marginBottom: 8 }}>Or, sign in with</Text>
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <Button title="Google" variant="neutral" onPress={() => setShowModal(true)} />
-              <Button title="Facebook" variant="neutral" onPress={() => setShowModal(true)} />
-              <Button title="Apple" variant="neutral" onPress={() => setShowModal(true)} />
-              <Button title="Microsoft" variant="neutral" onPress={() => setShowModal(true)} />
+              <SocialButton provider="google" onPress={() => setShowModal(true)} />
+              <SocialButton provider="facebook" onPress={() => setShowModal(true)} />
+              <SocialButton provider="apple" onPress={() => setShowModal(true)} />
+              <SocialButton provider="microsoft" onPress={() => setShowModal(true)} />
             </View>
           </Card>
         </ScrollView>
@@ -222,6 +244,9 @@ const styles = StyleSheet.create({
   strengthText: { fontWeight: '700' },
   hint: { color: '#bbb', marginTop: -6, marginBottom: 10, fontSize: 12 },
   fpRow: { marginTop: 8, padding: 12, borderRadius: 10, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between' },
+  termsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  checkmark: { color: '#22c55e', fontWeight: '900' },
 });
 
 export default CreateAccountScreen;

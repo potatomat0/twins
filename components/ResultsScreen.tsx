@@ -84,7 +84,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
                 title="Start Over"
                 variant="neutral"
                 onPress={() =>
-                  navigation.reset({ index: 0, routes: [{ name: 'Registration' as any }] })
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })
                 }
               />
               <Button
