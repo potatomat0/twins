@@ -17,6 +17,9 @@ type Props = { navigation: Nav; route: Route };
 const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const username = route.params?.username ?? 'Friend';
+  const email = route.params?.email ?? '';
+  const ageGroup = route.params?.ageGroup ?? '';
+  const gender = route.params?.gender ?? '';
   const { width: windowWidth } = useWindowDimensions();
   const scores = route.params?.scores ?? {
     'Extraversion': 50,
@@ -84,7 +87,18 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
                   navigation.reset({ index: 0, routes: [{ name: 'Registration' as any }] })
                 }
               />
-              <Button title="Create Accoutn" onPress={() => { /* TODO: push Final Registration */ }} />
+              <Button
+                title="Complete your profile"
+                onPress={() =>
+                  navigation.navigate('CreateAccount', {
+                    username,
+                    email,
+                    ageGroup,
+                    gender,
+                    scores,
+                  })
+                }
+              />
             </View>
           </Card>
         </ScrollView>

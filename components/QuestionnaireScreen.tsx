@@ -72,7 +72,13 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const onFinish = () => {
     const sums = computeBigFiveScores(answers);
     const normalized = normalizeScoresTo100(sums);
-    navigation.navigate('Results', { username: route.params?.username ?? 'Friend', scores: normalized });
+    navigation.navigate('Results', {
+      username: route.params?.username ?? 'Friend',
+      email: route.params?.email ?? '',
+      ageGroup: route.params?.ageGroup ?? '',
+      gender: route.params?.gender ?? '',
+      scores: normalized,
+    });
   };
 
   // No incomplete modal needed with gating
