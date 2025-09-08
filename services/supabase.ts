@@ -15,3 +15,27 @@ export const supabase = createClient(SUPABASE_URL as string, SUPABASE_ANON_KEY a
 });
 
 export default supabase;
+
+export async function ensureUser(email: string, username?: string) {
+  if (!email) return { ok: false, reason: 'missing-email' } as const;
+  try {
+    const { data, error } = await supabase
+      .from('User')
+      .select('id, email')
+      .eq('email', email)
+      .limit(1)
+      .maybeSingle();
+    if (error) return { ok: false, error } as const;
+    if (data?.id) return { ok: true, created: false, id: data.id } as const;
+    const insert = { email, username: username ?? null } as any;
+    const { data: created, error: e2 } = await supabase
+      .from('User')
+      .insert(insert)
+      .select('id')
+      .single();
+    if (e2) return { ok: false, error: e2 } as const;
+    return { ok: true, created: true, id: created?.id } as const;
+  } catch (e) {
+    return { ok: false, error: e } as const;
+  }
+}

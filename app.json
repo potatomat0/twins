@@ -19,6 +19,7 @@
       "package": "com.twins.app",
       "versionCode": 1,
       "minSdkVersion": 23,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#0B0B0E"
       }

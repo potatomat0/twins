@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
@@ -8,7 +8,7 @@ import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
-import supabase from '@services/supabase';
+import supabase, { ensureUser } from '@services/supabase';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 type Props = { navigation: Nav };
@@ -54,10 +54,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <KeyboardDismissable>
       <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}>        
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Card>
@@ -96,7 +98,17 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             />
 
             <View style={{ height: 12 }} />
-            <Button title="Login" onPress={() => setModal(true)} disabled={!canLogin} />
+            <Button
+              title="Login"
+              onPress={() => {
+                if (emailValid) {
+                  const placeholder = email.split('@')[0] || null;
+                  ensureUser(email.trim(), placeholder || undefined).catch(() => {});
+                }
+                setModal(true);
+              }}
+              disabled={!canLogin}
+            />
 
             <View style={{ height: 16 }} />
             <Text style={{ color: '#bbb', marginBottom: 8 }}>Or, start our personality quiz to start making an account</Text>
@@ -106,6 +118,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             />
           </Card>
         </ScrollView>
+        </KeyboardAvoidingView>
 
         <NotificationModal
           visible={modal}

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
@@ -8,6 +8,7 @@ import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
+import { ensureUser } from '@services/supabase';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Registration'>;
 
@@ -41,10 +42,12 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <KeyboardDismissable>
       <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}>        
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
       <Card>
@@ -96,19 +99,23 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
 
         <Button
           title="Start Questionnaire"
-          onPress={() =>
+          onPress={() => {
+            const uname = username.trim();
+            const mail = email.trim();
+            ensureUser(mail, uname).catch(() => {});
             navigation.navigate('Questionnaire', {
-              username: username.trim(),
-              email: email.trim(),
+              username: uname,
+              email: mail,
               ageGroup,
               gender,
-            })
-          }
+            });
+          }}
           disabled={!canStart}
           style={{ marginTop: 8 }}
         />
       </Card>
         </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </KeyboardDismissable>
   );

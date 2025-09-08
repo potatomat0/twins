@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
@@ -79,10 +79,12 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   return (
     <KeyboardDismissable>
       <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}>        
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Card>
@@ -248,6 +250,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
           </Card>
         </ScrollView>
+        </KeyboardAvoidingView>
 
         <NotificationModal
           visible={showModal}

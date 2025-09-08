@@ -26,4 +26,5 @@ gantt
 - 2025-09-08: UI polish — added visible back arrow to questionnaire header; improved keyboard dismissal to avoid blocking scroll and enabled ScrollView keyboardDismissMode. Social sign-in buttons use brand colors and icons.
 - 2025-09-08: Form UX — implemented auto-advance across Login, Registration, and Create Account: Return/Enter focuses the next field; dropdown selections auto-open the next dropdown or move focus to the next input; final fields attempt action when valid.
 - 2025-09-08: Supabase integration — added Supabase client and polyfills. Login screen attempts a lightweight connectivity check and, when successful, shows “Powered by Supabase” beside the welcome title.
- - 2025-09-08: Supabase config moved to Expo Constants: app.json extra now carries supabaseUrl and supabaseAnonKey, read via expo-constants. Fallback to EXPO_PUBLIC_ env vars supported.
+- 2025-09-08: Supabase config moved to Expo Constants: app.json extra now carries supabaseUrl and supabaseAnonKey, read via expo-constants. Fallback to EXPO_PUBLIC_ env vars supported.
+ - 2025-09-08: Wired Login and Registration to Supabase: on Login or starting the Questionnaire, the app ensures a user record exists (insert if missing) based on email and optional username. Non-blocking; errors are suppressed in UI for now.
