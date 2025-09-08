@@ -16,26 +16,41 @@ export const supabase = createClient(SUPABASE_URL as string, SUPABASE_ANON_KEY a
 
 export default supabase;
 
-export async function ensureUser(email: string, username?: string) {
-  if (!email) return { ok: false, reason: 'missing-email' } as const;
-  try {
-    const { data, error } = await supabase
-      .from('User')
-      .select('id, email')
-      .eq('email', email)
-      .limit(1)
-      .maybeSingle();
-    if (error) return { ok: false, error } as const;
-    if (data?.id) return { ok: true, created: false, id: data.id } as const;
-    const insert = { email, username: username ?? null } as any;
-    const { data: created, error: e2 } = await supabase
-      .from('User')
-      .insert(insert)
-      .select('id')
-      .single();
-    if (e2) return { ok: false, error: e2 } as const;
-    return { ok: true, created: true, id: created?.id } as const;
-  } catch (e) {
-    return { ok: false, error: e } as const;
-  }
+// Auth helpers (recommended over table-based password checks)
+export async function signInWithPassword(email: string, password: string) {
+  return supabase.auth.signInWithPassword({ email, password });
+}
+
+export async function signUpWithPassword(email: string, password: string, metadata?: Record<string, any>) {
+  return supabase.auth.signUp({ email, password, options: { data: metadata } });
+}
+
+export async function signOut() {
+  return supabase.auth.signOut();
+}
+
+// Profiles helpers (public.profiles)
+export async function getCurrentUser() {
+  return supabase.auth.getUser();
+}
+
+export type Profile = {
+  id: string;
+  username?: string | null;
+  age_group?: string | null;
+  gender?: string | null;
+  personality_fingerprint?: number | null;
+};
+
+export async function fetchProfile(id: string) {
+  return supabase.from('profiles').select('id, username, age_group, gender, personality_fingerprint').eq('id', id).maybeSingle();
+}
+
+export async function upsertProfile(profile: Profile) {
+  // Requires RLS allowing owner id === auth.uid()
+  return supabase
+    .from('profiles')
+    .upsert(profile, { onConflict: 'id' })
+    .select('id, username, age_group, gender, personality_fingerprint')
+    .single();
 }

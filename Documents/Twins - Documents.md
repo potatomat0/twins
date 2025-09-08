@@ -27,7 +27,7 @@ _____
 
 - On app launch, users land on the Login screen:
 
-	- Email (required) | Password (required) | Login (mocked for prototype)
+	- Email (required) | Password (required) | Login (connected to Supabase: creates/updates a user row and authenticates against the public.User table for prototype purposes)
 	- Below: a button "Start Personality Quiz" with helper text "Or, start our personality quiz to start making an account" which navigates to the Questionnaire.
 
 - Create Account (after Results via "Complete your profile"):

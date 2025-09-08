@@ -8,7 +8,7 @@ import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
-import supabase, { ensureUser } from '@services/supabase';
+import supabase, { signInWithPassword, fetchProfile, upsertProfile } from '@services/supabase';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 type Props = { navigation: Nav };
@@ -17,6 +17,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [modal, setModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMsg, setModalMsg] = useState('');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,11 +38,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     let cancelled = false;
     (async () => {
       try {
-        // Lightweight HEAD-like request to test connectivity
-        const { error } = await supabase
-          .from('User')
-          .select('id', { head: true, count: 'exact' })
-          .limit(1);
+        // Lightweight auth endpoint probe (no credentials required)
+        const { data, error } = await supabase.auth.getSession();
         if (!cancelled) setSupabaseOk(!error);
       } catch {
         if (!cancelled) setSupabaseOk(false);
@@ -100,12 +99,36 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <View style={{ height: 12 }} />
             <Button
               title="Login"
-              onPress={() => {
-                if (emailValid) {
-                  const placeholder = email.split('@')[0] || null;
-                  ensureUser(email.trim(), placeholder || undefined).catch(() => {});
+              onPress={async () => {
+                const mail = email.trim();
+                const fallbackName = (mail.split('@')[0] || 'User');
+                try {
+                  const { data, error } = await signInWithPassword(mail, password);
+                  if (error) {
+                    setModalTitle('Invalid credentials');
+                    setModalMsg(error.message ?? 'Email or password is incorrect.');
+                    setModal(true);
+                    return;
+                  }
+                  const authUser = data.user;
+                  const userId = authUser?.id;
+                  let username = (authUser?.user_metadata as any)?.username || fallbackName;
+                  if (userId) {
+                    const { data: prof } = await fetchProfile(userId);
+                    if (!prof) {
+                      // create minimal profile
+                      const { data: created } = await upsertProfile({ id: userId, username });
+                      if (created?.username) username = created.username;
+                    } else if (prof.username) {
+                      username = prof.username;
+                    }
+                  }
+                  navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email: mail } }] });
+                } catch (e: any) {
+                  setModalTitle('Error');
+                  setModalMsg(e?.message ?? 'An unexpected error occurred.');
+                  setModal(true);
                 }
-                setModal(true);
               }}
               disabled={!canLogin}
             />
@@ -122,8 +145,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
         <NotificationModal
           visible={modal}
-          title="Not implemented"
-          message="Login is mocked in this prototype. TODO: integrate Firebase Auth."
+          title={modalTitle || 'Notice'}
+          message={modalMsg || 'Something happened.'}
           primaryText="OK"
           onPrimary={() => setModal(false)}
           onRequestClose={() => setModal(false)}

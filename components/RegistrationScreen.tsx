@@ -8,7 +8,6 @@ import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
-import { ensureUser } from '@services/supabase';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Registration'>;
 
@@ -102,7 +101,6 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
           onPress={() => {
             const uname = username.trim();
             const mail = email.trim();
-            ensureUser(mail, uname).catch(() => {});
             navigation.navigate('Questionnaire', {
               username: uname,
               email: mail,

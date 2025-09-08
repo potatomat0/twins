@@ -6,6 +6,7 @@ import ResultsScreen from '@components/ResultsScreen';
 import CreateAccountScreen from '@components/CreateAccountScreen';
 import LoginScreen from '@components/LoginScreen';
 import SwipeHeader from '@components/common/SwipeHeader';
+import DashboardScreen from '@components/DashboardScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -13,6 +14,7 @@ export type RootStackParamList = {
   Questionnaire: { username: string; email: string; ageGroup: string; gender: string } | undefined;
   Results: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
   CreateAccount: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
+  Dashboard: { username: string; email: string } | undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -38,6 +40,7 @@ const AppNavigator = () => {
       />
       <Stack.Screen name="Results" component={ResultsScreen} />
       <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
+      <Stack.Screen name="Dashboard" component={DashboardScreen} />
     </Stack.Navigator>
   );
 };

@@ -11,6 +11,7 @@ import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import NotificationModal from '@components/common/NotificationModal';
 import SocialButton from '@components/common/SocialButton';
+import { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
 type Route = RouteProp<RootStackParamList, 'CreateAccount'>;
@@ -229,7 +230,35 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 	    {/*<Button title="Cancel" variant="neutral" onPress={() => navigation.goBack()} />*/}
               <Button
                 title="Create Account"
-                onPress={() => setShowModal(true)}
+                onPress={async () => {
+                  const mail = email.trim();
+                  const uname = username.trim();
+                  try {
+                    const { data, error } = await signUpWithPassword(mail, password, { username: uname, age_group: ageGroup, gender });
+                    if (error) {
+                      setShowModal(true);
+                      return;
+                    }
+                    const user = data.user;
+                    if (data.session && user?.id) {
+                      // Insert or update own profile (RLS owner policy)
+                      await upsertProfile({ id: user.id, username: uname, age_group: ageGroup, gender });
+                      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username: uname, email: mail } }] });
+                    } else {
+                      // Try to sign in immediately (works when email confirmation is disabled)
+                      const { data: sdata, error: signInErr } = await signInWithPassword(mail, password);
+                      if (!signInErr && sdata.user?.id) {
+                        await upsertProfile({ id: sdata.user.id, username: uname, age_group: ageGroup, gender });
+                        navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username: uname, email: mail } }] });
+                      } else {
+                        // Email confirmation likely enabled in project settings
+                        setShowModal(true);
+                      }
+                    }
+                  } catch {
+                    setShowModal(true);
+                  }
+                }}
                 disabled={!canSubmit}
               />
               <Button
@@ -254,8 +283,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 
         <NotificationModal
           visible={showModal}
-          title="Not implemented"
-          message="Account creation is mocked in this prototype. TODO: connect to Firebase/GCP and use TF Lite to generate the fingerprint."
+          title="Email confirmation is enabled"
+          message="For a smoother dev experience, disable 'Confirm email' in Supabase (Auth → Providers → Email). Then new accounts will auto‑login after sign up."
           primaryText="OK"
           onPrimary={() => setShowModal(false)}
           onRequestClose={() => setShowModal(false)}
