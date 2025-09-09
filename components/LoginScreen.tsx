@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
@@ -22,12 +22,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const emailRef = useRef<TextInput>(null as any);
   const passwordRef = useRef<TextInput>(null as any);
 
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const canLogin = emailValid && password.length >= 1;
   const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
+
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -65,7 +67,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome back</Text>
               {supabaseOk ? (
-                <Text style={{ color: '#22c55e', fontWeight: '700' }}>· Powered by Supabase</Text>
+                <Text style={{ color: '#22c55e', fontWeight: '700' }}>Prototype 3. Database By Supabase</Text>
               ) : supabaseOk === false ? null : null}
             </View>
             <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Sign in to continue</Text>
@@ -84,17 +86,27 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             />
             {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#888"
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              ref={passwordRef}
-              returnKeyType="done"
-              onSubmitEditing={() => { if (canLogin) setModal(true); }}
-            />
+            <View style={styles.inputWrap}>
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor="#888"
+                style={[styles.input, { paddingRight: 64 }]}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPw}
+                ref={passwordRef}
+                returnKeyType="done"
+                onSubmitEditing={() => { if (canLogin) setModal(true); }}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
+                onPress={() => setShowPw((v) => !v)}
+                style={styles.showBtn}
+              >
+                <Text style={styles.showTxt}>{showPw ? 'Hide' : 'Show'}</Text>
+              </Pressable>
+            </View>
 
             <View style={{ height: 12 }} />
             <Button
@@ -171,5 +183,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)'
   },
+  inputWrap: { position: 'relative' },
+  showBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
+  showTxt: { color: '#fff', fontWeight: '700' },
   warn: { color: '#f59e0b', marginTop: -8, marginBottom: 8 },
 });

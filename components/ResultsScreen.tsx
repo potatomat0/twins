@@ -69,7 +69,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <Card>
             <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>
-              Here's your final result, {username}!
+              Here's your final result!
             </Text>
             <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>
               Top strengths:
@@ -89,7 +89,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
                 }
               />
               <Button
-                title="Complete your profile"
+                title="Create Account"
                 onPress={() =>
                   navigation.navigate('CreateAccount', {
                     username,
