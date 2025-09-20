@@ -75,7 +75,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
               Top strengths:
             </Text>
             {top3.map(([k, v]) => (
-              <Text key={k} style={{ color: '#fff', marginBottom: 4 }}>
+              <Text key={k} style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 4 }}>
                 • {k}: {v}
               </Text>
             ))}

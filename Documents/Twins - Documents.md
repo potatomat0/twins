@@ -28,7 +28,7 @@ _____
 - On app launch, users land on the Login screen:
 
 	- Email (required) | Password (required, with show/hide toggle) | Login (connected to Supabase: creates/updates a user row and authenticates against the public.User table for prototype purposes)
-	- Below: a button "Start Personality Quiz" with helper text "Or, start our personality quiz to start making an account" which navigates to the Questionnaire.
+	- Below: a button "Start Personality Quiz" with helper text "Or, start our personality quiz to start making an account" which navigates to the Registration screen (prefills email if entered).
 
 - Create Account (after Results via "Complete your profile"):
 
@@ -80,7 +80,7 @@ _____
 - this screen will use google cloud API for account registration. field details are the same. the following fields are required: 
 
 1. username: autofill the previous onboarding data 
-2. email: autofll the previous onboarding data 
+2. email: autofill the previous onboarding data 
 3. password: standard validation 
 4. retype password: standard validation 
 
@@ -226,7 +226,7 @@ Core keys (both themes):
 - `--bg`: App background. Dark → 11 11 14; Light → 163 118 162 (#A376A2).
 - `--surface`: Inner surfaces (cards, inputs, question blocks, sheets). Dark → 20 20 24; Light → 255 255 255.
 - `--border`: Base border color triplet (use with alpha). Dark → 255 255 255; Light → 0 0 0.
-- `--text-primary`, `--text-secondary`, `--brand-primary`, `--accent-cyan`, `--danger`, `--warning`, `--neutral`.
+- `--text-primary`, `--text-secondary`, `--text-muted` (placeholders/hints), `--brand-primary`, `--accent-cyan`, `--danger`, `--warning`, `--neutral`.
 
 **Implementation:**  
 Use the StyleSheet API and consume the ThemeContext to apply colors.
@@ -249,6 +249,9 @@ const styles = StyleSheet.create({
 ```
 
 (Port the full list of themes from the original themes.ts file.)
+
+Text & placeholders
+- Use `--text-primary` for main content; `--text-secondary` for supportive text; and `--text-muted` for input placeholders and subtle hints.
 
 Theme presets and switching
 - Presets: `dark` and `light` are defined in `themes/index.ts` with complete color sets (`--text-primary`, `--text-secondary`, card, etc.).

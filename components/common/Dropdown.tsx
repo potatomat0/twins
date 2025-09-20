@@ -45,8 +45,13 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
           styles.input,
           {
             backgroundColor: toRgb(theme.colors['--surface']),
-            borderColor: toRgba(theme.colors['--border'], 0.08),
+            borderColor: open ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+            borderWidth: open ? 2 : 1,
             opacity: pressed ? 0.9 : 1,
+            shadowColor: toRgb(theme.colors['--focus']),
+            shadowOpacity: open ? 0.35 : 0,
+            shadowRadius: open ? 10 : 0,
+            elevation: open ? 4 : 0,
           },
         ]}
       >
@@ -63,6 +68,11 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
             { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08) },
           ]}
         >
+          {placeholder ? (
+            <View style={[styles.headerRow, { borderColor: toRgba(theme.colors['--border'], 0.06) }]}>
+              <Text style={{ color: toRgb(theme.colors['--text-secondary']), fontWeight: '700' }}>{placeholder}</Text>
+            </View>
+          ) : null}
           {items.map((it) => {
             const selected = it.value === value;
             return (
@@ -118,6 +128,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  headerRow: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
   },
   row: {
     paddingVertical: 14,

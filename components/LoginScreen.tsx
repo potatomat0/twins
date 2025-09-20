@@ -23,6 +23,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [emailFocus, setEmailFocus] = useState(false);
+  const [pwFocus, setPwFocus] = useState(false);
   const emailRef = useRef<TextInput>(null as any);
   const passwordRef = useRef<TextInput>(null as any);
 
@@ -74,28 +76,49 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
             <TextInput
               placeholder="Email"
-              placeholderTextColor="#888"
+              placeholderTextColor={toRgb(theme.colors['--text-muted'])}
               keyboardType="email-address"
               autoCapitalize="none"
               style={[
                 styles.input,
-                { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) },
+                {
+                  backgroundColor: toRgb(theme.colors['--surface']),
+                  borderColor: emailFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+                  borderWidth: emailFocus ? 2 : 1,
+                  color: toRgb(theme.colors['--text-primary']),
+                  shadowColor: toRgb(theme.colors['--focus']),
+                  shadowOpacity: emailFocus ? 0.35 : 0,
+                  shadowRadius: emailFocus ? 10 : 0,
+                  elevation: emailFocus ? 4 : 0,
+                },
               ]}
               value={email}
               onChangeText={setEmail}
               ref={emailRef}
               returnKeyType="next"
               onSubmitEditing={() => passwordRef.current?.focus?.()}
+              onFocus={() => setEmailFocus(true)}
+              onBlur={() => setEmailFocus(false)}
             />
             {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
             <View style={styles.inputWrap}>
               <TextInput
                 placeholder="Password"
-                placeholderTextColor="#888"
+              placeholderTextColor={toRgb(theme.colors['--text-muted'])}
                 style={[
                   styles.input,
-                  { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']), paddingRight: 64 },
+                  {
+                    backgroundColor: toRgb(theme.colors['--surface']),
+                    borderColor: pwFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+                    borderWidth: pwFocus ? 2 : 1,
+                    color: toRgb(theme.colors['--text-primary']),
+                    paddingRight: 64,
+                    shadowColor: toRgb(theme.colors['--focus']),
+                    shadowOpacity: pwFocus ? 0.35 : 0,
+                    shadowRadius: pwFocus ? 10 : 0,
+                    elevation: pwFocus ? 4 : 0,
+                  },
                 ]}
                 value={password}
                 onChangeText={setPassword}
@@ -103,14 +126,16 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 ref={passwordRef}
                 returnKeyType="done"
                 onSubmitEditing={() => { if (canLogin) setModal(true); }}
+                onFocus={() => setPwFocus(true)}
+                onBlur={() => setPwFocus(false)}
               />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
                 onPress={() => setShowPw((v) => !v)}
-                style={styles.showBtn}
+                style={[styles.showBtn, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}
               >
-                <Text style={styles.showTxt}>{showPw ? 'Hide' : 'Show'}</Text>
+                <Text style={[styles.showTxt, { color: toRgb(theme.colors['--text-primary']) }]}>{showPw ? 'Hide' : 'Show'}</Text>
               </Pressable>
             </View>
 
@@ -152,10 +177,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             />
 
             <View style={{ height: 16 }} />
-            <Text style={{ color: '#bbb', marginBottom: 8 }}>Or, start our personality quiz to start making an account</Text>
+            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>Or, start our personality quiz to start making an account</Text>
             <Button
               title="Start Personality Quiz"
-              onPress={() => navigation.navigate('Questionnaire', { username: '', email, ageGroup: '', gender: '' })}
+              onPress={() => navigation.navigate('Registration', { email })}
             />
           </Card>
         </ScrollView>

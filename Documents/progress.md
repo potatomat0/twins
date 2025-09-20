@@ -36,6 +36,14 @@ gantt
 
 - 2025-09-09: Theming — introduced unified `--bg` key and `--surface`/`--border` for inner components; Light theme now uses the purple (#A376A2 / 163 118 162) as `--bg`. Replaced hardcoded inner backgrounds with theme surfaces (Cards, inputs, dropdowns, questionnaire blocks). Navigation/background updated to `--bg`.
 
+- 2025-09-09: Onboarding flow — reintroduced Registration as the step before the personality questionnaire. The Login CTA now routes to Registration (prefilling email if provided), which then routes to Questionnaire with username/email/age group/gender. Create Account continues to auto‑fill these details.
+
+- 2025-09-09: Readability — standardized text colors across Login, Create Account, Dropdown, Questionnaire header, and NotificationModal. Added `--text-muted` for placeholders/hints; replaced hardcoded `#fff/#bbb/#888` with theme-driven `--text-primary/--text-secondary/--text-muted`. NotificationModal buttons and text now respect theme.
+
+- 2025-09-09: Bug fix — scroll lock after background taps. Root cause: the global keyboard dismiss wrapper used a full-screen `Pressable` that captured touch/scroll gestures, preventing the underlying `ScrollView` from handling drags. Fix: replaced with `TouchableWithoutFeedback` wrapping a `View` (flex:1) so background taps dismiss the keyboard without intercepting pan/scroll gestures. Verified across Login/Registration/Create Account/Results.
+
+- 2025-09-09: UX — added focused field highlight using a purple focus ring/shadow on all text inputs and dropdown triggers. Introduced `--focus` color to themes (A376A2) for consistent focus styling. Dropdown sheets now render a non-selectable header showing the placeholder (e.g., “Choose your age group/gender”).
+
 - 2025-09-09: Theming — added a Light theme preset to `themes/index.ts` (readable text and card colors) and a theme switcher on the Dashboard to toggle Dark/Light at runtime. Navigation theme now reflects the current selection.
 - 2025-09-09: Branding — updated Expo `splash.backgroundColor` to `#A376A2` to match the new default background preset.
  - 2025-09-08: Cleanup — removed legacy `public.User` code paths (ensureUser/upsertUser/authenticateUser). Switched Supabase connectivity probe on Login to an Auth endpoint (`getSession`).

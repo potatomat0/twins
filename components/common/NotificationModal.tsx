@@ -29,12 +29,12 @@ const NotificationModal: React.FC<Props> = ({
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onRequestClose}>
       <Pressable style={styles.backdrop} onPress={onRequestClose} />
       <View style={[styles.sheet, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08) }]}>        
-        {title ? <Text style={styles.title}>{title}</Text> : null}
-        {typeof message === 'string' ? <Text style={styles.message}>{message}</Text> : message}
+        {title ? <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>{title}</Text> : null}
+        {typeof message === 'string' ? <Text style={[styles.message, { color: toRgb(theme.colors['--text-secondary']) }]}>{message}</Text> : message}
         <View style={styles.actions}>
           {secondaryText ? (
-            <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onSecondary}>
-              <Text style={styles.btnSecondaryText}>{secondaryText}</Text>
+            <Pressable style={[styles.btn, styles.btnSecondary, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]} onPress={onSecondary}>
+              <Text style={[styles.btnSecondaryText, { color: toRgb(theme.colors['--text-primary']) }]}>{secondaryText}</Text>
             </Pressable>
           ) : null}
           <Pressable style={[styles.btn, styles.btnPrimary]} onPress={onPrimary}>
@@ -66,12 +66,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
   },
-  title: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 8 },
-  message: { color: '#ddd', fontSize: 14, lineHeight: 20 },
+  title: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  message: { fontSize: 14, lineHeight: 20 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 16 },
   btn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10 },
   btnPrimary: { backgroundColor: 'rgb(99, 102, 241)' },
   btnPrimaryText: { color: '#fff', fontWeight: '700' },
-  btnSecondary: { backgroundColor: 'rgba(255,255,255,0.06)' },
-  btnSecondaryText: { color: '#fff', fontWeight: '600' },
+  btnSecondary: {},
+  btnSecondaryText: { fontWeight: '600' },
 });

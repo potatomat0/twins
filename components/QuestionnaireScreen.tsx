@@ -94,11 +94,11 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: `rgb(${theme.colors['--bg']})` }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: `rgb(${theme.colors['--text-primary']})` }]}>Personality Questionnaire</Text>
-        <Text style={{ color: '#bbb', marginBottom: 8 }}>Question {index + 1} / {total}</Text>
+        <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>Question {index + 1} / {total}</Text>
         <View style={[styles.progressWrap, { backgroundColor: toRgba(theme.colors['--border'], 0.08) }]}>
           <View style={[styles.progressBar, { width: `${progress}%`, backgroundColor: `rgb(${theme.colors['--brand-primary']})` }]} />
         </View>
-        <Text style={{ color: '#bbb', marginTop: 6 }}>{answeredCount}/{total} answered</Text>
+        <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 6 }}>{answeredCount}/{total} answered</Text>
       </View>
 
       <ScrollView

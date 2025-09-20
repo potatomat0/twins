@@ -30,9 +30,9 @@ const SwipeHeader: React.FC<Props> = ({ title = '', onBack }) => {
   return (
     <View style={[styles.wrap, { backgroundColor: toRgb(theme.colors['--surface']), borderBottomColor: toRgba(theme.colors['--border'], 0.08) }]} {...responder.panHandlers}>
       <Pressable accessibilityRole="button" onPress={onBack} style={styles.backBtn}>
-        <Ionicons name="chevron-back" size={22} color="#fff" />
+        <Ionicons name="chevron-back" size={22} color={toRgb(theme.colors['--text-primary'])} />
       </Pressable>
-      <Text style={styles.title} numberOfLines={1}>{title}</Text>
+      <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]} numberOfLines={1}>{title}</Text>
       <View style={{ width: 40 }} />
     </View>
   );

@@ -10,7 +10,7 @@ import DashboardScreen from '@components/DashboardScreen';
 
 export type RootStackParamList = {
   Login: undefined;
-  Registration: undefined;
+  Registration: { email?: string } | undefined;
   Questionnaire: { username: string; email: string; ageGroup: string; gender: string } | undefined;
   Results: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
   CreateAccount: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;

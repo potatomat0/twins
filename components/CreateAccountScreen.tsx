@@ -8,7 +8,6 @@ import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
-import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import NotificationModal from '@components/common/NotificationModal';
 import SocialButton from '@components/common/SocialButton';
 import { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
@@ -57,6 +56,10 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [uFocus, setUFocus] = useState(false);
+  const [eFocus, setEFocus] = useState(false);
+  const [pFocus, setPFocus] = useState(false);
+  const [cFocus, setCFocus] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const emailRef = useRef<TextInput>(null as any);
   const genderRef = useRef<DropdownHandle>(null);
@@ -78,7 +81,6 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   return (
-    <KeyboardDismissable>
       <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>        
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
@@ -95,12 +97,26 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             {/* TODO: connect to Firebase Auth + GCP backend */}
             <TextInput
               placeholder="Username"
-              placeholderTextColor="#888"
-              style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) }]}
+              placeholderTextColor={toRgb(theme.colors['--text-muted'])}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: toRgb(theme.colors['--surface']),
+                  borderColor: uFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+                  borderWidth: uFocus ? 2 : 1,
+                  color: toRgb(theme.colors['--text-primary']),
+                  shadowColor: toRgb(theme.colors['--focus']),
+                  shadowOpacity: uFocus ? 0.35 : 0,
+                  shadowRadius: uFocus ? 10 : 0,
+                  elevation: uFocus ? 4 : 0,
+                },
+              ]}
               value={username}
               onChangeText={setUsername}
               returnKeyType="next"
               onSubmitEditing={() => emailRef.current?.focus?.()}
+              onFocus={() => setUFocus(true)}
+              onBlur={() => setUFocus(false)}
             />
             {!usernameValid && username.length > 0 && (
               <Text style={styles.warn}>Username must be at least 3 characters.</Text>
@@ -108,15 +124,29 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 
             <TextInput
               placeholder="Email"
-              placeholderTextColor="#888"
+              placeholderTextColor={toRgb(theme.colors['--text-muted'])}
               keyboardType="email-address"
               autoCapitalize="none"
-              style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) }]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: toRgb(theme.colors['--surface']),
+                  borderColor: eFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+                  borderWidth: eFocus ? 2 : 1,
+                  color: toRgb(theme.colors['--text-primary']),
+                  shadowColor: toRgb(theme.colors['--focus']),
+                  shadowOpacity: eFocus ? 0.35 : 0,
+                  shadowRadius: eFocus ? 10 : 0,
+                  elevation: eFocus ? 4 : 0,
+                },
+              ]}
               value={email}
               onChangeText={setEmail}
               ref={emailRef}
               returnKeyType="next"
               onSubmitEditing={() => genderRef.current?.open()}
+              onFocus={() => setEFocus(true)}
+              onBlur={() => setEFocus(false)}
             />
             {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
@@ -124,7 +154,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               options={genders}
               value={gender}
               onChange={(v) => setGender(v)}
-              placeholder="Select Your Gender"
+              placeholder="Choose your gender"
               ref={genderRef}
               onCommit={() => ageRef.current?.open()}
             />
@@ -132,7 +162,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               options={ageGroups}
               value={ageGroup}
               onChange={(v) => setAgeGroup(v)}
-              placeholder="Select Your Age Group"
+              placeholder="Choose your age group"
               ref={ageRef}
               onCommit={() => passwordRef.current?.focus?.()}
             />
@@ -141,8 +171,21 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.inputWrap}>
               <TextInput
                 placeholder="Password"
-                placeholderTextColor="#888"
-                style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']), paddingRight: 64 }]}
+                placeholderTextColor={toRgb(theme.colors['--text-muted'])}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: toRgb(theme.colors['--surface']),
+                    borderColor: pFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+                    borderWidth: pFocus ? 2 : 1,
+                    color: toRgb(theme.colors['--text-primary']),
+                    paddingRight: 64,
+                    shadowColor: toRgb(theme.colors['--focus']),
+                    shadowOpacity: pFocus ? 0.35 : 0,
+                    shadowRadius: pFocus ? 10 : 0,
+                    elevation: pFocus ? 4 : 0,
+                  },
+                ]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPw}
@@ -150,14 +193,16 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 ref={passwordRef}
                 returnKeyType="next"
                 onSubmitEditing={() => confirmRef.current?.focus?.()}
+                onFocus={() => setPFocus(true)}
+                onBlur={() => setPFocus(false)}
               />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
                 onPress={() => setShowPw((v) => !v)}
-                style={styles.showBtn}
+                style={[styles.showBtn, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}
               >
-                <Text style={styles.showTxt}>{showPw ? 'Hide' : 'Show'}</Text>
+                <Text style={[styles.showTxt, { color: toRgb(theme.colors['--text-primary']) }]}>{showPw ? 'Hide' : 'Show'}</Text>
               </Pressable>
             </View>
             <View style={styles.strengthWrap}>
@@ -166,13 +211,26 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               </View>
               <Text style={[styles.strengthText, { color: strength.color }]}>{strength.label}</Text>
             </View>
-            <Text style={styles.hint}>Use 8+ characters with a mix of letters, numbers, and symbols.</Text>
+            <Text style={[styles.hint, { color: toRgb(theme.colors['--text-secondary']) }]}>Use 8+ characters with a mix of letters, numbers, and symbols.</Text>
 
             <View style={styles.inputWrap}>
               <TextInput
                 placeholder="Confirm Password"
-                placeholderTextColor="#888"
-                style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']), paddingRight: 64 }]}
+                placeholderTextColor={toRgb(theme.colors['--text-muted'])}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: toRgb(theme.colors['--surface']),
+                    borderColor: cFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+                    borderWidth: cFocus ? 2 : 1,
+                    color: toRgb(theme.colors['--text-primary']),
+                    paddingRight: 64,
+                    shadowColor: toRgb(theme.colors['--focus']),
+                    shadowOpacity: cFocus ? 0.35 : 0,
+                    shadowRadius: cFocus ? 10 : 0,
+                    elevation: cFocus ? 4 : 0,
+                  },
+                ]}
                 value={confirm}
                 onChangeText={setConfirm}
                 secureTextEntry={!showConfirm}
@@ -182,14 +240,16 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 onSubmitEditing={() => {
                   if (canSubmit) setShowModal(true);
                 }}
+                onFocus={() => setCFocus(true)}
+                onBlur={() => setCFocus(false)}
               />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
                 onPress={() => setShowConfirm((v) => !v)}
-                style={styles.showBtn}
+                style={[styles.showBtn, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}
               >
-                <Text style={styles.showTxt}>{showConfirm ? 'Hide' : 'Show'}</Text>
+                <Text style={[styles.showTxt, { color: toRgb(theme.colors['--text-primary']) }]}>{showConfirm ? 'Hide' : 'Show'}</Text>
               </Pressable>
             </View>
             {!confirmValid && confirm.length > 0 && (
@@ -198,8 +258,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 
             {/* Mock fingerprint — TODO: supply from TF Lite model via useTensorflowModel */}
             <View style={[styles.fpRow, { borderColor: toRgba(theme.colors['--border'], 0.08) }]}>
-              <Text style={{ color: '#bbb' }}>Fingerprint</Text>
-              <Text style={{ color: '#fff', fontWeight: '700' }}>{fp}</Text>
+              <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>Fingerprint</Text>
+              <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>{fp}</Text>
             </View>
 
             {/* Terms / Privacy acknowledgment */}
@@ -212,25 +272,26 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               >
                 {agreed ? <Text style={styles.checkmark}>✓</Text> : null}
               </Pressable>
-              <Text style={{ color: '#bbb', flex: 1 }}>
+              <Text style={{ color: toRgb(theme.colors['--text-secondary']), flex: 1 }}>
                 I agree to the 
                 <Text
-                  style={{ color: '#fff', fontWeight: '700' }}
+                  style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}
                   onPress={() => setShowModal(true)}
                 > Terms</Text> and 
                 <Text
-                  style={{ color: '#fff', fontWeight: '700' }}
+                  style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}
                   onPress={() => setShowModal(true)}
                 > Privacy Policy</Text>
               </Text>
             </View>
 
             <View style={{ height: 12 }} />
-            <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
-	    {/*<Button title="Cancel" variant="neutral" onPress={() => navigation.goBack()} />*/}
-              <Button
-                title="Create Account"
-                onPress={async () => {
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Create Account"
+                  style={{ width: '100%' }}
+                  onPress={async () => {
                   const mail = email.trim();
                   const uname = username.trim();
                   try {
@@ -260,17 +321,21 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                   }
                 }}
                 disabled={!canSubmit}
-              />
-              <Button
-                title="Back to Login"
-                variant="neutral"
-                onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })}
-              />
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Back to Login"
+                  style={{ width: '100%' }}
+                  variant="neutral"
+                  onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })}
+                />
+              </View>
             </View>
 
             {/* TODO: implement social sign-in providers via Firebase Auth (Google, Facebook, Apple, Microsoft) */}
             <View style={{ height: 16 }} />
-            <Text style={{ color: '#bbb', marginBottom: 8 }}>Or, sign in with</Text>
+            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>Or, sign in with</Text>
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
               <SocialButton provider="google" onPress={() => setShowModal(true)} />
               <SocialButton provider="facebook" onPress={() => setShowModal(true)} />
@@ -290,7 +355,6 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           onRequestClose={() => setShowModal(false)}
         />
       </SafeAreaView>
-    </KeyboardDismissable>
   );
 };
 
@@ -313,7 +377,7 @@ const styles = StyleSheet.create({
   strengthBarBg: { flex: 1, height: 6, borderRadius: 4, overflow: 'hidden' },
   strengthBar: { height: '100%' },
   strengthText: { fontWeight: '700' },
-  hint: { color: '#bbb', marginTop: -6, marginBottom: 10, fontSize: 12 },
+  hint: { color: '--text-secondary', marginTop: -6, marginBottom: 10, fontSize: 12 },
   fpRow: { marginTop: 8, padding: 12, borderRadius: 10, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between' },
   termsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

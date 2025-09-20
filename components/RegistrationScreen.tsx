@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
+import { RouteProp } from '@react-navigation/native';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
@@ -10,16 +11,18 @@ import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Registration'>;
-
-type Props = { navigation: Nav };
+type Route = RouteProp<RootStackParamList, 'Registration'>;
+type Props = { navigation: Nav; route: Route };
 
 const ageGroups = ['<18', '18-24', '25-35', '35-44', '45+'];
 const genders = ['Male', 'Female', 'Non-Binary', 'Prefer Not To Say'];
 
-const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
+const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.email ?? '');
+  const [uFocus, setUFocus] = useState(false);
+  const [eFocus, setEFocus] = useState(false);
   const [ageGroup, setAgeGroup] = useState('');
   const [gender, setGender] = useState('');
   const usernameRef = useRef<TextInput>(null as any);
@@ -55,12 +58,26 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
 
         <TextInput
           placeholder="How would you want to be called?"
-          placeholderTextColor="#888"
-          style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) }]}
+          placeholderTextColor={toRgb(theme.colors['--text-muted'])}
+          style={[
+            styles.input,
+            {
+              backgroundColor: toRgb(theme.colors['--surface']),
+              borderColor: uFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+              borderWidth: uFocus ? 2 : 1,
+              color: toRgb(theme.colors['--text-primary']),
+              shadowColor: toRgb(theme.colors['--focus']),
+              shadowOpacity: uFocus ? 0.35 : 0,
+              shadowRadius: uFocus ? 10 : 0,
+              elevation: uFocus ? 4 : 0,
+            },
+          ]}
           value={username}
           onChangeText={setUsername}
           returnKeyType="next"
           onSubmitEditing={() => emailRef.current?.focus?.()}
+          onFocus={() => setUFocus(true)}
+          onBlur={() => setUFocus(false)}
         />
         {!usernameValid && username.length > 0 && (
           <Text style={styles.warn}>Username must be longer than 2 characters.</Text>
@@ -68,15 +85,29 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
 
         <TextInput
           placeholder="Enter your email"
-          placeholderTextColor="#888"
+          placeholderTextColor={toRgb(theme.colors['--text-muted'])}
           keyboardType="email-address"
           autoCapitalize="none"
-          style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) }]}
+          style={[
+            styles.input,
+            {
+              backgroundColor: toRgb(theme.colors['--surface']),
+              borderColor: eFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+              borderWidth: eFocus ? 2 : 1,
+              color: toRgb(theme.colors['--text-primary']),
+              shadowColor: toRgb(theme.colors['--focus']),
+              shadowOpacity: eFocus ? 0.35 : 0,
+              shadowRadius: eFocus ? 10 : 0,
+              elevation: eFocus ? 4 : 0,
+            },
+          ]}
           value={email}
           onChangeText={setEmail}
           ref={emailRef}
           returnKeyType="next"
           onSubmitEditing={() => ageRef.current?.open()}
+          onFocus={() => setEFocus(true)}
+          onBlur={() => setEFocus(false)}
         />
         {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
@@ -84,7 +115,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
           options={ageGroups}
           value={ageGroup}
           onChange={(v) => setAgeGroup(v)}
-          placeholder="Select Your Age Group"
+          placeholder="Choose your age group"
           ref={ageRef}
           onCommit={() => genderRef.current?.open()}
         />
@@ -92,7 +123,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
           options={genders}
           value={gender}
           onChange={(v) => setGender(v)}
-          placeholder="Select Your Gender"
+          placeholder="Choose your gender"
           ref={genderRef}
         />
 
