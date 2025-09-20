@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl, Pressable, KeyboardAvoidingView, Platform, Keyboard, InteractionManager } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
@@ -10,6 +11,9 @@ import Button from '@components/common/Button';
 import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
 import NotificationModal from '@components/common/NotificationModal';
 import SocialButton from '@components/common/SocialButton';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Entypo from '@expo/vector-icons/Entypo';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
@@ -47,6 +51,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
+  const [created, setCreated] = useState(false);
 
   const [username, setUsername] = useState(route.params?.username ?? '');
   const [email, setEmail] = useState(route.params?.email ?? '');
@@ -75,6 +81,29 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const fp = mockFingerprint(route.params?.scores);
 
+  // Focus the next untouched field forward; otherwise dismiss
+  const openDropdownAfterClose = (fn: () => void) => {
+    try {
+      InteractionManager.runAfterInteractions(() => setTimeout(fn, 80));
+    } catch {
+      setTimeout(fn, 160);
+    }
+  };
+
+  const focusNextUntouched = (from: 'username'|'email'|'gender'|'age'|'password'|'confirm') => {
+    const order: Array<'username'|'email'|'gender'|'age'|'password'|'confirm'> = ['username','email','gender','age','password','confirm'];
+    const idx = order.indexOf(from);
+    for (let i = idx + 1; i < order.length; i++) {
+      const f = order[i];
+      if (f === 'email' && !email) { emailRef.current?.focus?.(); return; }
+      if (f === 'gender' && !gender) { openDropdownAfterClose(() => genderRef.current?.open?.()); return; }
+      if (f === 'age' && !ageGroup) { openDropdownAfterClose(() => ageRef.current?.open?.()); return; }
+      if (f === 'password' && !password) { passwordRef.current?.focus?.(); return; }
+      if (f === 'confirm' && !confirm) { confirmRef.current?.focus?.(); return; }
+    }
+    Keyboard.dismiss();
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 600);
@@ -95,6 +124,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Review your info and set a password</Text>
 
             {/* TODO: connect to Firebase Auth + GCP backend */}
+            <View style={styles.inputWrap}>
             <TextInput
               placeholder="Username"
               placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -114,14 +144,21 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               value={username}
               onChangeText={setUsername}
               returnKeyType="next"
-              onSubmitEditing={() => emailRef.current?.focus?.()}
+              onSubmitEditing={() => focusNextUntouched('username')}
               onFocus={() => setUFocus(true)}
               onBlur={() => setUFocus(false)}
             />
+            {!!username && (
+              <Pressable accessibilityRole="button" accessibilityLabel="Clear username" onPress={() => setUsername('')} style={styles.clearBtn}>
+                <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
+              </Pressable>
+            )}
+            </View>
             {!usernameValid && username.length > 0 && (
               <Text style={styles.warn}>Username must be at least 3 characters.</Text>
             )}
 
+            <View style={styles.inputWrap}>
             <TextInput
               placeholder="Email"
               placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -144,10 +181,16 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               onChangeText={setEmail}
               ref={emailRef}
               returnKeyType="next"
-              onSubmitEditing={() => genderRef.current?.open()}
+              onSubmitEditing={() => focusNextUntouched('email')}
               onFocus={() => setEFocus(true)}
               onBlur={() => setEFocus(false)}
             />
+            {!!email && (
+              <Pressable accessibilityRole="button" accessibilityLabel="Clear email" onPress={() => setEmail('')} style={styles.clearBtn}>
+                <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
+              </Pressable>
+            )}
+            </View>
             {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
             <Dropdown
@@ -156,7 +199,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               onChange={(v) => setGender(v)}
               placeholder="Choose your gender"
               ref={genderRef}
-              onCommit={() => ageRef.current?.open()}
+              onCommit={() => focusNextUntouched('gender')}
             />
             <Dropdown
               options={ageGroups}
@@ -164,7 +207,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               onChange={(v) => setAgeGroup(v)}
               placeholder="Choose your age group"
               ref={ageRef}
-              onCommit={() => passwordRef.current?.focus?.()}
+              onCommit={() => focusNextUntouched('age')}
             />
 
             {/* TODO: enforce stronger password policies per product requirements */}
@@ -179,7 +222,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                     borderColor: pFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
                     borderWidth: pFocus ? 2 : 1,
                     color: toRgb(theme.colors['--text-primary']),
-                    paddingRight: 64,
+                    paddingRight: 96,
                     shadowColor: toRgb(theme.colors['--focus']),
                     shadowOpacity: pFocus ? 0.35 : 0,
                     shadowRadius: pFocus ? 10 : 0,
@@ -192,17 +235,26 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 autoCapitalize="none"
                 ref={passwordRef}
                 returnKeyType="next"
-                onSubmitEditing={() => confirmRef.current?.focus?.()}
+                onSubmitEditing={() => focusNextUntouched('password')}
                 onFocus={() => setPFocus(true)}
                 onBlur={() => setPFocus(false)}
               />
+              {!!password && (
+                <Pressable accessibilityRole="button" accessibilityLabel="Clear password" onPress={() => setPassword('')} style={styles.clearBtnLeft}>
+                  <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
+                </Pressable>
+              )}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
                 onPress={() => setShowPw((v) => !v)}
                 style={[styles.showBtn, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}
               >
-                <Text style={[styles.showTxt, { color: toRgb(theme.colors['--text-primary']) }]}>{showPw ? 'Hide' : 'Show'}</Text>
+                {showPw ? (
+                  <Entypo name="eye-with-line" size={16} color={toRgb(theme.colors['--text-primary'])} />
+                ) : (
+                  <AntDesign name="eye" size={16} color={toRgb(theme.colors['--text-primary'])} />
+                )}
               </Pressable>
             </View>
             <View style={styles.strengthWrap}>
@@ -224,7 +276,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                     borderColor: cFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
                     borderWidth: cFocus ? 2 : 1,
                     color: toRgb(theme.colors['--text-primary']),
-                    paddingRight: 64,
+                    paddingRight: 96,
                     shadowColor: toRgb(theme.colors['--focus']),
                     shadowOpacity: cFocus ? 0.35 : 0,
                     shadowRadius: cFocus ? 10 : 0,
@@ -238,18 +290,27 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 ref={confirmRef}
                 returnKeyType="done"
                 onSubmitEditing={() => {
-                  if (canSubmit) setShowModal(true);
+                  if (canSubmit) setShowModal(true); else focusNextUntouched('confirm');
                 }}
                 onFocus={() => setCFocus(true)}
                 onBlur={() => setCFocus(false)}
               />
+              {!!confirm && (
+                <Pressable accessibilityRole="button" accessibilityLabel="Clear confirm password" onPress={() => setConfirm('')} style={styles.clearBtnLeft}>
+                  <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
+                </Pressable>
+              )}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
                 onPress={() => setShowConfirm((v) => !v)}
                 style={[styles.showBtn, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}
               >
-                <Text style={[styles.showTxt, { color: toRgb(theme.colors['--text-primary']) }]}>{showConfirm ? 'Hide' : 'Show'}</Text>
+                {showConfirm ? (
+                  <Entypo name="eye-with-line" size={16} color={toRgb(theme.colors['--text-primary'])} />
+                ) : (
+                  <AntDesign name="eye" size={16} color={toRgb(theme.colors['--text-primary'])} />
+                )}
               </Pressable>
             </View>
             {!confirmValid && confirm.length > 0 && (
@@ -286,12 +347,11 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
 
             <View style={{ height: 12 }} />
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Button
-                  title="Create Account"
-                  style={{ width: '100%' }}
-                  onPress={async () => {
+            <View>
+              <Button
+                title="Create Account"
+                style={{ width: '100%' }}
+                onPress={async () => {
                   const mail = email.trim();
                   const uname = username.trim();
                   try {
@@ -304,13 +364,13 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                     if (data.session && user?.id) {
                       // Insert or update own profile (RLS owner policy)
                       await upsertProfile({ id: user.id, username: uname, age_group: ageGroup, gender });
-                      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username: uname, email: mail } }] });
+                      setCreated(true);
                     } else {
                       // Try to sign in immediately (works when email confirmation is disabled)
                       const { data: sdata, error: signInErr } = await signInWithPassword(mail, password);
                       if (!signInErr && sdata.user?.id) {
                         await upsertProfile({ id: sdata.user.id, username: uname, age_group: ageGroup, gender });
-                        navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username: uname, email: mail } }] });
+                        setCreated(true);
                       } else {
                         // Email confirmation likely enabled in project settings
                         setShowModal(true);
@@ -321,23 +381,21 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                   }
                 }}
                 disabled={!canSubmit}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button
-                  title="Back to Login"
-                  style={{ width: '100%' }}
-                  variant="neutral"
-                  onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })}
-                />
-              </View>
+              />
+              <View style={{ height: 10 }} />
+              <Button
+                title="Back to Login"
+                style={{ width: '100%' }}
+                variant="neutral"
+                onPress={() => setConfirmExit(true)}
+              />
             </View>
 
             {/* TODO: implement social sign-in providers via Firebase Auth (Google, Facebook, Apple, Microsoft) */}
             <View style={{ height: 16 }} />
             <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>Or, sign in with</Text>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <SocialButton provider="google" onPress={() => setShowModal(true)} />
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'space-around' }}>
+              <SocialButton style={{padding: 10}} provider="google" onPress={() => setShowModal(true)} />
               <SocialButton provider="facebook" onPress={() => setShowModal(true)} />
               <SocialButton provider="apple" onPress={() => setShowModal(true)} />
               <SocialButton provider="microsoft" onPress={() => setShowModal(true)} />
@@ -353,6 +411,31 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           primaryText="OK"
           onPrimary={() => setShowModal(false)}
           onRequestClose={() => setShowModal(false)}
+        />
+        <NotificationModal
+          visible={created}
+          title="Account created"
+          message="Your account has been created successfully."
+          primaryText="Login now"
+          onPrimary={() => { setCreated(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
+          secondaryText="Use a different account"
+          onSecondary={() => { setCreated(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
+          onRequestClose={() => setCreated(false)}
+          primaryVariant="primary"
+          secondaryVariant="muted"
+          stacked
+        />
+        <NotificationModal
+          visible={confirmExit}
+          title="Leave registration?"
+          message="If you go to Login now, you will lose all your progress."
+          primaryText="Leave"
+          onPrimary={() => { setConfirmExit(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
+          secondaryText="Stay"
+          onSecondary={() => setConfirmExit(false)}
+          onRequestClose={() => setConfirmExit(false)}
+          primaryVariant="danger"
+          secondaryVariant="accent"
         />
       </SafeAreaView>
   );
@@ -371,6 +454,8 @@ const styles = StyleSheet.create({
   },
   inputWrap: { position: 'relative' },
   showBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
+  clearBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
+  clearBtnLeft: { position: 'absolute', right: 52, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   showTxt: { color: '#fff', fontWeight: '700' },
   warn: { color: '#f59e0b', marginTop: -8, marginBottom: 8 },
   strengthWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: -4, marginBottom: 12 },

@@ -14,11 +14,12 @@ type Props = {
   color?: string; // triplet 'r g b' for polygon
   iconColor?: string; // triplet for info icons (defaults to accent)
   closeColor?: string; // triplet for close button (defaults to danger)
+  tooltipMaxHeight?: number;
 };
 
 const toRads = (deg: number) => (deg * Math.PI) / 180;
 
-const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconColor = '34 211 238', closeColor = '239 68 68' }) => {
+const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconColor = '34 211 238', closeColor = '239 68 68', tooltipMaxHeight = 300 }) => {
   const { theme } = useTheme();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const computedSize = Math.max(200, Math.floor((size ?? windowWidth * 0.95))); // ~95% width
@@ -120,10 +121,11 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
       {overlay && (
         <View style={styles.overlay}>
           <Pressable style={StyleSheet.absoluteFillObject as any} onPress={() => setOverlay(null)} />
+          { /* Tooltip container with capped height */ }
           <View style={[
             styles.tooltip,
             {
-              maxHeight: windowHeight * 0.8,
+              maxHeight: Math.min(tooltipMaxHeight, windowHeight * 0.9),
               width: Math.min(0.94 * windowWidth, 760),
               backgroundColor: toRgb(theme.colors['--surface']),
               borderColor: toRgba(theme.colors['--border'], 0.08),
@@ -137,7 +139,12 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
             >
               <Text style={styles.closeTxt}>×</Text>
             </Pressable>
-            <ScrollView contentContainerStyle={{ paddingBottom: 8 }}>
+            { /* Make inner scroll area fixed so it always scrolls when content is longer */ }
+            <ScrollView
+              style={{ height: Math.max(0, Math.min(tooltipMaxHeight, windowHeight * 0.9) - 56) }}
+              contentContainerStyle={{ paddingBottom: 8 }}
+              showsVerticalScrollIndicator
+            >
               <Text style={[styles.tipTitle, { color: toRgb(theme.colors['--text-primary']) }]}>{overlay.title}</Text>
               <Text style={[styles.tipText, { color: toRgb(theme.colors['--text-secondary']) }]}>{overlay.text}</Text>
               <Text style={[styles.tipHint, { color: toRgb(theme.colors['--text-secondary']) }]}>Tap outside or × to dismiss</Text>

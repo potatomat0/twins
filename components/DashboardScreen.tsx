@@ -1,5 +1,6 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb } from '@themes/index';
 import { RouteProp } from '@react-navigation/native';

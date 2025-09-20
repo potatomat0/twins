@@ -30,6 +30,8 @@ public.profiles (
   gender text,
   personality_fingerprint float4,
   created_at timestamptz default now()
+  email varchar unique 
+  character_group varchar 
 )
 ```
 

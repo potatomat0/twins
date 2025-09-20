@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Entypo from '@expo/vector-icons/Entypo';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
@@ -67,39 +71,52 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Card>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-              <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome back</Text>
+              <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome to Twins!</Text>
               {supabaseOk ? (
-                <Text style={{ color: '#22c55e', fontWeight: '700' }}>Prototype 3. Database By Supabase</Text>
+                <Text style={{ color: '#22c55e', fontWeight: '700' }}>Prototype 4. Database is connected</Text>
               ) : supabaseOk === false ? null : null}
             </View>
             <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Sign in to continue</Text>
 
-            <TextInput
-              placeholder="Email"
-              placeholderTextColor={toRgb(theme.colors['--text-muted'])}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={[
-                styles.input,
-                {
-                  backgroundColor: toRgb(theme.colors['--surface']),
-                  borderColor: emailFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
-                  borderWidth: emailFocus ? 2 : 1,
-                  color: toRgb(theme.colors['--text-primary']),
-                  shadowColor: toRgb(theme.colors['--focus']),
-                  shadowOpacity: emailFocus ? 0.35 : 0,
-                  shadowRadius: emailFocus ? 10 : 0,
-                  elevation: emailFocus ? 4 : 0,
-                },
-              ]}
-              value={email}
-              onChangeText={setEmail}
-              ref={emailRef}
-              returnKeyType="next"
-              onSubmitEditing={() => passwordRef.current?.focus?.()}
-              onFocus={() => setEmailFocus(true)}
-              onBlur={() => setEmailFocus(false)}
-            />
+            <View style={styles.inputWrap}>
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor={toRgb(theme.colors['--text-muted'])}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: toRgb(theme.colors['--surface']),
+                    borderColor: emailFocus ? toRgb(theme.colors['--focus']) : toRgba(theme.colors['--border'], 0.08),
+                    borderWidth: emailFocus ? 2 : 1,
+                    color: toRgb(theme.colors['--text-primary']),
+                    shadowColor: toRgb(theme.colors['--focus']),
+                    shadowOpacity: emailFocus ? 0.35 : 0,
+                    shadowRadius: emailFocus ? 10 : 0,
+                    elevation: emailFocus ? 4 : 0,
+                    paddingRight: 44,
+                  },
+                ]}
+                value={email}
+                onChangeText={setEmail}
+                ref={emailRef}
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus?.()}
+                onFocus={() => setEmailFocus(true)}
+                onBlur={() => setEmailFocus(false)}
+              />
+              {!!email && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear email"
+                  onPress={() => setEmail('')}
+                  style={styles.clearBtn}
+                >
+                  <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
+                </Pressable>
+              )}
+            </View>
             {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
             <View style={styles.inputWrap}>
@@ -129,13 +146,27 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 onFocus={() => setPwFocus(true)}
                 onBlur={() => setPwFocus(false)}
               />
+              {!!password && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear password"
+                  onPress={() => setPassword('')}
+                  style={styles.clearBtnLeft}
+                >
+                  <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
+                </Pressable>
+              )}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
                 onPress={() => setShowPw((v) => !v)}
                 style={[styles.showBtn, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}
               >
-                <Text style={[styles.showTxt, { color: toRgb(theme.colors['--text-primary']) }]}>{showPw ? 'Hide' : 'Show'}</Text>
+                {showPw ? (
+                  <Entypo name="eye-with-line" size={16} color={toRgb(theme.colors['--text-primary'])} />
+                ) : (
+                  <AntDesign name="eye" size={16} color={toRgb(theme.colors['--text-primary'])} />
+                )}
               </Pressable>
             </View>
 
@@ -214,6 +245,8 @@ const styles = StyleSheet.create({
   },
   inputWrap: { position: 'relative' },
   showBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
+  clearBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
+  clearBtnLeft: { position: 'absolute', right: 52, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   showTxt: { color: '#fff', fontWeight: '700' },
   warn: { color: '#f59e0b', marginTop: -8, marginBottom: 8 },
 });

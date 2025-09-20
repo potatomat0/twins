@@ -29,17 +29,38 @@ const AppNavigator = () => {
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Registration" component={RegistrationScreen} />
+      <Stack.Screen
+        name="Registration"
+        component={RegistrationScreen}
+        options={({ navigation }) => ({
+          headerShown: true,
+          gestureEnabled: false,
+          header: () => <SwipeHeader title="Registration" onBack={() => navigation.goBack()} />,
+        })}
+      />
       <Stack.Screen
         name="Questionnaire"
         component={QuestionnaireScreen}
+        options={{ headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="Results"
+        component={ResultsScreen}
         options={({ navigation }) => ({
-          headerShown: false,
-          header: () => <SwipeHeader title="Personality Questionnaire" onBack={() => navigation.goBack()} />,
+          headerShown: true,
+          gestureEnabled: false,
+          header: () => <SwipeHeader title="Results" onBack={() => navigation.goBack()} />,
         })}
       />
-      <Stack.Screen name="Results" component={ResultsScreen} />
-      <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
+      <Stack.Screen
+        name="CreateAccount"
+        component={CreateAccountScreen}
+        options={({ navigation }) => ({
+          headerShown: true,
+          gestureEnabled: false,
+          header: () => <SwipeHeader title="Create Account" onBack={() => navigation.goBack()} />,
+        })}
+      />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
     </Stack.Navigator>
   );

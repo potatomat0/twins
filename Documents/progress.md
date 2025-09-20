@@ -44,6 +44,8 @@ gantt
 
 - 2025-09-09: UX — added focused field highlight using a purple focus ring/shadow on all text inputs and dropdown triggers. Introduced `--focus` color to themes (A376A2) for consistent focus styling. Dropdown sheets now render a non-selectable header showing the placeholder (e.g., “Choose your age group/gender”).
 
+- 2025-09-09: Navigation — added themed back headers (SwipeHeader) to Registration, Questionnaire, Results, and Create Account screens. Back arrow uses secondary text color; header surface blends with current theme. Swipe-to-go-back gesture still supported.
+
 - 2025-09-09: Theming — added a Light theme preset to `themes/index.ts` (readable text and card colors) and a theme switcher on the Dashboard to toggle Dark/Light at runtime. Navigation theme now reflects the current selection.
 - 2025-09-09: Branding — updated Expo `splash.backgroundColor` to `#A376A2` to match the new default background preset.
  - 2025-09-08: Cleanup — removed legacy `public.User` code paths (ensureUser/upsertUser/authenticateUser). Switched Supabase connectivity probe on Login to an Auth endpoint (`getSession`).

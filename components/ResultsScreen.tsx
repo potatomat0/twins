@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, useWindowDimensions, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, ScrollView, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
@@ -58,18 +59,19 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           {/* Full-width chart */}
-          <View style={{ width: '100%', alignItems: 'center', marginBottom: 12 }}>
+          <View style={{ width: '100%', alignItems: 'center', marginBottom: -32 }}>
             <RadarChart
               data={chartData}
               color={theme.colors['--brand-primary']}
               iconColor={theme.colors['--accent-cyan']}
               closeColor={theme.colors['--danger']}
+              tooltipMaxHeight={300}
             />
           </View>
 
           <Card>
             <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>
-              Here's your final result!
+              Here's your final result! 
             </Text>
             <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>
               Top strengths:

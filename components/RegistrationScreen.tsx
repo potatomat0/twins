@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, Keyboard, InteractionManager, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { RouteProp } from '@react-navigation/native';
@@ -8,6 +9,8 @@ import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Registration'>;
@@ -35,6 +38,27 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const canStart = usernameValid && emailValid && ageGroup && gender;
 
+  // Focus the next untouched field in forward order; otherwise dismiss
+  const openDropdownAfterClose = (fn: () => void) => {
+    try {
+      InteractionManager.runAfterInteractions(() => setTimeout(fn, 80));
+    } catch {
+      setTimeout(fn, 160);
+    }
+  };
+
+  const focusNextUntouched = (from: 'username'|'email'|'age'|'gender') => {
+    const order: Array<'username'|'email'|'age'|'gender'> = ['username','email','age','gender'];
+    const idx = order.indexOf(from);
+    for (let i = idx + 1; i < order.length; i++) {
+      const f = order[i];
+      if (f === 'email' && !email) { emailRef.current?.focus?.(); return; }
+      if (f === 'age' && !ageGroup) { openDropdownAfterClose(() => ageRef.current?.open?.()); return; }
+      if (f === 'gender' && !gender) { openDropdownAfterClose(() => genderRef.current?.open?.()); return; }
+    }
+    Keyboard.dismiss();
+  };
+
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = () => {
     setRefreshing(true);
@@ -56,6 +80,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
         <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome to Twins</Text>
         <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Let’s create your temporary profile</Text>
 
+        <View style={styles.inputWrap}>
         <TextInput
           placeholder="How would you want to be called?"
           placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -75,14 +100,21 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           value={username}
           onChangeText={setUsername}
           returnKeyType="next"
-          onSubmitEditing={() => emailRef.current?.focus?.()}
+          onSubmitEditing={() => focusNextUntouched('username')}
           onFocus={() => setUFocus(true)}
           onBlur={() => setUFocus(false)}
         />
+        {!!username && (
+          <Pressable accessibilityRole="button" accessibilityLabel="Clear username" onPress={() => setUsername('')} style={styles.clearBtn}>
+            <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
+          </Pressable>
+        )}
+        </View>
         {!usernameValid && username.length > 0 && (
           <Text style={styles.warn}>Username must be longer than 2 characters.</Text>
         )}
 
+        <View style={styles.inputWrap}>
         <TextInput
           placeholder="Enter your email"
           placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -105,10 +137,16 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           onChangeText={setEmail}
           ref={emailRef}
           returnKeyType="next"
-          onSubmitEditing={() => ageRef.current?.open()}
+          onSubmitEditing={() => focusNextUntouched('email')}
           onFocus={() => setEFocus(true)}
           onBlur={() => setEFocus(false)}
         />
+        {!!email && (
+          <Pressable accessibilityRole="button" accessibilityLabel="Clear email" onPress={() => setEmail('')} style={styles.clearBtn}>
+            <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
+          </Pressable>
+        )}
+        </View>
         {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
         <Dropdown
@@ -117,7 +155,8 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           onChange={(v) => setAgeGroup(v)}
           placeholder="Choose your age group"
           ref={ageRef}
-          onCommit={() => genderRef.current?.open()}
+          onCommit={() => focusNextUntouched('age')}
+          onCommit={() => focusNextUntouched('gender')}
         />
         <Dropdown
           options={genders}
@@ -161,6 +200,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
   },
+  inputWrap: { position: 'relative' },
+  clearBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   warn: { color: '#f59e0b', marginTop: -8, marginBottom: 8 },
 });
 
