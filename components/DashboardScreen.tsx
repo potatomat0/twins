@@ -13,15 +13,20 @@ type Route = RouteProp<RootStackParamList, 'Dashboard'>;
 type Props = { navigation: Nav; route: Route };
 
 const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { theme } = useTheme();
+  const { theme, name, setTheme } = useTheme();
   const username = route.params?.username || 'Friend';
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}> 
+    <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}> 
       <View style={styles.center}>
         <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome back, {username}!</Text>
         <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>
           This dashboard is under construction.
         </Text>
+        <View style={{ height: 16 }} />
+        <Button
+          title={name === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          onPress={() => setTheme(name === 'dark' ? 'light' : 'dark')}
+        />
         <View style={{ height: 16 }} />
         <Button
           title="Logout"

@@ -1,6 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
+import { toRgb, toRgba } from '@themes/index';
 
 type Option = { label: string; value: string } | string;
 
@@ -43,13 +44,13 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
         style={({ pressed }) => [
           styles.input,
           {
-            backgroundColor: '#191a1f',
-            borderColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: toRgb(theme.colors['--surface']),
+            borderColor: toRgba(theme.colors['--border'], 0.08),
             opacity: pressed ? 0.9 : 1,
           },
         ]}
       >
-        <Text style={{ color: value ? '#fff' : '#888' }}>
+        <Text style={{ color: value ? toRgb(theme.colors['--text-primary']) : toRgb(theme.colors['--text-secondary']) }}>
           {currentLabel ?? placeholder}
         </Text>
       </Pressable>
@@ -59,7 +60,7 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
         <View
           style={[
             styles.sheet,
-            { backgroundColor: `rgb(${theme.colors['--dark-card']})`, borderColor: 'rgba(255,255,255,0.08)' },
+            { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08) },
           ]}
         >
           {items.map((it) => {
@@ -73,7 +74,7 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
                     backgroundColor: selected
                       ? 'rgba(99,102,241,0.18)'
                       : pressed
-                      ? 'rgba(255,255,255,0.04)'
+                      ? toRgba(theme.colors['--border'], 0.04)
                       : 'transparent',
                   },
                 ]}
@@ -84,7 +85,7 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
                   setTimeout(() => onCommit?.(), 0);
                 }}
               >
-                <Text style={{ color: '#fff', fontSize: 16 }}>{it.label}</Text>
+                <Text style={{ color: toRgb(theme.colors['--text-primary']), fontSize: 16 }}>{it.label}</Text>
               </Pressable>
             );
           })}

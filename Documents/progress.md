@@ -33,4 +33,9 @@ gantt
 - 2025-09-08: Migrated app code to use `public.profiles` keyed by `auth.users.id` for profile data. Login fetches/creates the profile after Auth sign-in, and Create Account inserts the profile when session is present (otherwise prompts for email verification). Registration no longer pre-creates any DB rows.
 
 - 2025-09-09: UI enhancement — added show/hide password toggle to Login screen, matching Create Account’s password visibility control. Keeps secure entry as default; accessible toggle with clear label.
+
+- 2025-09-09: Theming — introduced unified `--bg` key and `--surface`/`--border` for inner components; Light theme now uses the purple (#A376A2 / 163 118 162) as `--bg`. Replaced hardcoded inner backgrounds with theme surfaces (Cards, inputs, dropdowns, questionnaire blocks). Navigation/background updated to `--bg`.
+
+- 2025-09-09: Theming — added a Light theme preset to `themes/index.ts` (readable text and card colors) and a theme switcher on the Dashboard to toggle Dark/Light at runtime. Navigation theme now reflects the current selection.
+- 2025-09-09: Branding — updated Expo `splash.backgroundColor` to `#A376A2` to match the new default background preset.
  - 2025-09-08: Cleanup — removed legacy `public.User` code paths (ensureUser/upsertUser/authenticateUser). Switched Supabase connectivity probe on Login to an Auth endpoint (`getSession`).

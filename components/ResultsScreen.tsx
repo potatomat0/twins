@@ -51,7 +51,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <KeyboardDismissable>
-      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}> 
+      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}> 
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center' }}
           keyboardDismissMode="on-drag"

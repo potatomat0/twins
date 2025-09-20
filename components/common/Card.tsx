@@ -15,7 +15,7 @@ const Card: React.FC<Props> = ({ children, style }) => {
       style={[
         styles.card,
         {
-          backgroundColor: toRgb(theme.colors['--dark-card']),
+          backgroundColor: toRgb(theme.colors['--surface']),
         },
         style,
       ]}

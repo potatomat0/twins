@@ -7,7 +7,7 @@
     "userInterfaceStyle": "automatic",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#0B0B0E"
+      "backgroundColor": "#A376A2"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -18,7 +18,6 @@
     "android": {
       "package": "com.twins.app",
       "versionCode": 1,
-      "minSdkVersion": 23,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#0B0B0E"

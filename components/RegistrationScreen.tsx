@@ -3,7 +3,7 @@ import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshCon
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
-import { toRgb } from '@themes/index';
+import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
@@ -40,7 +40,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <KeyboardDismissable>
-      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}>        
+      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>        
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
@@ -56,7 +56,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
         <TextInput
           placeholder="How would you want to be called?"
           placeholderTextColor="#888"
-          style={styles.input}
+          style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) }]}
           value={username}
           onChangeText={setUsername}
           returnKeyType="next"
@@ -71,7 +71,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation }) => {
           placeholderTextColor="#888"
           keyboardType="email-address"
           autoCapitalize="none"
-          style={styles.input}
+          style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) }]}
           value={email}
           onChangeText={setEmail}
           ref={emailRef}
@@ -124,13 +124,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', marginBottom: 8 },
   subtitle: { fontSize: 14, marginBottom: 20 },
   input: {
-    backgroundColor: '#191a1f',
     color: '#fff',
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
   },
   warn: { color: '#f59e0b', marginTop: -8, marginBottom: 8 },
 });

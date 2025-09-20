@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
-import { toRgb } from '@themes/index';
+import { toRgb, toRgba } from '@themes/index';
 
 type Props = {
   visible: boolean;
@@ -28,7 +28,7 @@ const NotificationModal: React.FC<Props> = ({
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onRequestClose}>
       <Pressable style={styles.backdrop} onPress={onRequestClose} />
-      <View style={[styles.sheet, { backgroundColor: toRgb(theme.colors['--dark-card']) }]}>        
+      <View style={[styles.sheet, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08) }]}>        
         {title ? <Text style={styles.title}>{title}</Text> : null}
         {typeof message === 'string' ? <Text style={styles.message}>{message}</Text> : message}
         <View style={styles.actions}>
@@ -65,7 +65,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
   },
   title: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 8 },
   message: { color: '#ddd', fontSize: 14, lineHeight: 20 },
@@ -76,4 +75,3 @@ const styles = StyleSheet.create({
   btnSecondary: { backgroundColor: 'rgba(255,255,255,0.06)' },
   btnSecondaryText: { color: '#fff', fontWeight: '600' },
 });
-

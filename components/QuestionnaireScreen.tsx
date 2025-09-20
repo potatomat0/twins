@@ -4,7 +4,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
-import { toRgb } from '@themes/index';
+import { toRgb, toRgba } from '@themes/index';
 import { QUESTIONS } from '@data/questions';
 import Button from '@components/common/Button';
 import { AnswerMap, computeBigFiveScores, normalizeScoresTo100 } from '@services/profileAnalyzer';
@@ -91,11 +91,11 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <KeyboardDismissable>
-    <SafeAreaView style={[styles.container, { backgroundColor: `rgb(${theme.colors['--dark-bg']})` }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: `rgb(${theme.colors['--bg']})` }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: `rgb(${theme.colors['--text-primary']})` }]}>Personality Questionnaire</Text>
         <Text style={{ color: '#bbb', marginBottom: 8 }}>Question {index + 1} / {total}</Text>
-        <View style={styles.progressWrap}>
+        <View style={[styles.progressWrap, { backgroundColor: toRgba(theme.colors['--border'], 0.08) }]}>
           <View style={[styles.progressBar, { width: `${progress}%`, backgroundColor: `rgb(${theme.colors['--brand-primary']})` }]} />
         </View>
         <Text style={{ color: '#bbb', marginTop: 6 }}>{answeredCount}/{total} answered</Text>
@@ -106,8 +106,8 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={[styles.question, { borderColor: 'rgba(255,255,255,0.06)' }]}> 
-          <Text style={[styles.qtext, { color: toRgb(theme.colors['--text-primary']) }]}>
+        <View style={[styles.question, { borderColor: toRgba(theme.colors['--border'], 0.06), backgroundColor: toRgb(theme.colors['--surface']) }]}> 
+          <Text style={[styles.qtext, { color: toRgb(theme.colors['--text-primary']) }]}> 
             {current.Item_Number}. I {current.Question}
           </Text>
 
@@ -126,9 +126,9 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
                   style={({ pressed }) => [
                     styles.optionV,
                     {
-                      borderColor: selected ? `rgb(${color})` : 'rgba(255,255,255,0.12)',
+                      borderColor: selected ? `rgb(${color})` : toRgba(theme.colors['--border'], 0.12),
                       borderWidth: selected ? 2 : 1,
-                      backgroundColor: '#14151a',
+                      backgroundColor: toRgb(theme.colors['--surface']),
                       transform: [{ scale: selected ? 1.04 : pressed ? 0.98 : 1 }],
                       shadowColor: `rgb(${color})`,
                       shadowOpacity: selected ? 0.35 : 0,
@@ -182,10 +182,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 16, paddingTop: 12 },
   title: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
-  progressWrap: { height: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 6, overflow: 'hidden' },
+  progressWrap: { height: 8, borderRadius: 6, overflow: 'hidden' },
   progressBar: { height: '100%' },
   stage: { flexGrow: 1, padding: 24, justifyContent: 'center' },
-  question: { borderWidth: 1, borderRadius: 12, padding: 32, backgroundColor: '#14151a' },
+  question: { borderWidth: 1, borderRadius: 12, padding: 32 },
   qtext: { fontSize: 18, marginBottom: 20, fontWeight: '600' },
   optionsCol: { flexDirection: 'column', gap: 10 },
   optionV: { paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10, alignItems: 'flex-start', justifyContent: 'center' },

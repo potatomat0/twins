@@ -156,7 +156,7 @@ Our core UX philosophy is centered on creating a **seamless, engaging, and prem
 
 ## 2. Project Setup & Core Stack (Expo)
 
-Using **Expo** is highly recommended to streamline development, particularly for font management, asset bundling, and simplifying the build process.
+Using **Expo** is highly recommended to streamline development, particularly for font management, asset bundling, and simplifying the build process. The Expo splash background color is set to `#A376A2` to match the default app background.
 
 ### 2.1. Key Dependencies
 
@@ -220,7 +220,13 @@ codeCode
 
 ### 3.1. Color Palette & Theming
 
-The application's dynamic theming is a core feature. This must be implemented with a ThemeContext that provides the current theme's colors. Colors are defined as RGB strings ('79 70 229') to be used with rgba() in stylesheets, allowing for easy opacity modifications.
+The application's dynamic theming is a core feature. This must be implemented with a ThemeContext that provides the current theme's colors. Colors are defined as RGB strings ('79 70 229') to be used with rgba() in stylesheets, allowing for easy opacity modifications.
+
+Core keys (both themes):
+- `--bg`: App background. Dark → 11 11 14; Light → 163 118 162 (#A376A2).
+- `--surface`: Inner surfaces (cards, inputs, question blocks, sheets). Dark → 20 20 24; Light → 255 255 255.
+- `--border`: Base border color triplet (use with alpha). Dark → 255 255 255; Light → 0 0 0.
+- `--text-primary`, `--text-secondary`, `--brand-primary`, `--accent-cyan`, `--danger`, `--warning`, `--neutral`.
 
 **Implementation:**  
 Use the StyleSheet API and consume the ThemeContext to apply colors.
@@ -234,7 +240,7 @@ import { useTheme } from '../context/ThemeContext';
 const { theme } = useTheme(); // theme object contains color values
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: `rgb(${theme.colors['--dark-bg']})`,
+    backgroundColor: `rgb(${theme.colors['--bg']})`,
   },
   title: {
     color: `rgb(${theme.colors['--brand-primary']})`,
@@ -243,6 +249,10 @@ const styles = StyleSheet.create({
 ```
 
 (Port the full list of themes from the original themes.ts file.)
+
+Theme presets and switching
+- Presets: `dark` and `light` are defined in `themes/index.ts` with complete color sets (`--text-primary`, `--text-secondary`, card, etc.).
+- Usage: Access `name` and `setTheme` from `ThemeContext`; a toggle is provided on the Dashboard to switch between themes at runtime. Navigation theme updates automatically.
 
 ### 3.2. Typography
 
@@ -281,7 +291,7 @@ The sole typeface is **Inter**. It provides excellent readability and a modern 
 
 The primary content container.
 
-- backgroundColor: rgb(var(--dark-card))
+- backgroundColor: rgb(var(--surface))
     
 - borderRadius: 16
     

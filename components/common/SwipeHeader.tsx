@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, PanResponder, GestureResponderEvent, PanResponderGestureState, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@context/ThemeContext';
+import { toRgb, toRgba } from '@themes/index';
 
 type Props = {
   title?: string;
@@ -8,6 +10,7 @@ type Props = {
 };
 
 const SwipeHeader: React.FC<Props> = ({ title = '', onBack }) => {
+  const { theme } = useTheme();
   const responder = useMemo(
     () =>
       PanResponder.create({
@@ -25,7 +28,7 @@ const SwipeHeader: React.FC<Props> = ({ title = '', onBack }) => {
   );
 
   return (
-    <View style={styles.wrap} {...responder.panHandlers}>
+    <View style={[styles.wrap, { backgroundColor: toRgb(theme.colors['--surface']), borderBottomColor: toRgba(theme.colors['--border'], 0.08) }]} {...responder.panHandlers}>
       <Pressable accessibilityRole="button" onPress={onBack} style={styles.backBtn}>
         <Ionicons name="chevron-back" size={22} color="#fff" />
       </Pressable>
@@ -40,9 +43,7 @@ export default SwipeHeader;
 const styles = StyleSheet.create({
   wrap: {
     height: 56,
-    backgroundColor: '#14151a',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,

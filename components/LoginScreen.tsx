@@ -3,7 +3,7 @@ import { View, Text, TextInput, StyleSheet, SafeAreaView, ScrollView, RefreshCon
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
-import { toRgb } from '@themes/index';
+import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
@@ -54,7 +54,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <KeyboardDismissable>
-      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}>        
+      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>        
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
@@ -77,7 +77,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               placeholderTextColor="#888"
               keyboardType="email-address"
               autoCapitalize="none"
-              style={styles.input}
+              style={[
+                styles.input,
+                { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) },
+              ]}
               value={email}
               onChangeText={setEmail}
               ref={emailRef}
@@ -90,7 +93,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               <TextInput
                 placeholder="Password"
                 placeholderTextColor="#888"
-                style={[styles.input, { paddingRight: 64 }]}
+                style={[
+                  styles.input,
+                  { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']), paddingRight: 64 },
+                ]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPw}
@@ -175,13 +181,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700', marginBottom: 8 },
   subtitle: { fontSize: 14, marginBottom: 20 },
   input: {
-    backgroundColor: '#191a1f',
     color: '#fff',
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
   },
   inputWrap: { position: 'relative' },
   showBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },

@@ -6,19 +6,19 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme, Theme as NavTheme } from '@react-navigation/native';
 import AppNavigator from '@navigation/AppNavigator';
 import { ThemeProvider, useTheme } from '@context/ThemeContext';
-import { toRgb } from '@themes/index';
+import { toRgb, toRgba } from '@themes/index';
 
 function NavigationWithTheme() {
-  const { theme } = useTheme();
+  const { theme, name } = useTheme();
   const navTheme: NavTheme = {
     ...DefaultTheme,
-    dark: true,
+    dark: name === 'dark',
     colors: {
       ...DefaultTheme.colors,
-      background: toRgb(theme.colors['--dark-bg']),
-      card: toRgb(theme.colors['--dark-card']),
+      background: toRgb(theme.colors['--bg']),
+      card: toRgb(theme.colors['--surface']),
       text: toRgb(theme.colors['--text-primary']),
-      border: 'rgba(255,255,255,0.1)',
+      border: toRgba(theme.colors['--border'], 0.1),
       primary: toRgb(theme.colors['--brand-primary']),
     },
   };

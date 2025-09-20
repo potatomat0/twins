@@ -4,7 +4,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
-import { toRgb } from '@themes/index';
+import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
@@ -79,7 +79,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <KeyboardDismissable>
-      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--dark-bg']) }]}>        
+      <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>        
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={{ padding: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
@@ -96,7 +96,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             <TextInput
               placeholder="Username"
               placeholderTextColor="#888"
-              style={styles.input}
+              style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) }]}
               value={username}
               onChangeText={setUsername}
               returnKeyType="next"
@@ -111,7 +111,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               placeholderTextColor="#888"
               keyboardType="email-address"
               autoCapitalize="none"
-              style={styles.input}
+              style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']) }]}
               value={email}
               onChangeText={setEmail}
               ref={emailRef}
@@ -142,7 +142,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               <TextInput
                 placeholder="Password"
                 placeholderTextColor="#888"
-                style={[styles.input, { paddingRight: 64 }]}
+                style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']), paddingRight: 64 }]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPw}
@@ -172,7 +172,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               <TextInput
                 placeholder="Confirm Password"
                 placeholderTextColor="#888"
-                style={[styles.input, { paddingRight: 64 }]}
+                style={[styles.input, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), color: toRgb(theme.colors['--text-primary']), paddingRight: 64 }]}
                 value={confirm}
                 onChangeText={setConfirm}
                 secureTextEntry={!showConfirm}
@@ -197,7 +197,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             )}
 
             {/* Mock fingerprint — TODO: supply from TF Lite model via useTensorflowModel */}
-            <View style={[styles.fpRow, { borderColor: 'rgba(255,255,255,0.08)' }]}>
+            <View style={[styles.fpRow, { borderColor: toRgba(theme.colors['--border'], 0.08) }]}>
               <Text style={{ color: '#bbb' }}>Fingerprint</Text>
               <Text style={{ color: '#fff', fontWeight: '700' }}>{fp}</Text>
             </View>
@@ -299,20 +299,18 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700', marginBottom: 8 },
   subtitle: { fontSize: 14, marginBottom: 20 },
   input: {
-    backgroundColor: '#191a1f',
     color: '#fff',
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)'
   },
   inputWrap: { position: 'relative' },
   showBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   showTxt: { color: '#fff', fontWeight: '700' },
   warn: { color: '#f59e0b', marginTop: -8, marginBottom: 8 },
   strengthWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: -4, marginBottom: 12 },
-  strengthBarBg: { flex: 1, height: 6, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' },
+  strengthBarBg: { flex: 1, height: 6, borderRadius: 4, overflow: 'hidden' },
   strengthBar: { height: '100%' },
   strengthText: { fontWeight: '700' },
   hint: { color: '#bbb', marginTop: -6, marginBottom: 10, fontSize: 12 },
