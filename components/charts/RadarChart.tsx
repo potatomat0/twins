@@ -19,7 +19,7 @@ type Props = {
 
 const toRads = (deg: number) => (deg * Math.PI) / 180;
 
-const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconColor = '34 211 238', closeColor = '239 68 68', tooltipMaxHeight = 300 }) => {
+const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconColor = '34 211 238', closeColor = '239 68 68', tooltipMaxHeight = 120 }) => {
   const { theme } = useTheme();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const computedSize = Math.max(200, Math.floor((size ?? windowWidth * 0.95))); // ~95% width
@@ -121,7 +121,7 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
       {overlay && (
         <View style={styles.overlay}>
           <Pressable style={StyleSheet.absoluteFillObject as any} onPress={() => setOverlay(null)} />
-          { /* Tooltip container with capped height */ }
+          { /* Tooltip container with capped height and flex layout so inner content can scroll */ }
           <View style={[
             styles.tooltip,
             {
@@ -139,9 +139,9 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
             >
               <Text style={styles.closeTxt}>×</Text>
             </Pressable>
-            { /* Make inner scroll area fixed so it always scrolls when content is longer */ }
+            { /* Inner ScrollView flexes to fill remaining space to enable scrolling */ }
             <ScrollView
-              style={{ height: Math.max(0, Math.min(tooltipMaxHeight, windowHeight * 0.9) - 56) }}
+              style={{ flex: 1 }}
               contentContainerStyle={{ paddingBottom: 8 }}
               showsVerticalScrollIndicator
             >
@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   tooltip: {
+    flex: 1,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,

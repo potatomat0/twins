@@ -79,6 +79,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Sign in to continue</Text>
 
             <View style={styles.inputWrap}>
+              <View style={styles.iconLeft}>
+                <Entypo name="email" size={12} color={toRgb(theme.colors['--text-muted'])} />
+              </View>
               <TextInput
                 placeholder="Email"
                 placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -120,6 +123,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
             <View style={styles.inputWrap}>
+              <View style={styles.iconLeft}>
+                <MaterialIcons name="password" size={12} color={toRgb(theme.colors['--text-muted'])} />
+              </View>
               <TextInput
                 placeholder="Password"
               placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -178,6 +184,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 const fallbackName = (mail.split('@')[0] || 'User');
                 try {
                   const { data, error } = await signInWithPassword(mail, password);
+                  console.log('[Login] signIn response:', { data, error });
                   if (error) {
                     setModalTitle('Invalid credentials');
                     setModalMsg(error.message ?? 'Email or password is incorrect.');
@@ -188,10 +195,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                   const userId = authUser?.id;
                   let username = (authUser?.user_metadata as any)?.username || fallbackName;
                   if (userId) {
-                    const { data: prof } = await fetchProfile(userId);
+                    const { data: prof, error: profErr } = await fetchProfile(userId);
+                    console.log('[Login] fetchProfile:', { prof, profErr });
                     if (!prof) {
-                      // create minimal profile
-                      const { data: created } = await upsertProfile({ id: userId, username });
+                      // create minimal profile with email captured
+                      const { data: created, error: upErr } = await upsertProfile({ id: userId, username });
+                      console.log('[Login] upsertProfile (create):', { created, upErr });
                       if (created?.username) username = created.username;
                     } else if (prof.username) {
                       username = prof.username;
@@ -199,6 +208,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                   }
                   navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email: mail } }] });
                 } catch (e: any) {
+                  console.log('[Login] exception:', e);
                   setModalTitle('Error');
                   setModalMsg(e?.message ?? 'An unexpected error occurred.');
                   setModal(true);
@@ -244,6 +254,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   inputWrap: { position: 'relative' },
+  iconLeft: { position: 'absolute', left: -24, top: 14 },
   showBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   clearBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   clearBtnLeft: { position: 'absolute', right: 52, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },

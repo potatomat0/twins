@@ -83,8 +83,8 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const onNext = async () => {
     try { pop.seekTo?.(0); } catch {}
     try { await pop.play(); } catch {}
-    await haptics.selection();
-    setTimeout(() => haptics.selection(), 60);
+    await haptics.medium();
+    setTimeout(() => haptics.light(), 60);
     if (index < total - 1) setIndex((i) => i + 1);
     else onFinish();
   };

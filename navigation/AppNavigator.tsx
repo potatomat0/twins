@@ -13,7 +13,9 @@ export type RootStackParamList = {
   Registration: { email?: string } | undefined;
   Questionnaire: { username: string; email: string; ageGroup: string; gender: string } | undefined;
   Results: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
+  Character: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
   CreateAccount: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
+  VerifyEmail: { email: string; password: string; username: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
   Dashboard: { username: string; email: string } | undefined;
 };
 
@@ -53,6 +55,15 @@ const AppNavigator = () => {
         })}
       />
       <Stack.Screen
+        name="Character"
+        component={require('@components/CharacterScreen').default}
+        options={({ navigation }) => ({
+          headerShown: true,
+          gestureEnabled: false,
+          header: () => <SwipeHeader title="Your Character" onBack={() => navigation.goBack()} />,
+        })}
+      />
+      <Stack.Screen
         name="CreateAccount"
         component={CreateAccountScreen}
         options={({ navigation }) => ({
@@ -62,6 +73,15 @@ const AppNavigator = () => {
         })}
       />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      <Stack.Screen
+        name="VerifyEmail"
+        component={require('@components/VerifyEmailScreen').default}
+        options={({ navigation }) => ({
+          headerShown: true,
+          gestureEnabled: false,
+          header: () => <SwipeHeader title="Verify Email" onBack={() => navigation.goBack()} />,
+        })}
+      />
     </Stack.Navigator>
   );
 };

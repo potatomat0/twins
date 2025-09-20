@@ -40,10 +40,15 @@ export type Profile = {
   age_group?: string | null;
   gender?: string | null;
   personality_fingerprint?: number | null;
+  character_group?: string | null;
 };
 
 export async function fetchProfile(id: string) {
-  return supabase.from('profiles').select('id, username, age_group, gender, personality_fingerprint').eq('id', id).maybeSingle();
+  return supabase
+    .from('profiles')
+    .select('id, username, age_group, gender, personality_fingerprint, character_group')
+    .eq('id', id)
+    .maybeSingle();
 }
 
 export async function upsertProfile(profile: Profile) {
@@ -51,6 +56,32 @@ export async function upsertProfile(profile: Profile) {
   return supabase
     .from('profiles')
     .upsert(profile, { onConflict: 'id' })
-    .select('id, username, age_group, gender, personality_fingerprint')
+    .select('id, username, age_group, gender, personality_fingerprint, character_group')
     .single();
+}
+
+// Email OTP helpers (for when email confirmation is enabled)
+export async function resendEmailOtp(email: string) {
+  // Triggers sending a new confirmation code to the email for signup
+  return supabase.auth.resend({ type: 'signup', email });
+}
+
+export async function verifyEmailOtp(email: string, token: string) {
+  // Confirms the signup using the code from the email
+  return supabase.auth.verifyOtp({ type: 'signup', email, token });
+}
+
+// View: public.my_profile exposes email joined from auth.users for the current user
+export type MyProfile = {
+  id: string;
+  username: string | null;
+  age_group: string | null;
+  gender: string | null;
+  personality_fingerprint: number | null;
+  character_group: string | null;
+  email: string | null;
+};
+
+export async function fetchMyProfile() {
+  return supabase.from('my_profile').select('*').maybeSingle<MyProfile>();
 }

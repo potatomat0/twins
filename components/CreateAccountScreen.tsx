@@ -14,6 +14,8 @@ import SocialButton from '@components/common/SocialButton';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
@@ -47,6 +49,31 @@ function passwordStrength(pw: string) {
   return { label: 'Strong', color: '#22c55e', pct: 100 };
 }
 
+// Determine character group from normalized scores
+function determineCharacterGroup(scores?: Record<string, number>) {
+  if (!scores) return null;
+  const E = scores['Extraversion'] ?? 0;
+  const A = scores['Agreeableness'] ?? 0;
+  const C = scores['Conscientiousness'] ?? 0;
+  const O = scores['Intellect/Imagination'] ?? 0; // Openness
+  const HIGH = 70;
+  const VERY_HIGH = 85;
+  if (O >= VERY_HIGH) return 'Creator';
+  if (E >= HIGH && O >= HIGH) return 'Explorer';
+  if (E >= HIGH && A >= HIGH) return 'Connector';
+  if (C >= HIGH && O >= HIGH) return 'Strategist';
+  if (A >= HIGH && C >= HIGH) return 'Guardian';
+  const pairs: Array<[string, number]> = [
+    ['Explorer', (E + O) / 2],
+    ['Connector', (E + A) / 2],
+    ['Strategist', (C + O) / 2],
+    ['Guardian', (A + C) / 2],
+    ['Creator', O],
+  ];
+  pairs.sort((a, b) => b[1] - a[1]);
+  return pairs[0][0];
+}
+
 const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
@@ -67,6 +94,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const [pFocus, setPFocus] = useState(false);
   const [cFocus, setCFocus] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [jumpHint, setJumpHint] = useState(false);
   const emailRef = useRef<TextInput>(null as any);
   const genderRef = useRef<DropdownHandle>(null);
   const ageRef = useRef<DropdownHandle>(null);
@@ -90,6 +118,31 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+  // Advance only to the next empty field; if none remain, do nothing
+  const nextEmptyAfter = (from: 'username'|'email'|'gender'|'age'|'password'|'confirm') => {
+    const order: Array<'username'|'email'|'gender'|'age'|'password'|'confirm'> = ['username','email','gender','age','password','confirm'];
+    const idx = order.indexOf(from);
+    for (let i = idx + 1; i < order.length; i++) {
+      const f = order[i];
+      if (f === 'email' && !email) return f;
+      if (f === 'gender' && !gender) return f;
+      if (f === 'age' && !ageGroup) return f;
+      if (f === 'password' && !password) return f;
+      if (f === 'confirm' && !confirm) return f;
+    }
+    return null;
+  };
+
+  const goNext = (from: 'username'|'email'|'gender'|'age'|'password'|'confirm') => {
+    const next = nextEmptyAfter(from);
+    if (!next) { setJumpHint(true); setTimeout(() => setJumpHint(false), 1500); Keyboard.dismiss(); return; }
+    if (next === 'email') { emailRef.current?.focus?.(); return; }
+    if (next === 'gender') { openDropdownAfterClose(() => genderRef.current?.open?.()); return; }
+    if (next === 'age') { openDropdownAfterClose(() => ageRef.current?.open?.()); return; }
+    if (next === 'password') { openDropdownAfterClose(() => passwordRef.current?.focus?.()); return; }
+    if (next === 'confirm') { openDropdownAfterClose(() => confirmRef.current?.focus?.()); return; }
+  };
+
   const focusNextUntouched = (from: 'username'|'email'|'gender'|'age'|'password'|'confirm') => {
     const order: Array<'username'|'email'|'gender'|'age'|'password'|'confirm'> = ['username','email','gender','age','password','confirm'];
     const idx = order.indexOf(from);
@@ -98,8 +151,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
       if (f === 'email' && !email) { emailRef.current?.focus?.(); return; }
       if (f === 'gender' && !gender) { openDropdownAfterClose(() => genderRef.current?.open?.()); return; }
       if (f === 'age' && !ageGroup) { openDropdownAfterClose(() => ageRef.current?.open?.()); return; }
-      if (f === 'password' && !password) { passwordRef.current?.focus?.(); return; }
-      if (f === 'confirm' && !confirm) { confirmRef.current?.focus?.(); return; }
+      if (f === 'password' && !password) { openDropdownAfterClose(() => passwordRef.current?.focus?.()); return; }
+      if (f === 'confirm' && !confirm) { openDropdownAfterClose(() => confirmRef.current?.focus?.()); return; }
     }
     Keyboard.dismiss();
   };
@@ -125,8 +178,11 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 
             {/* TODO: connect to Firebase Auth + GCP backend */}
             <View style={styles.inputWrap}>
-            <TextInput
-              placeholder="Username"
+              <View style={styles.iconLeft}>
+                <AntDesign name="user" size={12} color={toRgb(theme.colors['--text-muted'])} />
+              </View>
+              <TextInput
+                placeholder="Username"
               placeholderTextColor={toRgb(theme.colors['--text-muted'])}
               style={[
                 styles.input,
@@ -144,7 +200,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               value={username}
               onChangeText={setUsername}
               returnKeyType="next"
-              onSubmitEditing={() => focusNextUntouched('username')}
+              onSubmitEditing={() => goNext('username')}
+              blurOnSubmit={false}
               onFocus={() => setUFocus(true)}
               onBlur={() => setUFocus(false)}
             />
@@ -159,8 +216,11 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             )}
 
             <View style={styles.inputWrap}>
-            <TextInput
-              placeholder="Email"
+              <View style={styles.iconLeft}>
+                <Entypo name="email" size={12} color={toRgb(theme.colors['--text-muted'])} />
+              </View>
+              <TextInput
+                placeholder="Email"
               placeholderTextColor={toRgb(theme.colors['--text-muted'])}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -181,7 +241,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               onChangeText={setEmail}
               ref={emailRef}
               returnKeyType="next"
-              onSubmitEditing={() => focusNextUntouched('email')}
+              onSubmitEditing={() => goNext('email')}
+              blurOnSubmit={false}
               onFocus={() => setEFocus(true)}
               onBlur={() => setEFocus(false)}
             />
@@ -193,25 +254,38 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
             {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
-            <Dropdown
-              options={genders}
-              value={gender}
-              onChange={(v) => setGender(v)}
-              placeholder="Choose your gender"
-              ref={genderRef}
-              onCommit={() => focusNextUntouched('gender')}
-            />
-            <Dropdown
-              options={ageGroups}
-              value={ageGroup}
-              onChange={(v) => setAgeGroup(v)}
-              placeholder="Choose your age group"
-              ref={ageRef}
-              onCommit={() => focusNextUntouched('age')}
-            />
+            <View style={styles.inputWrap}>
+              <View style={styles.iconLeft}>
+                <FontAwesome name="transgender-alt" size={12} color={toRgb(theme.colors['--text-muted'])} />
+              </View>
+              <Dropdown
+                options={genders}
+                value={gender}
+                onChange={(v) => setGender(v)}
+                placeholder="Choose your gender"
+                ref={genderRef}
+                onCommit={() => goNext('gender')}
+              />
+            </View>
+            <View style={styles.inputWrap}>
+              <View style={styles.iconLeft}>
+                <FontAwesome6 name="users-line" size={12} color={toRgb(theme.colors['--text-muted'])} />
+              </View>
+              <Dropdown
+                options={ageGroups}
+                value={ageGroup}
+                onChange={(v) => setAgeGroup(v)}
+                placeholder="Choose your age group"
+                ref={ageRef}
+                onCommit={() => goNext('age')}
+              />
+            </View>
 
             {/* TODO: enforce stronger password policies per product requirements */}
             <View style={styles.inputWrap}>
+              <View style={styles.iconLeft}>
+                <MaterialIcons name="password" size={12} color={toRgb(theme.colors['--text-muted'])} />
+              </View>
               <TextInput
                 placeholder="Password"
                 placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -235,7 +309,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 autoCapitalize="none"
                 ref={passwordRef}
                 returnKeyType="next"
-                onSubmitEditing={() => focusNextUntouched('password')}
+                blurOnSubmit={false}
+                onSubmitEditing={() => goNext('password')}
                 onFocus={() => setPFocus(true)}
                 onBlur={() => setPFocus(false)}
               />
@@ -266,6 +341,9 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             <Text style={[styles.hint, { color: toRgb(theme.colors['--text-secondary']) }]}>Use 8+ characters with a mix of letters, numbers, and symbols.</Text>
 
             <View style={styles.inputWrap}>
+              <View style={styles.iconLeft}>
+                <MaterialIcons name="password" size={12} color={toRgb(theme.colors['--text-muted'])} />
+              </View>
               <TextInput
                 placeholder="Confirm Password"
                 placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -347,6 +425,11 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
 
             <View style={{ height: 12 }} />
+            {jumpHint ? (
+              <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 6 }}>
+                All set — you can create your account now.
+              </Text>
+            ) : null}
             <View>
               <Button
                 title="Create Account"
@@ -361,22 +444,25 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                       return;
                     }
                     const user = data.user;
+                    console.log('[CreateAccount] signUp response:', { data, error });
                     if (data.session && user?.id) {
                       // Insert or update own profile (RLS owner policy)
-                      await upsertProfile({ id: user.id, username: uname, age_group: ageGroup, gender });
+                      await upsertProfile({ id: user.id, username: uname, age_group: ageGroup, gender, character_group: determineCharacterGroup(route.params?.scores) });
                       setCreated(true);
                     } else {
                       // Try to sign in immediately (works when email confirmation is disabled)
                       const { data: sdata, error: signInErr } = await signInWithPassword(mail, password);
+                      console.log('[CreateAccount] signIn fallback response:', { data: sdata, error: signInErr });
                       if (!signInErr && sdata.user?.id) {
-                        await upsertProfile({ id: sdata.user.id, username: uname, age_group: ageGroup, gender });
+                        await upsertProfile({ id: sdata.user.id, username: uname, age_group: ageGroup, gender, character_group: determineCharacterGroup(route.params?.scores) });
                         setCreated(true);
                       } else {
-                        // Email confirmation likely enabled in project settings
-                        setShowModal(true);
+                        // Email confirmation likely enabled in project settings, route to OTP screen
+                        navigation.navigate('VerifyEmail' as any, { email: mail, password, username: uname, ageGroup, gender, scores: route.params?.scores ?? {} });
                       }
                     }
                   } catch {
+                    console.log('[CreateAccount] signUp exception');
                     setShowModal(true);
                   }
                 }}
@@ -453,6 +539,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   inputWrap: { position: 'relative' },
+  iconLeft: { position: 'absolute', left: -24, top: 14 },
   showBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   clearBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   clearBtnLeft: { position: 'absolute', right: 52, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },

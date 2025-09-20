@@ -10,6 +10,7 @@ import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import RadarChart from '@components/charts/RadarChart';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
+import NotificationModal from '@components/common/NotificationModal';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Results'>;
 type Route = RouteProp<RootStackParamList, 'Results'>;
@@ -45,6 +46,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
     .slice(0,3), [scores]);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 600);
@@ -65,7 +67,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
               color={theme.colors['--brand-primary']}
               iconColor={theme.colors['--accent-cyan']}
               closeColor={theme.colors['--danger']}
-              tooltipMaxHeight={300}
+              tooltipMaxHeight={220}
             />
           </View>
 
@@ -86,14 +88,12 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
               <Button
                 title="Start Over"
                 variant="neutral"
-                onPress={() =>
-                  navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })
-                }
+                onPress={() => setConfirmReset(true)}
               />
               <Button
-                title="Create Account"
+                title="Continue"
                 onPress={() =>
-                  navigation.navigate('CreateAccount', {
+                  navigation.navigate('Character' as any, {
                     username,
                     email,
                     ageGroup,
@@ -105,6 +105,18 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
           </Card>
         </ScrollView>
+        <NotificationModal
+          visible={confirmReset}
+          title="Start over?"
+          message="If you go to Login now, you will lose this result."
+          primaryText="Leave"
+          onPrimary={() => { setConfirmReset(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
+          secondaryText="Stay"
+          onSecondary={() => setConfirmReset(false)}
+          onRequestClose={() => setConfirmReset(false)}
+          primaryVariant="danger"
+          secondaryVariant="accent"
+        />
       </SafeAreaView>
     </KeyboardDismissable>
   );

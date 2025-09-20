@@ -11,6 +11,9 @@ import Button from '@components/common/Button';
 import Dropdown, { DropdownHandle } from '@components/common/Dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Entypo from '@expo/vector-icons/Entypo';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Registration'>;
@@ -24,6 +27,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState(route.params?.email ?? '');
+  const [jumpHint, setJumpHint] = useState(false);
   const [uFocus, setUFocus] = useState(false);
   const [eFocus, setEFocus] = useState(false);
   const [ageGroup, setAgeGroup] = useState('');
@@ -47,16 +51,25 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
-  const focusNextUntouched = (from: 'username'|'email'|'age'|'gender') => {
+  // Advance to the next empty field; if none remain, do nothing
+  const nextEmptyAfter = (from: 'username'|'email'|'age'|'gender') => {
     const order: Array<'username'|'email'|'age'|'gender'> = ['username','email','age','gender'];
     const idx = order.indexOf(from);
     for (let i = idx + 1; i < order.length; i++) {
       const f = order[i];
-      if (f === 'email' && !email) { emailRef.current?.focus?.(); return; }
-      if (f === 'age' && !ageGroup) { openDropdownAfterClose(() => ageRef.current?.open?.()); return; }
-      if (f === 'gender' && !gender) { openDropdownAfterClose(() => genderRef.current?.open?.()); return; }
+      if (f === 'email' && !email) return f;
+      if (f === 'age' && !ageGroup) return f;
+      if (f === 'gender' && !gender) return f;
     }
-    Keyboard.dismiss();
+    return null;
+  };
+
+  const goNext = (from: 'username'|'email'|'age'|'gender') => {
+    const next = nextEmptyAfter(from);
+    if (!next) { setJumpHint(true); setTimeout(() => setJumpHint(false), 1500); Keyboard.dismiss(); return; }
+    if (next === 'email') { emailRef.current?.focus?.(); return; }
+    if (next === 'age') { openDropdownAfterClose(() => ageRef.current?.open?.()); return; }
+    if (next === 'gender') { openDropdownAfterClose(() => genderRef.current?.open?.()); return; }
   };
 
   const [refreshing, setRefreshing] = useState(false);
@@ -81,6 +94,9 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
         <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Let’s create your temporary profile</Text>
 
         <View style={styles.inputWrap}>
+        <View style={styles.iconLeft}>
+          <AntDesign name="user" size={12} color={toRgb(theme.colors['--text-muted'])} />
+        </View>
         <TextInput
           placeholder="How would you want to be called?"
           placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -100,7 +116,8 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           value={username}
           onChangeText={setUsername}
           returnKeyType="next"
-          onSubmitEditing={() => focusNextUntouched('username')}
+          onSubmitEditing={() => goNext('username')}
+          blurOnSubmit={false}
           onFocus={() => setUFocus(true)}
           onBlur={() => setUFocus(false)}
         />
@@ -115,6 +132,9 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
         )}
 
         <View style={styles.inputWrap}>
+        <View style={styles.iconLeft}>
+          <Entypo name="email" size={12} color={toRgb(theme.colors['--text-muted'])} />
+        </View>
         <TextInput
           placeholder="Enter your email"
           placeholderTextColor={toRgb(theme.colors['--text-muted'])}
@@ -137,7 +157,8 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           onChangeText={setEmail}
           ref={emailRef}
           returnKeyType="next"
-          onSubmitEditing={() => focusNextUntouched('email')}
+          onSubmitEditing={() => goNext('email')}
+          blurOnSubmit={false}
           onFocus={() => setEFocus(true)}
           onBlur={() => setEFocus(false)}
         />
@@ -149,23 +170,35 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
         {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
 
-        <Dropdown
-          options={ageGroups}
-          value={ageGroup}
-          onChange={(v) => setAgeGroup(v)}
-          placeholder="Choose your age group"
-          ref={ageRef}
-          onCommit={() => focusNextUntouched('age')}
-          onCommit={() => focusNextUntouched('gender')}
-        />
-        <Dropdown
-          options={genders}
-          value={gender}
-          onChange={(v) => setGender(v)}
-          placeholder="Choose your gender"
-          ref={genderRef}
-        />
+        <View style={styles.inputWrap}>
+          <View style={styles.iconLeft}>
+            <FontAwesome6 name="users-line" size={12} color={toRgb(theme.colors['--text-muted'])} />
+          </View>
+          <Dropdown
+            options={ageGroups}
+            value={ageGroup}
+            onChange={(v) => setAgeGroup(v)}
+            placeholder="Choose your age group"
+            ref={ageRef}
+            onCommit={() => goNext('age')}
+          />
+        </View>
+        <View style={styles.inputWrap}>
+          <View style={styles.iconLeft}>
+            <FontAwesome name="transgender-alt" size={12} color={toRgb(theme.colors['--text-muted'])} />
+          </View>
+          <Dropdown
+            options={genders}
+            value={gender}
+            onChange={(v) => setGender(v)}
+            placeholder="Choose your gender"
+            ref={genderRef}
+          />
+        </View>
 
+        {jumpHint ? (
+          <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 6 }}>All set — tap "Start Questionnaire".</Text>
+        ) : null}
         <Button
           title="Start Questionnaire"
           onPress={() => {
@@ -201,6 +234,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   inputWrap: { position: 'relative' },
+  iconLeft: { position: 'absolute', left: -24, top: 14 },
   clearBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   warn: { color: '#f59e0b', marginTop: -8, marginBottom: 8 },
 });

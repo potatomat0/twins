@@ -17,6 +17,20 @@ export const haptics = {
       } catch {}
     }
   },
+  async medium() {
+    if (withExpo) {
+      try {
+        await ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Medium);
+      } catch {}
+    }
+  },
+  async heavy() {
+    if (withExpo) {
+      try {
+        await ExpoHaptics.impactAsync(ExpoHaptics.ImpactFeedbackStyle.Heavy);
+      } catch {}
+    }
+  },
   async selection() {
     if (withExpo) {
       try {
