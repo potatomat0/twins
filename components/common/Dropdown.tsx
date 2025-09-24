@@ -2,6 +2,7 @@ import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Option = { label: string; value: string } | string;
 
@@ -20,6 +21,7 @@ export type DropdownHandle = {
 
 const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholder = 'Select…', onChange, onCommit }, ref) => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const items = useMemo(
     () =>
@@ -65,7 +67,7 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
         <View
           style={[
             styles.sheet,
-            { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08) },
+            { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), bottom: 16 + insets.bottom, paddingBottom: 8 + insets.bottom },
           ]}
         >
           {placeholder ? (

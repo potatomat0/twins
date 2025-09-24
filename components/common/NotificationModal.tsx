@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = {
   visible: boolean;
@@ -31,6 +32,7 @@ const NotificationModal: React.FC<Props> = ({
   stacked = false,
 }) => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const primaryBg =
     primaryVariant === 'danger'
       ? toRgb(theme.colors['--danger'])
@@ -47,7 +49,15 @@ const NotificationModal: React.FC<Props> = ({
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onRequestClose}>
       <Pressable style={styles.backdrop} onPress={onRequestClose} />
-      <View style={[styles.sheet, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08) }]}>        
+      <View style={[
+        styles.sheet,
+        {
+          backgroundColor: toRgb(theme.colors['--surface']),
+          borderColor: toRgba(theme.colors['--border'], 0.08),
+          bottom: 16 + insets.bottom,
+          paddingBottom: 16 + insets.bottom,
+        },
+      ]}>        
         {title ? <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>{title}</Text> : null}
         {typeof message === 'string' ? <Text style={[styles.message, { color: toRgb(theme.colors['--text-secondary']) }]}>{message}</Text> : message}
         <View style={[styles.actions, stacked ? { flexDirection: 'column', justifyContent: 'flex-start' } : null]}>

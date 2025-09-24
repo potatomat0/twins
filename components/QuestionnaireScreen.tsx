@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions, ScrollView, RefreshControl, Animated, Easing } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
@@ -40,6 +40,7 @@ const OPTION_LABELS: Record<1|2|3|4|5, string> = {
 
 const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [index, setIndex] = useState(0);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -202,7 +203,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
       </ScrollView>
 
       {/* Footer navigation: no early finish allowed */}
-      <View style={styles.footerRow}>
+      <View style={[styles.footerRow, { bottom: Math.max(16, insets.bottom + 12) }]}>
         <View style={{ flex: 1 }}>
           <Button title="Previous" variant="neutral" onPress={onPrev} disabled={index === 0} />
         </View>
