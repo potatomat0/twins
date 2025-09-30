@@ -85,7 +85,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           <Card>
             <View style={styles.languageSwitcher}>
               <Text style={[styles.languageLabel, { color: toRgb(theme.colors['--text-secondary']) }]}>
-                {t('login.languageLabel')}
+               <Entypo name="language" /> | {t('login.languageLabel')}
               </Text>
               <Dropdown
                 options={languageOptions}

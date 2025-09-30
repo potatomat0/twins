@@ -48,4 +48,5 @@ gantt
 
 - 2025-09-09: Theming — added a Light theme preset to `themes/index.ts` (readable text and card colors) and a theme switcher on the Dashboard to toggle Dark/Light at runtime. Navigation theme now reflects the current selection.
 - 2025-09-09: Branding — updated Expo `splash.backgroundColor` to `#A376A2` to match the new default background preset.
- - 2025-09-08: Cleanup — removed legacy `public.User` code paths (ensureUser/upsertUser/authenticateUser). Switched Supabase connectivity probe on Login to an Auth endpoint (`getSession`).
+- 2025-09-08: Cleanup — removed legacy `public.User` code paths (ensureUser/upsertUser/authenticateUser). Switched Supabase connectivity probe on Login to an Auth endpoint (`getSession`).
+- 2025-09-30: Internationalization pass — introduced `LocaleProvider` + translation dictionaries, localized Login/Registration/Create Account/Questionnaire/Results/Character/Verify Email screens, externalized questionnaire copy to `data/questionTexts.ts`, added localized dropdown options and notices, and documented the flow in the new i18n guide. Updated results handoff to use the actual username supplied during onboarding.
