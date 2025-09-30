@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, ViewStyle, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useTranslation } from '@context/LocaleContext';
 
 type Provider = 'google' | 'facebook' | 'apple' | 'microsoft';
 
@@ -20,6 +21,9 @@ const brand: Record<Provider, { color: string; icon: string; label: string }> = 
 
 const SocialButton: React.FC<Props> = ({ provider, title, onPress, style }) => {
   const cfg = brand[provider];
+  const { t } = useTranslation();
+  const displayTitle = title ?? t('common.signInWithProvider', { provider: cfg.label });
+  const accessibilityLabel = t('common.signInWithProvider', { provider: cfg.label });
   return (
     <Pressable
       onPress={onPress}
@@ -29,11 +33,11 @@ const SocialButton: React.FC<Props> = ({ provider, title, onPress, style }) => {
         style,
       ]}
       accessibilityRole="button"
-      accessibilityLabel={`Sign in with ${cfg.label}`}
+      accessibilityLabel={accessibilityLabel}
     >
       <View style={styles.row}>
         <FontAwesome5 name={cfg.icon as any} size={16} color="#fff" style={{ marginRight: 0 }} />
-        <Text style={styles.text}>{title}</Text>
+        <Text style={styles.text}>{displayTitle}</Text>
       </View>
     </Pressable>
   );
@@ -52,4 +56,3 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   text: { color: '#fff', fontWeight: '700' },
 });
-

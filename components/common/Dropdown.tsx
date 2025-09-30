@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from '@context/LocaleContext';
 
 type Option = { label: string; value: string } | string;
 
@@ -19,9 +20,10 @@ export type DropdownHandle = {
   close: () => void;
 };
 
-const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholder = 'Select…', onChange, onCommit }, ref) => {
+const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholder, onChange, onCommit }, ref) => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const items = useMemo(
     () =>
@@ -32,6 +34,7 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
   );
 
   const currentLabel = items.find((i) => i.value === value)?.label;
+  const resolvedPlaceholder = placeholder ?? t('common.select');
 
   useImperativeHandle(ref, () => ({
     open: () => setOpen(true),
@@ -58,7 +61,7 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
         ]}
       >
         <Text style={{ color: value ? toRgb(theme.colors['--text-primary']) : toRgb(theme.colors['--text-secondary']) }}>
-          {currentLabel ?? placeholder}
+          {currentLabel ?? resolvedPlaceholder}
         </Text>
       </Pressable>
 
@@ -70,9 +73,9 @@ const Dropdown = forwardRef<DropdownHandle, Props>(({ options, value, placeholde
             { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.08), bottom: 16 + insets.bottom, paddingBottom: 8 + insets.bottom },
           ]}
         >
-          {placeholder ? (
+          {resolvedPlaceholder ? (
             <View style={[styles.headerRow, { borderColor: toRgba(theme.colors['--border'], 0.06) }]}>
-              <Text style={{ color: toRgb(theme.colors['--text-secondary']), fontWeight: '700' }}>{placeholder}</Text>
+              <Text style={{ color: toRgb(theme.colors['--text-secondary']), fontWeight: '700' }}>{resolvedPlaceholder}</Text>
             </View>
           ) : null}
           {items.map((it) => {

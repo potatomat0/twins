@@ -5,8 +5,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
+import { useTranslation } from '@context/LocaleContext';
 import { toRgb, toRgba } from '@themes/index';
 import { QUESTIONS } from '@data/questions';
+import { getQuestionText } from '@data/questionTexts';
 import Button from '@components/common/Button';
 import { AnswerMap, computeBigFiveScores, normalizeScoresTo100 } from '@services/profileAnalyzer';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
@@ -30,16 +32,9 @@ const OPTION_COLORS: Record<1|2|3|4|5, string> = {
   5: '59 130 246', // blue
 };
 
-const OPTION_LABELS: Record<1|2|3|4|5, string> = {
-  1: 'Disagree',
-  2: 'Slightly Disagree',
-  3: 'Neutral',
-  4: 'Slightly Agree',
-  5: 'Agree',
-};
-
 const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [index, setIndex] = useState(0);
@@ -65,6 +60,18 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const current = QUESTIONS[index];
   const currentValue = answers[current.Item_Number];
+  const questionText = useMemo(() => getQuestionText(locale, current.Item_Number), [locale, current.Item_Number]);
+
+  const optionLabels: Record<1 | 2 | 3 | 4 | 5, string> = useMemo(
+    () => ({
+      1: t('questionnaire.scale.disagree'),
+      2: t('questionnaire.scale.slightlyDisagree'),
+      3: t('questionnaire.scale.neutral'),
+      4: t('questionnaire.scale.slightlyAgree'),
+      5: t('questionnaire.scale.agree'),
+    }) as Record<1 | 2 | 3 | 4 | 5, string>,
+    [t],
+  );
 
   const onSelect = (id: number, value: 1 | 2 | 3 | 4 | 5) => {
     setAnswers((prev) => {
@@ -98,7 +105,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
     const sums = computeBigFiveScores(answers);
     const normalized = normalizeScoresTo100(sums);
     navigation.navigate('Results', {
-      username: route.params?.username ?? 'Friend',
+      username: route.params?.username ?? '',
       email: route.params?.email ?? '',
       ageGroup: route.params?.ageGroup ?? '',
       gender: route.params?.gender ?? '',
@@ -119,7 +126,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   return (
     <KeyboardDismissable>
     <SafeAreaView style={[styles.container, { backgroundColor: `rgb(${theme.colors['--bg']})` }]}>
-      <SwipeHeader title="Personality Questionnaire" onBack={() => setConfirmBack(true)} />
+      <SwipeHeader title={t('questionnaire.title')} onBack={() => setConfirmBack(true)} />
       <View style={styles.header}>
         <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']), textAlign: 'center' }]}>{index + 1}/{total}</Text>
         <View
@@ -148,7 +155,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
       >
         <View style={[styles.question, { borderColor: toRgba(theme.colors['--border'], 0.08), backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}> 
           <Text style={[styles.qtext, { color: toRgb(theme.colors['--text-primary']) }]}> 
-            I {current.Question}
+            {questionText}
           </Text>
 
           {/* Horizontal Likert scale with icons only */}
@@ -173,7 +180,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
                     },
                   ]}
                   accessibilityRole="button"
-                  accessibilityLabel={`${OPTION_LABELS[v as 1 | 2 | 3 | 4 | 5]}`}
+                  accessibilityLabel={optionLabels[v as 1 | 2 | 3 | 4 | 5]}
                   accessibilityState={{ selected }}
                 >
                   {({ pressed }) => (
@@ -205,14 +212,14 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
       {/* Footer navigation: no early finish allowed */}
       <View style={[styles.footerRow, { bottom: Math.max(16, insets.bottom + 12) }]}>
         <View style={{ flex: 1 }}>
-          <Button title="Previous" variant="neutral" onPress={onPrev} disabled={index === 0} />
+          <Button title={t('questionnaire.buttons.previous')} variant="neutral" onPress={onPrev} disabled={index === 0} />
         </View>
         <View style={{ width: 12 }} />
         <View style={{ flex: 1 }}>
           {index < total - 1 ? (
-            <Button title="Next" onPress={onNext} disabled={!currentValue} />
+            <Button title={t('questionnaire.buttons.next')} onPress={onNext} disabled={!currentValue} />
           ) : (
-            <Button title="See result" onPress={onNext} disabled={!currentValue} />
+            <Button title={t('questionnaire.buttons.finish')} onPress={onNext} disabled={!currentValue} />
           )}
         </View>
       </View>
@@ -220,11 +227,11 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
       {/* Back-confirmation */}
       <NotificationModal
         visible={confirmBack}
-        title="Leave questionnaire?"
-        message="If you go to Login now, you will lose all your progress."
-        primaryText="Leave"
+        title={t('questionnaire.confirm.title')}
+        message={t('questionnaire.confirm.message')}
+        primaryText={t('questionnaire.confirm.leave')}
         onPrimary={() => { setConfirmBack(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
-        secondaryText="Stay"
+        secondaryText={t('questionnaire.confirm.stay')}
         onSecondary={() => setConfirmBack(false)}
         onRequestClose={() => setConfirmBack(false)}
         primaryVariant="danger"

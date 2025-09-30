@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Image, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
+import { useTranslation } from '@context/LocaleContext';
 import { toRgb } from '@themes/index';
 import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
@@ -19,14 +20,6 @@ const icons: Record<string, any> = {
   Strategist: require('../assets/images/twins-strategist.png.png'),
   Guardian: require('../assets/images/twins-guardian.png.png'),
   Creator: require('../assets/images/twins-creator.png.png'),
-};
-
-const descriptions: Record<string, string> = {
-  Explorer: 'You are curious and sociable, always seeking new adventures.',
-  Connector: 'You are a warm and outgoing person who unites others.',
-  Strategist: 'You are organized and insightful, achieving goals with vision.',
-  Guardian: 'You are a dependable and caring pillar of support for others.',
-  Creator: 'You have a highly imaginative mind, driven by pure creativity.',
 };
 
 function determineGroup(scores: Record<string, number>) {
@@ -58,11 +51,13 @@ function determineGroup(scores: Record<string, number>) {
 
 const CharacterScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const scores = route.params?.scores ?? {};
   const group = useMemo(() => determineGroup(scores), [scores]);
   const icon = icons[group];
-  const fullText = descriptions[group] ?? '';
+  const descriptionKey = `character.descriptions.${group}`;
+  const fullText = t(descriptionKey);
   const [confirmExit, setConfirmExit] = useState(false);
 
   // Typing / cursor animation over ~2 seconds
@@ -90,17 +85,19 @@ const CharacterScreen: React.FC<Props> = ({ navigation, route }) => {
       <View style={styles.center}>        
         <Image source={icon} style={{ width: Math.min(220, width * 0.6), height: Math.min(220, width * 0.6), resizeMode: 'contain' }} />
         <View style={{ height: 12 }} />
-        <Text style={[styles.group, { color: toRgb(theme.colors['--text-primary']) }]}>{group}</Text>
+        <Text style={[styles.group, { color: toRgb(theme.colors['--text-primary']) }]}>
+          {t(`character.labels.${group}`)}
+        </Text>
         <View style={{ height: 6 }} />
         <Text style={[styles.desc, { color: toRgb(theme.colors['--text-secondary']) }]}> 
           {shown}
           {blink ? '|' : ' '}
         </Text>
         <View style={{ height: 24 }} />
-        <Button title="Go back" variant="danger" onPress={() => setConfirmExit(true)} style={{ alignSelf: 'stretch' }} />
+        <Button title={t('character.goBack')} variant="danger" onPress={() => setConfirmExit(true)} style={{ alignSelf: 'stretch' }} />
         <View style={{ height: 10 }} />
         <Button
-          title="Create your account"
+          title={t('character.createAccount')}
           onPress={() =>
             navigation.navigate('CreateAccount', {
               username: route.params?.username ?? '',
@@ -117,11 +114,11 @@ const CharacterScreen: React.FC<Props> = ({ navigation, route }) => {
 
       <NotificationModal
         visible={confirmExit}
-        title="Leave registration?"
-        message="If you go to Login now, you will lose all your progress."
-        primaryText="Leave"
+        title={t('character.confirm.title')}
+        message={t('character.confirm.message')}
+        primaryText={t('character.confirm.leave')}
         onPrimary={() => { setConfirmExit(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
-        secondaryText="Stay"
+        secondaryText={t('character.confirm.stay')}
         onSecondary={() => setConfirmExit(false)}
         onRequestClose={() => setConfirmExit(false)}
         primaryVariant="danger"

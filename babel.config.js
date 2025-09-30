@@ -14,7 +14,8 @@ module.exports = function (api) {
             "@themes": "./themes",
             "@services": "./services",
             "@hooks": "./hooks",
-            "@data": "./data"
+            "@data": "./data",
+            "@i18n": "./i18n"
           }
         }
       ],

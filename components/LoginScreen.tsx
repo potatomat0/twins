@@ -7,18 +7,22 @@ import Entypo from '@expo/vector-icons/Entypo';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
+import { useTranslation } from '@context/LocaleContext';
 import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
+import Dropdown from '@components/common/Dropdown';
 import supabase, { signInWithPassword, fetchProfile, upsertProfile } from '@services/supabase';
+import { Locale } from '@i18n/translations';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 type Props = { navigation: Nav };
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
+  const { t, locale, setLocale, availableLocales } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
   const [modal, setModal] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
@@ -36,6 +40,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const canLogin = emailValid && password.length >= 1;
   const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
 
+
+  const languageOptions = useMemo(
+    () =>
+      availableLocales.map((code) => ({
+        label: t(`login.languages.${code}`),
+        value: code,
+      })),
+    [availableLocales, t],
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -70,20 +83,31 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Card>
+            <View style={styles.languageSwitcher}>
+              <Text style={[styles.languageLabel, { color: toRgb(theme.colors['--text-secondary']) }]}>
+                {t('login.languageLabel')}
+              </Text>
+              <Dropdown
+                options={languageOptions}
+                value={locale}
+                onChange={(next) => setLocale(next as Locale)}
+                placeholder={t('login.languagePlaceholder')}
+              />
+            </View>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-              <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome to Twins!</Text>
+              <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>{t('login.welcomeTitle')}</Text>
               {supabaseOk ? (
-                <Text style={{ color: '#22c55e', fontWeight: '700' }}>Prototype 4. Database is connected</Text>
+                <Text style={{ color: '#22c55e', fontWeight: '700' }}>{t('login.connectionStatus')}</Text>
               ) : supabaseOk === false ? null : null}
             </View>
-            <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Sign in to continue</Text>
+            <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>{t('login.subtitle')}</Text>
 
             <View style={styles.inputWrap}>
               <View style={styles.iconLeft}>
                 <Entypo name="email" size={12} color={toRgb(theme.colors['--text-muted'])} />
               </View>
               <TextInput
-                placeholder="Email"
+                placeholder={t('login.emailPlaceholder')}
                 placeholderTextColor={toRgb(theme.colors['--text-muted'])}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -112,7 +136,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               {!!email && (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Clear email"
+                  accessibilityLabel={t('login.accessibility.clearEmail')}
                   onPress={() => setEmail('')}
                   style={styles.clearBtn}
                 >
@@ -120,14 +144,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 </Pressable>
               )}
             </View>
-            {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
+            {!emailValid && email.length > 0 && <Text style={styles.warn}>{t('login.errors.invalidEmail')}</Text>}
 
             <View style={styles.inputWrap}>
               <View style={styles.iconLeft}>
                 <MaterialIcons name="password" size={12} color={toRgb(theme.colors['--text-muted'])} />
               </View>
               <TextInput
-                placeholder="Password"
+                placeholder={t('login.passwordPlaceholder')}
               placeholderTextColor={toRgb(theme.colors['--text-muted'])}
                 style={[
                   styles.input,
@@ -155,7 +179,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               {!!password && (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Clear password"
+                  accessibilityLabel={t('login.accessibility.clearPassword')}
                   onPress={() => setPassword('')}
                   style={styles.clearBtnLeft}
                 >
@@ -164,7 +188,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               )}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
+                accessibilityLabel={showPw ? t('login.accessibility.hidePassword') : t('login.accessibility.showPassword')}
                 onPress={() => setShowPw((v) => !v)}
                 style={[styles.showBtn, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}
               >
@@ -178,7 +202,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
             <View style={{ height: 12 }} />
             <Button
-              title="Login"
+              title={t('login.submit')}
               onPress={async () => {
                 const mail = email.trim();
                 const fallbackName = (mail.split('@')[0] || 'User');
@@ -186,8 +210,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                   const { data, error } = await signInWithPassword(mail, password);
                   console.log('[Login] signIn response:', { data, error });
                   if (error) {
-                    setModalTitle('Invalid credentials');
-                    setModalMsg(error.message ?? 'Email or password is incorrect.');
+                    setModalTitle(t('login.errors.invalidCredentialsTitle'));
+                    setModalMsg(error.message || t('login.errors.invalidCredentialsMessage'));
                     setModal(true);
                     return;
                   }
@@ -209,8 +233,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                   navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email: mail } }] });
                 } catch (e: any) {
                   console.log('[Login] exception:', e);
-                  setModalTitle('Error');
-                  setModalMsg(e?.message ?? 'An unexpected error occurred.');
+                  setModalTitle(t('login.errors.genericTitle'));
+                  setModalMsg(e?.message || t('login.errors.genericMessage'));
                   setModal(true);
                 }
               }}
@@ -218,9 +242,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             />
 
             <View style={{ height: 16 }} />
-            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>Or, start our personality quiz to start making an account</Text>
+            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>{t('login.quizPrompt')}</Text>
             <Button
-              title="Start Personality Quiz"
+              title={t('login.quizCta')}
               onPress={() => navigation.navigate('Registration', { email })}
             />
           </Card>
@@ -229,9 +253,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
         <NotificationModal
           visible={modal}
-          title={modalTitle || 'Notice'}
-          message={modalMsg || 'Something happened.'}
-          primaryText="OK"
+          title={modalTitle || t('common.notice')}
+          message={modalMsg || t('login.noticeFallback')}
           onPrimary={() => setModal(false)}
           onRequestClose={() => setModal(false)}
         />
@@ -255,6 +278,8 @@ const styles = StyleSheet.create({
   },
   inputWrap: { position: 'relative' },
   iconLeft: { position: 'absolute', left: -24, top: 14 },
+  languageSwitcher: { marginBottom: 12 },
+  languageLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
   showBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   clearBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   clearBtnLeft: { position: 'absolute', right: 52, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },

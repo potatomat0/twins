@@ -5,12 +5,14 @@ import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
+import { useTranslation } from '@context/LocaleContext';
 import { toRgb } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import RadarChart from '@components/charts/RadarChart';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import NotificationModal from '@components/common/NotificationModal';
+import { FACTOR_LABEL_KEYS } from '@data/factors';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Results'>;
 type Route = RouteProp<RootStackParamList, 'Results'>;
@@ -18,7 +20,8 @@ type Props = { navigation: Nav; route: Route };
 
 const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
-  const username = route.params?.username ?? 'Friend';
+  const { t } = useTranslation();
+  const username = route.params?.username ?? '';
   const email = route.params?.email ?? '';
   const ageGroup = route.params?.ageGroup ?? '';
   const gender = route.params?.gender ?? '';
@@ -31,19 +34,26 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
     'Intellect/Imagination': 50,
   };
 
-  const chartData = useMemo(() => (
-    [
+  const chartData = useMemo(
+    () => [
       { label: 'Extraversion', score: scores['Extraversion'] },
       { label: 'Agreeableness', score: scores['Agreeableness'] },
       { label: 'Conscientiousness', score: scores['Conscientiousness'] },
       { label: 'Emotional Stability', score: scores['Emotional Stability'] },
       { label: 'Intellect/Imagination', score: scores['Intellect/Imagination'] },
-    ]
-  ), [scores]);
+    ],
+    [scores],
+  );
 
-  const top3 = useMemo(() => Object.entries(scores)
-    .sort((a,b) => b[1]-a[1])
-    .slice(0,3), [scores]);
+  const top3 = useMemo(
+    () =>
+      Object.entries(scores)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3),
+    [scores],
+  );
+
+  const resolvedName = username?.trim().length ? username.trim() : t('results.screen.defaultName');
 
   const [refreshing, setRefreshing] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -73,25 +83,29 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <Card>
             <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>
-              Here's your final result! 
+              {t('results.screen.title', { username: resolvedName })}
             </Text>
             <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>
-              Top strengths:
+              {t('results.screen.subtitle')}
             </Text>
-            {top3.map(([k, v]) => (
-              <Text key={k} style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 4 }}>
-                • {k}: {v}
-              </Text>
-            ))}
+            {top3.map(([key, value]) => {
+              const labelKey = FACTOR_LABEL_KEYS[key as keyof typeof FACTOR_LABEL_KEYS];
+              const factorLabel = labelKey ? t(labelKey) : key;
+              return (
+                <Text key={key} style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 4 }}>
+                  {t('results.screen.strengthEntry', { factor: factorLabel, value })}
+                </Text>
+              );
+            })}
             <View style={{ height: 12 }} />
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <Button
-                title="Start Over"
+                title={t('results.screen.startOver')}
                 variant="neutral"
                 onPress={() => setConfirmReset(true)}
               />
               <Button
-                title="Continue"
+                title={t('results.screen.continue')}
                 onPress={() =>
                   navigation.navigate('Character' as any, {
                     username,
@@ -107,11 +121,11 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
         </ScrollView>
         <NotificationModal
           visible={confirmReset}
-          title="Start over?"
-          message="If you go to Login now, you will lose this result."
-          primaryText="Leave"
+          title={t('results.screen.confirmTitle')}
+          message={t('results.screen.confirmMessage')}
+          primaryText={t('results.screen.confirmLeave')}
           onPrimary={() => { setConfirmReset(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
-          secondaryText="Stay"
+          secondaryText={t('results.screen.confirmStay')}
           onSecondary={() => setConfirmReset(false)}
           onRequestClose={() => setConfirmReset(false)}
           primaryVariant="danger"

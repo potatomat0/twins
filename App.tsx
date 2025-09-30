@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme, Theme as NavTheme } from '@react-navigation/native';
 import AppNavigator from '@navigation/AppNavigator';
 import { ThemeProvider, useTheme } from '@context/ThemeContext';
+import { LocaleProvider } from '@context/LocaleContext';
 import { toRgb, toRgba } from '@themes/index';
 
 function NavigationWithTheme() {
@@ -33,8 +34,10 @@ function NavigationWithTheme() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <NavigationWithTheme />
-    </ThemeProvider>
+    <LocaleProvider>
+      <ThemeProvider>
+        <NavigationWithTheme />
+      </ThemeProvider>
+    </LocaleProvider>
   );
 }

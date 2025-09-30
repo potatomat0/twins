@@ -5,6 +5,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
+import { useTranslation } from '@context/LocaleContext';
 import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
@@ -22,8 +23,17 @@ type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
 type Route = RouteProp<RootStackParamList, 'CreateAccount'>;
 type Props = { navigation: Nav; route: Route };
 
-const ageGroups = ['<18', '18-24', '25-35', '35-44', '45+'];
-const genders = ['Male', 'Female', 'Non-Binary', 'Prefer Not To Say'];
+const AGE_VALUES = ['<18', '18-24', '25-35', '35-44', '45+'] as const;
+const AGE_KEYS = ['under18', 'range18_24', 'range25_35', 'range35_44', 'range45_plus'] as const;
+const GENDER_VALUES = ['Male', 'Female', 'Non-Binary', 'Prefer Not To Say'] as const;
+const GENDER_KEYS = ['male', 'female', 'nonBinary', 'preferNot'] as const;
+
+type NoticeState = {
+  title: string;
+  message: string;
+  primaryText?: string;
+  primaryVariant?: 'primary' | 'danger' | 'accent';
+};
 
 // TODO: replace this mock with TensorFlow Lite model output
 function mockFingerprint(scores: Record<string, number> | undefined) {
@@ -35,6 +45,8 @@ function mockFingerprint(scores: Record<string, number> | undefined) {
   return `fp(${xf}, ${yf})`;
 }
 
+type StrengthKey = 'weak' | 'medium' | 'strong';
+
 function passwordStrength(pw: string) {
   let score = 0;
   if (pw.length >= 8) score++;
@@ -44,9 +56,9 @@ function passwordStrength(pw: string) {
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   if (pw.length >= 12) score++;
   // 0-6
-  if (score <= 2) return { label: 'Weak', color: '#ef4444', pct: 33 };
-  if (score <= 4) return { label: 'Medium', color: '#f59e0b', pct: 66 };
-  return { label: 'Strong', color: '#22c55e', pct: 100 };
+  if (score <= 2) return { key: 'weak' as StrengthKey, color: '#ef4444', pct: 33 };
+  if (score <= 4) return { key: 'medium' as StrengthKey, color: '#f59e0b', pct: 66 };
+  return { key: 'strong' as StrengthKey, color: '#22c55e', pct: 100 };
 }
 
 // Determine character group from normalized scores
@@ -76,8 +88,9 @@ function determineCharacterGroup(scores?: Record<string, number>) {
 
 const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [notice, setNotice] = useState<NoticeState | null>(null);
   const [confirmExit, setConfirmExit] = useState(false);
   const [created, setCreated] = useState(false);
 
@@ -95,6 +108,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const [cFocus, setCFocus] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [jumpHint, setJumpHint] = useState(false);
+  const [creating, setCreating] = useState(false);
   const emailRef = useRef<TextInput>(null as any);
   const genderRef = useRef<DropdownHandle>(null);
   const ageRef = useRef<DropdownHandle>(null);
@@ -104,10 +118,28 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const usernameValid = useMemo(() => username.trim().length >= 3, [username]);
   const strength = useMemo(() => passwordStrength(password), [password]);
+  const strengthLabel = useMemo(() => t(`createAccount.passwordStrength.${strength.key}`), [strength.key, t]);
   const confirmValid = useMemo(() => confirm.length > 0 && confirm === password, [confirm, password]);
   const canSubmit = usernameValid && emailValid && ageGroup && gender && password.length >= 8 && confirmValid && agreed;
 
+  const ageOptions = useMemo(
+    () => AGE_KEYS.map((key, idx) => ({ label: t(`registration.options.ageGroups.${key}`), value: AGE_VALUES[idx] })),
+    [t],
+  );
+
+  const genderOptions = useMemo(
+    () => GENDER_KEYS.map((key, idx) => ({ label: t(`registration.options.genders.${key}`), value: GENDER_VALUES[idx] })),
+    [t],
+  );
+
   const fp = mockFingerprint(route.params?.scores);
+  const characterGroup = useMemo(() => determineCharacterGroup(route.params?.scores) ?? undefined, [route.params?.scores]);
+
+  const openNotice = (config: NoticeState) => {
+    setNotice(config);
+  };
+
+  const closeNotice = () => setNotice(null);
 
   // Focus the next untouched field forward; otherwise dismiss
   const openDropdownAfterClose = (fn: () => void) => {
@@ -162,6 +194,117 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     setTimeout(() => setRefreshing(false), 600);
   };
 
+  const handleCreateAccount = async () => {
+    if (!canSubmit || creating) {
+      if (!canSubmit) focusNextUntouched('confirm');
+      return;
+    }
+    const mail = email.trim();
+    const uname = username.trim();
+    setCreating(true);
+    try {
+      const { data, error } = await signUpWithPassword(mail, password, { username: uname, age_group: ageGroup, gender });
+      console.log('[CreateAccount] signUp response:', { data, error });
+      if (error) {
+        const normalized = (error.message ?? '').toLowerCase();
+        if (normalized.includes('already registered') || normalized.includes('already exists')) {
+          openNotice({
+            title: t('createAccount.notices.emailExistsTitle'),
+            message: t('createAccount.notices.emailExistsMessage'),
+            primaryVariant: 'danger',
+          });
+        } else {
+          openNotice({
+            title: t('createAccount.notices.genericErrorTitle'),
+            message: error.message ?? t('createAccount.notices.genericErrorMessage'),
+            primaryVariant: 'danger',
+          });
+        }
+        return;
+      }
+      const user = data.user;
+      const identities = user?.identities ?? [];
+      if (!data.session && user && identities.length === 0) {
+        openNotice({
+          title: 'Account already exists',
+          message: 'Looks like that email or username is already tied to a Twins account. Try logging in or go back to pick different credentials.',
+          primaryVariant: 'danger',
+        });
+        return;
+      }
+      if (data.session && user?.id) {
+        const { error: profileError } = await upsertProfile({
+          id: user.id,
+          username: uname,
+          age_group: ageGroup,
+          gender,
+          character_group: characterGroup,
+        });
+        if (profileError) {
+          const details = `${profileError.details ?? profileError.message ?? ''}`.toLowerCase();
+          if (profileError.code === '23505' || details.includes('duplicate key value')) {
+            openNotice({
+              title: t('createAccount.notices.usernameUnavailableTitle'),
+              message: t('createAccount.notices.usernameUnavailableMessage'),
+              primaryVariant: 'danger',
+            });
+          } else {
+            openNotice({
+              title: t('createAccount.notices.profileSaveTitle'),
+              message: profileError.message ?? t('createAccount.notices.profileSaveMessage'),
+              primaryVariant: 'danger',
+            });
+          }
+          return;
+        }
+        setCreated(true);
+        return;
+      }
+
+      const { data: sdata, error: signInErr } = await signInWithPassword(mail, password);
+      console.log('[CreateAccount] signIn fallback response:', { data: sdata, error: signInErr });
+      if (!signInErr && sdata.user?.id) {
+        const { error: profileError } = await upsertProfile({
+          id: sdata.user.id,
+          username: uname,
+          age_group: ageGroup,
+          gender,
+          character_group: characterGroup,
+        });
+        if (profileError) {
+          const details = `${profileError.details ?? profileError.message ?? ''}`.toLowerCase();
+          if (profileError.code === '23505' || details.includes('duplicate key value')) {
+          openNotice({
+            title: t('createAccount.notices.usernameUnavailableTitle'),
+            message: t('createAccount.notices.usernameUnavailableMessage'),
+            primaryVariant: 'danger',
+          });
+        } else {
+          openNotice({
+            title: t('createAccount.notices.profileSaveTitle'),
+            message: profileError.message ?? t('createAccount.notices.profileSaveMessage'),
+            primaryVariant: 'danger',
+          });
+        }
+          return;
+        }
+        setCreated(true);
+        return;
+      }
+
+      navigation.navigate('VerifyEmail' as any, { email: mail, password, username: uname, ageGroup, gender, scores: route.params?.scores ?? {} });
+    } catch (err: any) {
+      console.log('[CreateAccount] signUp exception', err);
+      openNotice({
+        title: t('createAccount.notices.genericErrorTitle'),
+        message: err?.message ?? t('createAccount.notices.genericErrorMessage'),
+        primaryVariant: 'danger',
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
       <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>        
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -173,8 +316,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Card>
-            <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Create your account</Text>
-            <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Review your info and set a password</Text>
+            <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>{t('createAccount.title')}</Text>
+            <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>{t('createAccount.subtitle')}</Text>
 
             {/* TODO: connect to Firebase Auth + GCP backend */}
             <View style={styles.inputWrap}>
@@ -182,7 +325,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 <AntDesign name="user" size={12} color={toRgb(theme.colors['--text-muted'])} />
               </View>
               <TextInput
-                placeholder="Username"
+                placeholder={t('createAccount.usernamePlaceholder')}
               placeholderTextColor={toRgb(theme.colors['--text-muted'])}
               style={[
                 styles.input,
@@ -206,13 +349,13 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               onBlur={() => setUFocus(false)}
             />
             {!!username && (
-              <Pressable accessibilityRole="button" accessibilityLabel="Clear username" onPress={() => setUsername('')} style={styles.clearBtn}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('createAccount.a11y.clearUsername')} onPress={() => setUsername('')} style={styles.clearBtn}>
                 <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
               </Pressable>
             )}
             </View>
             {!usernameValid && username.length > 0 && (
-              <Text style={styles.warn}>Username must be at least 3 characters.</Text>
+              <Text style={styles.warn}>{t('createAccount.errors.usernameTooShort')}</Text>
             )}
 
             <View style={styles.inputWrap}>
@@ -220,7 +363,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 <Entypo name="email" size={12} color={toRgb(theme.colors['--text-muted'])} />
               </View>
               <TextInput
-                placeholder="Email"
+                placeholder={t('createAccount.emailPlaceholder')}
               placeholderTextColor={toRgb(theme.colors['--text-muted'])}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -247,22 +390,22 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               onBlur={() => setEFocus(false)}
             />
             {!!email && (
-              <Pressable accessibilityRole="button" accessibilityLabel="Clear email" onPress={() => setEmail('')} style={styles.clearBtn}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('createAccount.a11y.clearEmail')} onPress={() => setEmail('')} style={styles.clearBtn}>
                 <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
               </Pressable>
             )}
             </View>
-            {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
+            {!emailValid && email.length > 0 && <Text style={styles.warn}>{t('createAccount.errors.invalidEmail')}</Text>}
 
             <View style={styles.inputWrap}>
               <View style={styles.iconLeft}>
                 <FontAwesome name="transgender-alt" size={12} color={toRgb(theme.colors['--text-muted'])} />
               </View>
               <Dropdown
-                options={genders}
+                options={genderOptions}
                 value={gender}
                 onChange={(v) => setGender(v)}
-                placeholder="Choose your gender"
+                placeholder={t('createAccount.genderPlaceholder')}
                 ref={genderRef}
                 onCommit={() => goNext('gender')}
               />
@@ -272,10 +415,10 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 <FontAwesome6 name="users-line" size={12} color={toRgb(theme.colors['--text-muted'])} />
               </View>
               <Dropdown
-                options={ageGroups}
+                options={ageOptions}
                 value={ageGroup}
                 onChange={(v) => setAgeGroup(v)}
-                placeholder="Choose your age group"
+                placeholder={t('createAccount.agePlaceholder')}
                 ref={ageRef}
                 onCommit={() => goNext('age')}
               />
@@ -287,7 +430,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 <MaterialIcons name="password" size={12} color={toRgb(theme.colors['--text-muted'])} />
               </View>
               <TextInput
-                placeholder="Password"
+                placeholder={t('createAccount.passwordPlaceholder')}
                 placeholderTextColor={toRgb(theme.colors['--text-muted'])}
                 style={[
                   styles.input,
@@ -315,13 +458,13 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 onBlur={() => setPFocus(false)}
               />
               {!!password && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Clear password" onPress={() => setPassword('')} style={styles.clearBtnLeft}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('createAccount.a11y.clearPassword')} onPress={() => setPassword('')} style={styles.clearBtnLeft}>
                   <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
                 </Pressable>
               )}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
+                accessibilityLabel={showPw ? t('createAccount.a11y.hidePassword') : t('createAccount.a11y.showPassword')}
                 onPress={() => setShowPw((v) => !v)}
                 style={[styles.showBtn, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}
               >
@@ -336,16 +479,16 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               <View style={[styles.strengthBarBg]}>
                 <View style={[styles.strengthBar, { width: `${strength.pct}%`, backgroundColor: strength.color }]} />
               </View>
-              <Text style={[styles.strengthText, { color: strength.color }]}>{strength.label}</Text>
+              <Text style={[styles.strengthText, { color: strength.color }]}>{strengthLabel}</Text>
             </View>
-            <Text style={[styles.hint, { color: toRgb(theme.colors['--text-secondary']) }]}>Use 8+ characters with a mix of letters, numbers, and symbols.</Text>
+            <Text style={[styles.hint, { color: toRgb(theme.colors['--text-secondary']) }]}>{t('createAccount.passwordHint')}</Text>
 
             <View style={styles.inputWrap}>
               <View style={styles.iconLeft}>
                 <MaterialIcons name="password" size={12} color={toRgb(theme.colors['--text-muted'])} />
               </View>
-              <TextInput
-                placeholder="Confirm Password"
+             <TextInput
+                placeholder={t('createAccount.confirmPlaceholder')}
                 placeholderTextColor={toRgb(theme.colors['--text-muted'])}
                 style={[
                   styles.input,
@@ -368,19 +511,19 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 ref={confirmRef}
                 returnKeyType="done"
                 onSubmitEditing={() => {
-                  if (canSubmit) setShowModal(true); else focusNextUntouched('confirm');
+                  if (canSubmit) handleCreateAccount(); else focusNextUntouched('confirm');
                 }}
                 onFocus={() => setCFocus(true)}
                 onBlur={() => setCFocus(false)}
               />
               {!!confirm && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Clear confirm password" onPress={() => setConfirm('')} style={styles.clearBtnLeft}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('createAccount.a11y.clearConfirm')} onPress={() => setConfirm('')} style={styles.clearBtnLeft}>
                   <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
                 </Pressable>
               )}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
+                accessibilityLabel={showConfirm ? t('createAccount.a11y.hideConfirm') : t('createAccount.a11y.showConfirm')}
                 onPress={() => setShowConfirm((v) => !v)}
                 style={[styles.showBtn, { backgroundColor: toRgba(theme.colors['--border'], 0.06) }]}
               >
@@ -392,12 +535,12 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               </Pressable>
             </View>
             {!confirmValid && confirm.length > 0 && (
-              <Text style={styles.warn}>Passwords do not match.</Text>
+              <Text style={styles.warn}>{t('createAccount.errors.confirmMismatch')}</Text>
             )}
 
             {/* Mock fingerprint — TODO: supply from TF Lite model via useTensorflowModel */}
             <View style={[styles.fpRow, { borderColor: toRgba(theme.colors['--border'], 0.08) }]}>
-              <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>Fingerprint</Text>
+              <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('createAccount.fingerprintLabel')}</Text>
               <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>{fp}</Text>
             </View>
 
@@ -412,65 +555,45 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 {agreed ? <Text style={styles.checkmark}>✓</Text> : null}
               </Pressable>
               <Text style={{ color: toRgb(theme.colors['--text-secondary']), flex: 1 }}>
-                I agree to the 
+                {t('createAccount.terms.prefix')}{' '}
                 <Text
                   style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}
-                  onPress={() => setShowModal(true)}
-                > Terms</Text> and 
+                  onPress={() => openNotice({
+                    title: t('createAccount.terms.termsModalTitle'),
+                    message: t('createAccount.terms.termsModalMessage'),
+                  })}
+                >
+                  {t('createAccount.terms.termsLink')}
+                </Text>{' '}
+                {t('createAccount.terms.and')}{' '}
                 <Text
                   style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}
-                  onPress={() => setShowModal(true)}
-                > Privacy Policy</Text>
+                  onPress={() => openNotice({
+                    title: t('createAccount.terms.privacyModalTitle'),
+                    message: t('createAccount.terms.privacyModalMessage'),
+                  })}
+                >
+                  {t('createAccount.terms.privacyLink')}
+                </Text>
               </Text>
             </View>
 
             <View style={{ height: 12 }} />
             {jumpHint ? (
               <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 6 }}>
-                All set — you can create your account now.
+                {t('createAccount.jumpHint')}
               </Text>
             ) : null}
             <View>
               <Button
-                title="Create Account"
+                title={creating ? t('createAccount.creating') : t('createAccount.submit')}
                 style={{ width: '100%' }}
-                onPress={async () => {
-                  const mail = email.trim();
-                  const uname = username.trim();
-                  try {
-                    const { data, error } = await signUpWithPassword(mail, password, { username: uname, age_group: ageGroup, gender });
-                    if (error) {
-                      setShowModal(true);
-                      return;
-                    }
-                    const user = data.user;
-                    console.log('[CreateAccount] signUp response:', { data, error });
-                    if (data.session && user?.id) {
-                      // Insert or update own profile (RLS owner policy)
-                      await upsertProfile({ id: user.id, username: uname, age_group: ageGroup, gender, character_group: determineCharacterGroup(route.params?.scores) });
-                      setCreated(true);
-                    } else {
-                      // Try to sign in immediately (works when email confirmation is disabled)
-                      const { data: sdata, error: signInErr } = await signInWithPassword(mail, password);
-                      console.log('[CreateAccount] signIn fallback response:', { data: sdata, error: signInErr });
-                      if (!signInErr && sdata.user?.id) {
-                        await upsertProfile({ id: sdata.user.id, username: uname, age_group: ageGroup, gender, character_group: determineCharacterGroup(route.params?.scores) });
-                        setCreated(true);
-                      } else {
-                        // Email confirmation likely enabled in project settings, route to OTP screen
-                        navigation.navigate('VerifyEmail' as any, { email: mail, password, username: uname, ageGroup, gender, scores: route.params?.scores ?? {} });
-                      }
-                    }
-                  } catch {
-                    console.log('[CreateAccount] signUp exception');
-                    setShowModal(true);
-                  }
-                }}
-                disabled={!canSubmit}
+                onPress={handleCreateAccount}
+                disabled={!canSubmit || creating}
               />
               <View style={{ height: 10 }} />
               <Button
-                title="Back to Login"
+                title={t('createAccount.backToLogin')}
                 style={{ width: '100%' }}
                 variant="neutral"
                 onPress={() => setConfirmExit(true)}
@@ -479,32 +602,58 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 
             {/* TODO: implement social sign-in providers via Firebase Auth (Google, Facebook, Apple, Microsoft) */}
             <View style={{ height: 16 }} />
-            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>Or, sign in with</Text>
+            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>{t('createAccount.socials.heading')}</Text>
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'space-around' }}>
-              <SocialButton style={{padding: 10}} provider="google" onPress={() => setShowModal(true)} />
-              <SocialButton provider="facebook" onPress={() => setShowModal(true)} />
-              <SocialButton provider="apple" onPress={() => setShowModal(true)} />
-              <SocialButton provider="microsoft" onPress={() => setShowModal(true)} />
+              <SocialButton
+                style={{padding: 10}}
+                provider="google"
+                onPress={() => openNotice({
+                  title: t('createAccount.socials.modalTitle'),
+                  message: t('createAccount.socials.modalMessage', { provider: t('createAccount.socials.providers.google') }),
+                })}
+              />
+              <SocialButton
+                provider="facebook"
+                onPress={() => openNotice({
+                  title: t('createAccount.socials.modalTitle'),
+                  message: t('createAccount.socials.modalMessage', { provider: t('createAccount.socials.providers.facebook') }),
+                })}
+              />
+              <SocialButton
+                provider="apple"
+                onPress={() => openNotice({
+                  title: t('createAccount.socials.modalTitle'),
+                  message: t('createAccount.socials.modalMessage', { provider: t('createAccount.socials.providers.apple') }),
+                })}
+              />
+              <SocialButton
+                provider="microsoft"
+                onPress={() => openNotice({
+                  title: t('createAccount.socials.modalTitle'),
+                  message: t('createAccount.socials.modalMessage', { provider: t('createAccount.socials.providers.microsoft') }),
+                })}
+              />
             </View>
           </Card>
         </ScrollView>
         </KeyboardAvoidingView>
 
         <NotificationModal
-          visible={showModal}
-          title="Email confirmation is enabled"
-          message="For a smoother dev experience, disable 'Confirm email' in Supabase (Auth → Providers → Email). Then new accounts will auto‑login after sign up."
-          primaryText="OK"
-          onPrimary={() => setShowModal(false)}
-          onRequestClose={() => setShowModal(false)}
+          visible={!!notice}
+          title={notice?.title}
+          message={notice?.message}
+          primaryText={notice?.primaryText ?? t('common.ok')}
+          primaryVariant={notice?.primaryVariant}
+          onPrimary={closeNotice}
+          onRequestClose={closeNotice}
         />
         <NotificationModal
           visible={created}
-          title="Account created"
-          message="Your account has been created successfully."
-          primaryText="Login now"
+          title={t('createAccount.notices.successTitle')}
+          message={t('createAccount.notices.successMessage')}
+          primaryText={t('createAccount.success.loginNow')}
           onPrimary={() => { setCreated(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
-          secondaryText="Use a different account"
+          secondaryText={t('createAccount.success.useDifferent')}
           onSecondary={() => { setCreated(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
           onRequestClose={() => setCreated(false)}
           primaryVariant="primary"
@@ -513,11 +662,11 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
         />
         <NotificationModal
           visible={confirmExit}
-          title="Leave registration?"
-          message="If you go to Login now, you will lose all your progress."
-          primaryText="Leave"
+          title={t('createAccount.confirmExit.title')}
+          message={t('createAccount.confirmExit.message')}
+          primaryText={t('createAccount.confirmExit.leave')}
           onPrimary={() => { setConfirmExit(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
-          secondaryText="Stay"
+          secondaryText={t('createAccount.confirmExit.stay')}
           onSecondary={() => setConfirmExit(false)}
           onRequestClose={() => setConfirmExit(false)}
           primaryVariant="danger"

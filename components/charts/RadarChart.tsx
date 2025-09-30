@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, Text, useWindowDimensions, ScrollView } from 'react-native';
 import { Svg, G, Path, Line, Text as SvgText, Circle } from 'react-native-svg';
 import { toRgb, toRgba } from '@themes/index';
 import { useTheme } from '@context/ThemeContext';
-import { FACTOR_EXPLANATIONS, FACTOR_ORDER } from '@data/factors';
+import { useTranslation } from '@context/LocaleContext';
+import { FACTOR_EXPLANATIONS_KEYS, FACTOR_LABEL_KEYS, FACTOR_ORDER } from '@data/factors';
 // Placeholder grid + polygon. d3 dependencies are declared but not strictly required for this stub.
 
 type Datum = { label: string; score: number };
@@ -42,11 +43,7 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
     .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]} ${p[1]}`)
     .join(' ') + ' Z';
 
-  const factorIndexByLabel = useMemo(() => {
-    const map: Record<string, number> = {};
-    data.forEach((d, i) => (map[d.label] = i));
-    return map;
-  }, [data]);
+  const { t } = useTranslation();
 
   const handleSvgPress = (evt: any) => {
     const { locationX, locationY } = evt.nativeEvent || {};
@@ -59,8 +56,11 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
     setActive(idx);
     const label = data[idx].label;
     const title = FACTOR_ORDER.find((f) => f === label) ?? label;
-    const text = FACTOR_EXPLANATIONS[title] ?? '';
-    setOverlay({ title, text });
+    const labelKey = FACTOR_LABEL_KEYS[title];
+    const explanationKey = FACTOR_EXPLANATIONS_KEYS[title];
+    const localizedTitle = labelKey ? t(labelKey) : title;
+    const text = explanationKey ? t(explanationKey) : '';
+    setOverlay({ title: localizedTitle, text });
   };
 
   return (
@@ -95,7 +95,7 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
             <G key={i}>
               <Line x1={cx} y1={cy} x2={x2} y2={y2} stroke={toRgba(theme.colors['--border'], 0.12)} />
               <SvgText x={lx} y={ly} fill={toRgb(theme.colors['--text-secondary'])} fontSize={10} textAnchor="middle">
-                {d.label}
+                {FACTOR_LABEL_KEYS[d.label] ? t(FACTOR_LABEL_KEYS[d.label]) : d.label}
               </SvgText>
               {/* Glowing info icon */}
               <G
@@ -103,8 +103,11 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
                   setActive(i);
                   const label = d.label;
                   const title = FACTOR_ORDER.find((f) => f === label) ?? label;
-                  const text = FACTOR_EXPLANATIONS[title] ?? '';
-                  setOverlay({ title, text });
+                  const labelKey = FACTOR_LABEL_KEYS[title];
+                  const explanationKey = FACTOR_EXPLANATIONS_KEYS[title];
+                  const localizedTitle = labelKey ? t(labelKey) : title;
+                  const text = explanationKey ? t(explanationKey) : '';
+                  setOverlay({ title: localizedTitle, text });
                 }}
               >
                 <Circle cx={ix} cy={iy} r={12} fill={toRgba(iconColor, isActive ? 0.35 : 0.2)} />
@@ -133,7 +136,7 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
           ]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close"
+              accessibilityLabel={t('common.close')}
               onPress={() => setOverlay(null)}
               style={[styles.closeBtn, { backgroundColor: toRgb(closeColor) }]}
             >
@@ -147,7 +150,9 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
             >
               <Text style={[styles.tipTitle, { color: toRgb(theme.colors['--text-primary']) }]}>{overlay.title}</Text>
               <Text style={[styles.tipText, { color: toRgb(theme.colors['--text-secondary']) }]}>{overlay.text}</Text>
-              <Text style={[styles.tipHint, { color: toRgb(theme.colors['--text-secondary']) }]}>Tap outside or × to dismiss</Text>
+              <Text style={[styles.tipHint, { color: toRgb(theme.colors['--text-secondary']) }]}>
+                {t('results.tooltip.dismissHint')}
+              </Text>
             </ScrollView>
           </View>
         </View>

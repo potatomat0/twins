@@ -1,10 +1,11 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
+import { useTranslation } from '@context/LocaleContext';
 import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
@@ -40,6 +41,7 @@ function determineCharacterGroup(scores?: Record<string, number>) {
 
 const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const email = route.params?.email ?? '';
   const password = route.params?.password ?? '';
   const username = route.params?.username ?? '';
@@ -57,7 +59,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
       console.log('[VerifyEmail] verifying OTP for', email);
       const { data, error } = await verifyEmailOtp(email, code.trim());
       console.log('[VerifyEmail] verifyOtp response:', { data, error });
-      if (error) { setNotice(error.message); setWorking(false); return; }
+      if (error) { setNotice(error.message ?? t('verifyEmail.genericError')); setWorking(false); return; }
       let user = data.user;
       const character_group = determineCharacterGroup(scores) || undefined;
       if (!user?.id) {
@@ -66,7 +68,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         const { data: sdata, error: signInErr } = await signInWithPassword(email, password);
         console.log('[VerifyEmail] signIn after verify:', { sdata, signInErr });
         if (signInErr || !sdata.user?.id) {
-          setNotice(signInErr?.message ?? 'Verified. Please sign in with your credentials.');
+          setNotice(signInErr?.message ?? t('verifyEmail.signInPrompt'));
           setWorking(false);
           return;
         }
@@ -75,12 +77,21 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
       // Upsert profile under authenticated session
       const { data: prof, error: upErr } = await upsertProfile({ id: user.id, username, age_group: ageGroup, gender, character_group });
       console.log('[VerifyEmail] upsert profile:', { prof, upErr });
-      if (upErr) { setNotice(upErr.message); setWorking(false); return; }
+      if (upErr) {
+        const details = `${upErr.details ?? upErr.message ?? ''}`.toLowerCase();
+        if (upErr.code === '23505' || details.includes('duplicate key value')) {
+          setNotice(t('verifyEmail.profileErrorDuplicate'));
+        } else {
+          setNotice(upErr.message ?? t('verifyEmail.profileErrorGeneric'));
+        }
+        setWorking(false);
+        return;
+      }
       // Auto-login complete → go to Dashboard
       navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email } }] });
     } catch (e: any) {
       console.log('[VerifyEmail] exception:', e);
-      setNotice(e?.message ?? 'Failed to verify.');
+      setNotice(e?.message ?? t('verifyEmail.genericError'));
     } finally {
       setWorking(false);
     }
@@ -91,10 +102,10 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
       console.log('[VerifyEmail] resending OTP to', email);
       const { data, error } = await resendEmailOtp(email);
       console.log('[VerifyEmail] resend response:', { data, error });
-      setNotice(error ? error.message : 'A new code was sent.');
+      setNotice(error ? (error.message ?? t('verifyEmail.resendError')) : t('verifyEmail.resendSuccess'));
     } catch (e: any) {
       console.log('[VerifyEmail] resend exception:', e);
-      setNotice(e?.message ?? 'Failed to resend code.');
+      setNotice(e?.message ?? t('verifyEmail.resendError'));
     }
   };
 
@@ -103,10 +114,10 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <Card>
-            <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Verify your email</Text>
-            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 10 }}>We sent a 6-digit code to {email}.</Text>
+            <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>{t('verifyEmail.title')}</Text>
+            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 10 }}>{t('verifyEmail.description', { email })}</Text>
             <TextInput
-              placeholder="Enter 6-digit code"
+              placeholder={t('verifyEmail.placeholder')}
               placeholderTextColor={toRgb(theme.colors['--text-muted'])}
               keyboardType="number-pad"
               maxLength={6}
@@ -118,20 +129,20 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
               onSubmitEditing={onVerify}
             />
             <View style={{ height: 10 }} />
-            <Button title={working ? 'Verifying...' : 'Verify'} onPress={onVerify} disabled={working || code.trim().length < 6} />
+            <Button title={working ? t('verifyEmail.verifying') : t('verifyEmail.verify')} onPress={onVerify} disabled={working || code.trim().length < 6} />
             <View style={{ height: 8 }} />
-            <Button title="Resend code" variant="neutral" onPress={onResend} />
+            <Button title={t('verifyEmail.resend')} variant="neutral" onPress={onResend} />
             <View style={{ height: 8 }} />
-            <Button title="Back to Login" variant="neutral" onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })} />
+            <Button title={t('verifyEmail.backToLogin')} variant="neutral" onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })} />
           </Card>
         </View>
       </KeyboardAvoidingView>
 
       <NotificationModal
         visible={!!notice}
-        title="Notice"
+        title={t('verifyEmail.noticeTitle')}
         message={notice ?? ''}
-        primaryText="OK"
+        primaryText={t('verifyEmail.noticeDismiss')}
         onPrimary={() => setNotice(null)}
         onRequestClose={() => setNotice(null)}
       />

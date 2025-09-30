@@ -5,6 +5,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { RouteProp } from '@react-navigation/native';
 import { useTheme } from '@context/ThemeContext';
+import { useTranslation } from '@context/LocaleContext';
 import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
@@ -20,11 +21,24 @@ type Nav = StackNavigationProp<RootStackParamList, 'Registration'>;
 type Route = RouteProp<RootStackParamList, 'Registration'>;
 type Props = { navigation: Nav; route: Route };
 
-const ageGroups = ['<18', '18-24', '25-35', '35-44', '45+'];
-const genders = ['Male', 'Female', 'Non-Binary', 'Prefer Not To Say'];
+const AGE_GROUP_OPTIONS = [
+  { value: '<18', key: 'under18' },
+  { value: '18-24', key: 'range18_24' },
+  { value: '25-35', key: 'range25_35' },
+  { value: '35-44', key: 'range35_44' },
+  { value: '45+', key: 'range45_plus' },
+] as const;
+
+const GENDER_OPTIONS = [
+  { value: 'Male', key: 'male' },
+  { value: 'Female', key: 'female' },
+  { value: 'Non-Binary', key: 'nonBinary' },
+  { value: 'Prefer Not To Say', key: 'preferNot' },
+] as const;
 
 const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState(route.params?.email ?? '');
   const [jumpHint, setJumpHint] = useState(false);
@@ -41,6 +55,24 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
   const usernameValid = useMemo(() => username.trim().length >= 2, [username]);
 
   const canStart = usernameValid && emailValid && ageGroup && gender;
+
+  const ageOptions = useMemo(
+    () =>
+      AGE_GROUP_OPTIONS.map((opt) => ({
+        label: t(`registration.options.ageGroups.${opt.key}`),
+        value: opt.value,
+      })),
+    [t],
+  );
+
+  const genderOptions = useMemo(
+    () =>
+      GENDER_OPTIONS.map((opt) => ({
+        label: t(`registration.options.genders.${opt.key}`),
+        value: opt.value,
+      })),
+    [t],
+  );
 
   // Focus the next untouched field in forward order; otherwise dismiss
   const openDropdownAfterClose = (fn: () => void) => {
@@ -90,15 +122,15 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
       <Card>
-        <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>Welcome to Twins</Text>
-        <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>Let’s create your temporary profile</Text>
+        <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>{t('registration.title')}</Text>
+        <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>{t('registration.subtitle')}</Text>
 
         <View style={styles.inputWrap}>
         <View style={styles.iconLeft}>
           <AntDesign name="user" size={12} color={toRgb(theme.colors['--text-muted'])} />
         </View>
         <TextInput
-          placeholder="How would you want to be called?"
+          placeholder={t('registration.usernamePlaceholder')}
           placeholderTextColor={toRgb(theme.colors['--text-muted'])}
           style={[
             styles.input,
@@ -122,13 +154,13 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           onBlur={() => setUFocus(false)}
         />
         {!!username && (
-          <Pressable accessibilityRole="button" accessibilityLabel="Clear username" onPress={() => setUsername('')} style={styles.clearBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('registration.accessibility.clearUsername')} onPress={() => setUsername('')} style={styles.clearBtn}>
             <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
           </Pressable>
         )}
         </View>
         {!usernameValid && username.length > 0 && (
-          <Text style={styles.warn}>Username must be longer than 2 characters.</Text>
+          <Text style={styles.warn}>{t('registration.usernameRequirement')}</Text>
         )}
 
         <View style={styles.inputWrap}>
@@ -136,7 +168,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           <Entypo name="email" size={12} color={toRgb(theme.colors['--text-muted'])} />
         </View>
         <TextInput
-          placeholder="Enter your email"
+          placeholder={t('registration.emailPlaceholder')}
           placeholderTextColor={toRgb(theme.colors['--text-muted'])}
           keyboardType="email-address"
           autoCapitalize="none"
@@ -163,22 +195,22 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           onBlur={() => setEFocus(false)}
         />
         {!!email && (
-          <Pressable accessibilityRole="button" accessibilityLabel="Clear email" onPress={() => setEmail('')} style={styles.clearBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('registration.accessibility.clearEmail')} onPress={() => setEmail('')} style={styles.clearBtn}>
             <MaterialIcons name="clear" size={12} color={toRgb(theme.colors['--text-primary'])} />
           </Pressable>
         )}
         </View>
-        {!emailValid && email.length > 0 && <Text style={styles.warn}>Please enter a valid email.</Text>}
+        {!emailValid && email.length > 0 && <Text style={styles.warn}>{t('registration.errors.invalidEmail')}</Text>}
 
         <View style={styles.inputWrap}>
           <View style={styles.iconLeft}>
             <FontAwesome6 name="users-line" size={12} color={toRgb(theme.colors['--text-muted'])} />
           </View>
           <Dropdown
-            options={ageGroups}
+            options={ageOptions}
             value={ageGroup}
             onChange={(v) => setAgeGroup(v)}
-            placeholder="Choose your age group"
+            placeholder={t('registration.agePlaceholder')}
             ref={ageRef}
             onCommit={() => goNext('age')}
           />
@@ -188,19 +220,19 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
             <FontAwesome name="transgender-alt" size={12} color={toRgb(theme.colors['--text-muted'])} />
           </View>
           <Dropdown
-            options={genders}
+            options={genderOptions}
             value={gender}
             onChange={(v) => setGender(v)}
-            placeholder="Choose your gender"
+            placeholder={t('registration.genderPlaceholder')}
             ref={genderRef}
           />
         </View>
 
         {jumpHint ? (
-          <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 6 }}>All set — tap "Start Questionnaire".</Text>
+          <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 6 }}>{t('registration.jumpHint')}</Text>
         ) : null}
         <Button
-          title="Start Questionnaire"
+          title={t('registration.startCta')}
           onPress={() => {
             const uname = username.trim();
             const mail = email.trim();

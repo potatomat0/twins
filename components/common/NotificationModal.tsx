@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from '@context/LocaleContext';
 
 type Props = {
   visible: boolean;
@@ -22,7 +23,7 @@ const NotificationModal: React.FC<Props> = ({
   visible,
   title,
   message,
-  primaryText = 'OK',
+  primaryText,
   onPrimary,
   secondaryText,
   onSecondary,
@@ -33,6 +34,8 @@ const NotificationModal: React.FC<Props> = ({
 }) => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const resolvedPrimaryText = primaryText ?? t('common.ok');
   const primaryBg =
     primaryVariant === 'danger'
       ? toRgb(theme.colors['--danger'])
@@ -67,7 +70,7 @@ const NotificationModal: React.FC<Props> = ({
             </Pressable>
           ) : null}
           <Pressable style={[styles.btn, styles.btnPrimary, { backgroundColor: primaryBg }, stacked ? styles.btnBlock : null]} onPress={onPrimary}>
-            <Text style={styles.btnPrimaryText}>{primaryText}</Text>
+            <Text style={styles.btnPrimaryText}>{resolvedPrimaryText}</Text>
           </Pressable>
         </View>
       </View>
