@@ -90,8 +90,16 @@ function determineCharacterGroup(scores?: Record<string, number>) {
 const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { createAccountDraft, setCreateAccountDraft, clearAllDrafts, setResumeTarget } = useSessionStore();
+  const { createAccountDraft, setCreateAccountDraft, clearCreateAccountDraft, clearAllDrafts, setResumeTarget } = useSessionStore();
   const hydratedRef = useRef(false);
+  const paramsRef = useRef<RootStackParamList['CreateAccount'] | undefined>(route.params);
+  const draftRef = useRef(createAccountDraft);
+  useEffect(() => {
+    paramsRef.current = route.params;
+  }, [route.params]);
+  useEffect(() => {
+    draftRef.current = createAccountDraft;
+  }, [createAccountDraft]);
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<NoticeState | null>(null);
   const [confirmExit, setConfirmExit] = useState(false);
@@ -212,6 +220,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
       setAgeGroup(createAccountDraft.form.ageGroup ?? '');
       setGender(createAccountDraft.form.gender ?? '');
       setAgreed(createAccountDraft.form.agreed ?? false);
+      paramsRef.current = createAccountDraft.params;
     } else if (route.params) {
       setUsername(route.params.username ?? '');
       setEmail(route.params.email ?? '');
@@ -223,19 +232,29 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 
   useEffect(() => {
     if (!hydratedRef.current) return;
-    const params = {
-      ...(route.params ?? {}),
+    const hasFormData = Boolean((username ?? '').trim() || (email ?? '').trim() || ageGroup || gender || agreed);
+    if (!hasFormData) {
+      if (createAccountDraft) {
+        clearCreateAccountDraft();
+      }
+      return;
+    }
+    const base = paramsRef.current ?? {};
+    const fallbackScores = (base as any)?.scores ?? draftRef.current?.params?.scores ?? {};
+    const resumeParams: RootStackParamList['CreateAccount'] = {
+      ...(base as object),
       username,
       email,
       ageGroup,
       gender,
+      scores: fallbackScores,
     } as RootStackParamList['CreateAccount'];
     setCreateAccountDraft({
-      params,
+      params: resumeParams,
       form: { username, email, ageGroup, gender, agreed },
       lastUpdated: Date.now(),
     });
-  }, [username, email, ageGroup, gender, agreed, route.params, setCreateAccountDraft]);
+  }, [username, email, ageGroup, gender, agreed, setCreateAccountDraft, clearCreateAccountDraft, createAccountDraft]);
 
   const handleCreateAccount = async () => {
     if (!canSubmit || creating) {

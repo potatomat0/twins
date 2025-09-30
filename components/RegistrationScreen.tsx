@@ -40,7 +40,7 @@ const GENDER_OPTIONS = [
 const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { registrationDraft, setRegistrationDraft, setResumeTarget } = useSessionStore();
+  const { registrationDraft, setRegistrationDraft, clearRegistrationDraft, setResumeTarget } = useSessionStore();
   const hydratedRef = useRef(false);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState(route.params?.email ?? '');
@@ -132,8 +132,15 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
 
   useEffect(() => {
     if (!hydratedRef.current) return;
-    setRegistrationDraft({ username, email, ageGroup, gender });
-  }, [username, email, ageGroup, gender, setRegistrationDraft]);
+    const hasData = Boolean((username ?? '').trim() || (email ?? '').trim() || ageGroup || gender);
+    if (hasData) {
+      setRegistrationDraft({ username, email, ageGroup, gender });
+    } else {
+      if (registrationDraft) {
+        clearRegistrationDraft();
+      }
+    }
+  }, [username, email, ageGroup, gender, setRegistrationDraft, clearRegistrationDraft, registrationDraft]);
 
   return (
     <KeyboardDismissable>

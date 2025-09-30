@@ -17,7 +17,6 @@ import Dropdown from '@components/common/Dropdown';
 import supabase, { signInWithPassword, fetchProfile, upsertProfile } from '@services/supabase';
 import { Locale } from '@i18n/translations';
 import { useSessionStore } from '@store/sessionStore';
-import type { ResumeDestination } from '@store/sessionStore';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 type Props = { navigation: Nav };
@@ -41,9 +40,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const canLogin = emailValid && password.length >= 1;
   const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
-  const resumeCandidate = useSessionStore((state) => state.getResumeDestination());
-  const clearAllDrafts = useSessionStore((state) => state.clearAllDrafts);
-  const resumeRef = useRef<ResumeDestination | null>(null);
+  const { resumeDestination, clearAllDrafts } = useSessionStore((state) => ({
+    resumeDestination: state.resumeDestination,
+    clearAllDrafts: state.clearAllDrafts,
+  }));
+  const resumeRef = useRef(resumeDestination);
   const [resumeVisible, setResumeVisible] = useState(false);
 
 
@@ -62,13 +63,13 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    if (resumeCandidate) {
-      resumeRef.current = resumeCandidate;
+    resumeRef.current = resumeDestination;
+    if (resumeDestination) {
       setResumeVisible(true);
     } else {
       setResumeVisible(false);
     }
-  }, [resumeCandidate]);
+  }, [resumeDestination]);
 
   useEffect(() => {
     let cancelled = false;

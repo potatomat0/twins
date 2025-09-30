@@ -36,13 +36,12 @@ const OPTION_COLORS: Record<1|2|3|4|5, string> = {
 const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const {
-    questionnaireDraft,
-    setQuestionnaireDraft,
-    clearQuestionnaireDraft,
-    setResumeTarget,
-  } = useSessionStore();
+  const { questionnaireDraft, setQuestionnaireDraft, clearQuestionnaireDraft, setResumeTarget } = useSessionStore();
   const hydratedRef = useRef(false);
+  const paramsRef = useRef(route.params);
+  useEffect(() => {
+    paramsRef.current = route.params;
+  }, [route.params]);
   const insets = useSafeAreaInsets();
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [index, setIndex] = useState(0);
@@ -149,13 +148,18 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
 
   useEffect(() => {
     if (!hydratedRef.current) return;
-    setQuestionnaireDraft({
-      answers,
-      index,
-      params: route.params,
-      lastUpdated: Date.now(),
-    });
-  }, [answers, index, route.params, setQuestionnaireDraft]);
+    const hasProgress = Object.keys(answers).length > 0 || index > 0;
+    if (hasProgress) {
+      setQuestionnaireDraft({
+        answers,
+        index,
+        params: paramsRef.current,
+        lastUpdated: Date.now(),
+      });
+    } else if (questionnaireDraft) {
+      clearQuestionnaireDraft();
+    }
+  }, [answers, index, setQuestionnaireDraft, clearQuestionnaireDraft, questionnaireDraft]);
 
   return (
     <KeyboardDismissable>
