@@ -11,6 +11,7 @@ import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
 import { resendEmailOtp, verifyEmailOtp, upsertProfile, signInWithPassword } from '@services/supabase';
+import { useSessionStore } from '@store/sessionStore';
 
 type Nav = StackNavigationProp<RootStackParamList, 'VerifyEmail'>;
 type Route = RouteProp<RootStackParamList, 'VerifyEmail'>;
@@ -42,6 +43,7 @@ function determineCharacterGroup(scores?: Record<string, number>) {
 const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { clearAllDrafts } = useSessionStore();
   const email = route.params?.email ?? '';
   const password = route.params?.password ?? '';
   const username = route.params?.username ?? '';
@@ -88,6 +90,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         return;
       }
       // Auto-login complete → go to Dashboard
+      clearAllDrafts();
       navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email } }] });
     } catch (e: any) {
       console.log('[VerifyEmail] exception:', e);

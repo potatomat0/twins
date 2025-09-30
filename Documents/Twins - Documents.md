@@ -114,6 +114,8 @@ prop buttons:
 - SocialButton: provider-colored sign-in buttons (Google, Facebook, Apple, Microsoft) with brand icons. Currently mocked; to be wired with Firebase Auth providers.
 - Terms/Privacy Acknowledgment: a mandatory checkbox row before account creation to confirm acceptance of Terms and Privacy Policy. Submission is disabled until acknowledged.
  - Auto-advance inputs: text inputs move focus to the next field on return/enter; Dropdowns auto-open the next selector or focus the next input after a choice. Final fields submit if valid.
+- LocaleProvider: wraps the app and drives all copy via translation keys. The login screen exposes a language dropdown (English/Japanese/Vietnamese) and each screen reads strings from `i18n/translations.ts`.
+- SessionStore: onboarding/questionnaire/account drafts persist locally using Zustand + AsyncStorage so users can resume unfinished steps after relaunch. The login screen surfaces a resume modal when stored progress exists.
 
 ## Development note 
 

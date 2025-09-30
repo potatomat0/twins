@@ -16,6 +16,8 @@ import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import Dropdown from '@components/common/Dropdown';
 import supabase, { signInWithPassword, fetchProfile, upsertProfile } from '@services/supabase';
 import { Locale } from '@i18n/translations';
+import { useSessionStore } from '@store/sessionStore';
+import type { ResumeDestination } from '@store/sessionStore';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 type Props = { navigation: Nav };
@@ -39,6 +41,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const canLogin = emailValid && password.length >= 1;
   const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
+  const resumeCandidate = useSessionStore((state) => state.getResumeDestination());
+  const clearAllDrafts = useSessionStore((state) => state.clearAllDrafts);
+  const resumeRef = useRef<ResumeDestination | null>(null);
+  const [resumeVisible, setResumeVisible] = useState(false);
 
 
   const languageOptions = useMemo(
@@ -56,6 +62,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   useEffect(() => {
+    if (resumeCandidate) {
+      resumeRef.current = resumeCandidate;
+      setResumeVisible(true);
+    } else {
+      setResumeVisible(false);
+    }
+  }, [resumeCandidate]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -70,6 +85,36 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       cancelled = true;
     };
   }, []);
+
+  const handleResumeFlow = () => {
+    const dest = resumeRef.current;
+    if (!dest) {
+      setResumeVisible(false);
+      return;
+    }
+    setResumeVisible(false);
+    switch (dest.screen) {
+      case 'Registration':
+        navigation.navigate('Registration' as any);
+        break;
+      case 'Questionnaire':
+        navigation.navigate('Questionnaire' as any, dest.params ?? {});
+        break;
+      case 'Character':
+        navigation.navigate('Character' as any, dest.params);
+        break;
+      case 'CreateAccount':
+        navigation.navigate('CreateAccount' as any, dest.params);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleDismissResume = () => {
+    setResumeVisible(false);
+    clearAllDrafts();
+  };
 
   return (
     <KeyboardDismissable>
@@ -255,8 +300,19 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           visible={modal}
           title={modalTitle || t('common.notice')}
           message={modalMsg || t('login.noticeFallback')}
+          primaryText={t('common.ok')}
           onPrimary={() => setModal(false)}
           onRequestClose={() => setModal(false)}
+        />
+        <NotificationModal
+          visible={resumeVisible}
+          title={t('login.resumeTitle')}
+          message={t('login.resumeMessage')}
+          primaryText={t('login.resumeResume')}
+          onPrimary={handleResumeFlow}
+          secondaryText={t('login.resumeDismiss')}
+          onSecondary={handleDismissResume}
+          onRequestClose={handleDismissResume}
         />
       </SafeAreaView>
     </KeyboardDismissable>

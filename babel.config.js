@@ -15,7 +15,8 @@ module.exports = function (api) {
             "@services": "./services",
             "@hooks": "./hooks",
             "@data": "./data",
-            "@i18n": "./i18n"
+            "@i18n": "./i18n",
+            "@store": "./store"
           }
         }
       ],

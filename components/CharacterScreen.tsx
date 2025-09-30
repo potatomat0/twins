@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Image, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
@@ -9,6 +9,8 @@ import { useTranslation } from '@context/LocaleContext';
 import { toRgb } from '@themes/index';
 import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
+import { useSessionStore } from '@store/sessionStore';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Character'>;
 type Route = RouteProp<RootStackParamList, 'Character'>;
@@ -52,6 +54,7 @@ function determineGroup(scores: Record<string, number>) {
 const CharacterScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { setCharacterDraft, setResumeTarget } = useSessionStore();
   const { width } = useWindowDimensions();
   const scores = route.params?.scores ?? {};
   const group = useMemo(() => determineGroup(scores), [scores]);
@@ -79,6 +82,19 @@ const CharacterScreen: React.FC<Props> = ({ navigation, route }) => {
     const id = setInterval(() => setBlink((b) => !b), 500);
     return () => clearInterval(id);
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setResumeTarget('character');
+      return undefined;
+    }, [setResumeTarget]),
+  );
+
+  useEffect(() => {
+    if (route.params) {
+      setCharacterDraft({ params: route.params, lastUpdated: Date.now() });
+    }
+  }, [route.params, setCharacterDraft]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}> 

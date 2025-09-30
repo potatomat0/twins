@@ -1,8 +1,8 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl, Pressable, KeyboardAvoidingView, Platform, Keyboard, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
 import { useTranslation } from '@context/LocaleContext';
@@ -18,6 +18,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
+import { useSessionStore } from '@store/sessionStore';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
 type Route = RouteProp<RootStackParamList, 'CreateAccount'>;
@@ -89,6 +90,8 @@ function determineCharacterGroup(scores?: Record<string, number>) {
 const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { createAccountDraft, setCreateAccountDraft, clearAllDrafts, setResumeTarget } = useSessionStore();
+  const hydratedRef = useRef(false);
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<NoticeState | null>(null);
   const [confirmExit, setConfirmExit] = useState(false);
@@ -194,6 +197,46 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     setTimeout(() => setRefreshing(false), 600);
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      setResumeTarget('createAccount');
+      return undefined;
+    }, [setResumeTarget]),
+  );
+
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    if (createAccountDraft) {
+      setUsername(createAccountDraft.form.username ?? '');
+      setEmail(createAccountDraft.form.email ?? '');
+      setAgeGroup(createAccountDraft.form.ageGroup ?? '');
+      setGender(createAccountDraft.form.gender ?? '');
+      setAgreed(createAccountDraft.form.agreed ?? false);
+    } else if (route.params) {
+      setUsername(route.params.username ?? '');
+      setEmail(route.params.email ?? '');
+      setAgeGroup(route.params.ageGroup ?? '');
+      setGender(route.params.gender ?? '');
+    }
+    hydratedRef.current = true;
+  }, [createAccountDraft, route.params]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    const params = {
+      ...(route.params ?? {}),
+      username,
+      email,
+      ageGroup,
+      gender,
+    } as RootStackParamList['CreateAccount'];
+    setCreateAccountDraft({
+      params,
+      form: { username, email, ageGroup, gender, agreed },
+      lastUpdated: Date.now(),
+    });
+  }, [username, email, ageGroup, gender, agreed, route.params, setCreateAccountDraft]);
+
   const handleCreateAccount = async () => {
     if (!canSubmit || creating) {
       if (!canSubmit) focusNextUntouched('confirm');
@@ -226,8 +269,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
       const identities = user?.identities ?? [];
       if (!data.session && user && identities.length === 0) {
         openNotice({
-          title: 'Account already exists',
-          message: 'Looks like that email or username is already tied to a Twins account. Try logging in or go back to pick different credentials.',
+          title: t('createAccount.notices.emailExistsTitle'),
+          message: t('createAccount.notices.emailExistsMessage'),
           primaryVariant: 'danger',
         });
         return;
@@ -257,6 +300,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           }
           return;
         }
+        clearAllDrafts();
         setCreated(true);
         return;
       }
@@ -288,6 +332,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
         }
           return;
         }
+        clearAllDrafts();
         setCreated(true);
         return;
       }
@@ -652,9 +697,9 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           title={t('createAccount.notices.successTitle')}
           message={t('createAccount.notices.successMessage')}
           primaryText={t('createAccount.success.loginNow')}
-          onPrimary={() => { setCreated(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
+          onPrimary={() => { setCreated(false); clearAllDrafts(); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
           secondaryText={t('createAccount.success.useDifferent')}
-          onSecondary={() => { setCreated(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
+          onSecondary={() => { setCreated(false); clearAllDrafts(); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
           onRequestClose={() => setCreated(false)}
           primaryVariant="primary"
           secondaryVariant="muted"

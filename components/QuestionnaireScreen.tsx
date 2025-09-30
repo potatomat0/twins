@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions, ScrollView, RefreshControl, Animated, Easing } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
 import { useTranslation } from '@context/LocaleContext';
@@ -19,6 +19,7 @@ import { useSound } from '@services/sound';
 import { Svg, Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
+import { useSessionStore } from '@store/sessionStore';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Questionnaire'>;
 type Route = RouteProp<RootStackParamList, 'Questionnaire'>;
@@ -35,6 +36,13 @@ const OPTION_COLORS: Record<1|2|3|4|5, string> = {
 const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
+  const {
+    questionnaireDraft,
+    setQuestionnaireDraft,
+    clearQuestionnaireDraft,
+    setResumeTarget,
+  } = useSessionStore();
+  const hydratedRef = useRef(false);
   const insets = useSafeAreaInsets();
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [index, setIndex] = useState(0);
@@ -104,6 +112,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const onFinish = () => {
     const sums = computeBigFiveScores(answers);
     const normalized = normalizeScoresTo100(sums);
+    clearQuestionnaireDraft();
     navigation.navigate('Results', {
       username: route.params?.username ?? '',
       email: route.params?.email ?? '',
@@ -122,6 +131,31 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const [confirmBack, setConfirmBack] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setResumeTarget('questionnaire');
+      return undefined;
+    }, [setResumeTarget]),
+  );
+
+  useEffect(() => {
+    if (!hydratedRef.current && questionnaireDraft) {
+      setAnswers(questionnaireDraft.answers ?? {});
+      setIndex(questionnaireDraft.index ?? 0);
+    }
+    hydratedRef.current = true;
+  }, [questionnaireDraft]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    setQuestionnaireDraft({
+      answers,
+      index,
+      params: route.params,
+      lastUpdated: Date.now(),
+    });
+  }, [answers, index, route.params, setQuestionnaireDraft]);
 
   return (
     <KeyboardDismissable>

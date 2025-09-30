@@ -1,9 +1,9 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, Keyboard, InteractionManager, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '@context/ThemeContext';
 import { useTranslation } from '@context/LocaleContext';
 import { toRgb, toRgba } from '@themes/index';
@@ -16,6 +16,7 @@ import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
+import { useSessionStore } from '@store/sessionStore';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Registration'>;
 type Route = RouteProp<RootStackParamList, 'Registration'>;
@@ -39,6 +40,8 @@ const GENDER_OPTIONS = [
 const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { registrationDraft, setRegistrationDraft, setResumeTarget } = useSessionStore();
+  const hydratedRef = useRef(false);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState(route.params?.email ?? '');
   const [jumpHint, setJumpHint] = useState(false);
@@ -109,6 +112,28 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 600);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      setResumeTarget('registration');
+      return undefined;
+    }, [setResumeTarget]),
+  );
+
+  useEffect(() => {
+    if (!hydratedRef.current && registrationDraft) {
+      setUsername(registrationDraft.username ?? '');
+      setEmail(registrationDraft.email ?? '');
+      setAgeGroup(registrationDraft.ageGroup ?? '');
+      setGender(registrationDraft.gender ?? '');
+    }
+    hydratedRef.current = true;
+  }, [registrationDraft]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    setRegistrationDraft({ username, email, ageGroup, gender });
+  }, [username, email, ageGroup, gender, setRegistrationDraft]);
 
   return (
     <KeyboardDismissable>
