@@ -5,6 +5,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Entypo from '@expo/vector-icons/Entypo';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useIsFocused } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
 import { useTranslation } from '@context/LocaleContext';
@@ -17,6 +18,7 @@ import Dropdown from '@components/common/Dropdown';
 import supabase, { signInWithPassword, fetchProfile, upsertProfile } from '@services/supabase';
 import { Locale } from '@i18n/translations';
 import { useSessionStore } from '@store/sessionStore';
+import { shallow } from 'zustand/shallow';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 type Props = { navigation: Nav };
@@ -40,12 +42,28 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const canLogin = emailValid && password.length >= 1;
   const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
-  const { resumeDestination, clearAllDrafts } = useSessionStore((state) => ({
-    resumeDestination: state.resumeDestination,
-    clearAllDrafts: state.clearAllDrafts,
-  }));
+  const { resumeDestination, clearAllDrafts, resumeSignature } = useSessionStore(
+    (state) => {
+      const timestamps = [
+        state.registrationDraft?.lastUpdated ?? 0,
+        state.questionnaireDraft?.lastUpdated ?? 0,
+        state.characterDraft?.lastUpdated ?? 0,
+        state.createAccountDraft?.lastUpdated ?? 0,
+      ];
+      const latestTimestamp = timestamps.reduce((max, ts) => (ts > max ? ts : max), 0);
+      const destinationSignature = state.resumeDestination ? JSON.stringify(state.resumeDestination) : '';
+      return {
+        resumeDestination: state.resumeDestination,
+        clearAllDrafts: state.clearAllDrafts,
+        resumeSignature: state.resumeDestination ? `${destinationSignature}|${latestTimestamp}` : null,
+      };
+    },
+    shallow,
+  );
   const resumeRef = useRef(resumeDestination);
   const [resumeVisible, setResumeVisible] = useState(false);
+  const promptSignatureRef = useRef<string | null>(null);
+  const isFocused = useIsFocused();
 
 
   const languageOptions = useMemo(
@@ -64,12 +82,31 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     resumeRef.current = resumeDestination;
-    if (resumeDestination) {
-      setResumeVisible(true);
-    } else {
-      setResumeVisible(false);
-    }
   }, [resumeDestination]);
+
+  useEffect(() => {
+    if (!isFocused) {
+      if (resumeVisible) {
+        setResumeVisible(false);
+      }
+      return;
+    }
+
+    if (!resumeSignature) {
+      promptSignatureRef.current = null;
+      if (resumeVisible) {
+        setResumeVisible(false);
+      }
+      return;
+    }
+
+    if (promptSignatureRef.current === resumeSignature) {
+      return;
+    }
+
+    promptSignatureRef.current = resumeSignature;
+    setResumeVisible(true);
+  }, [isFocused, resumeSignature, resumeVisible]);
 
   useEffect(() => {
     let cancelled = false;

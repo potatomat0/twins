@@ -89,6 +89,15 @@ const computeResumeTarget = (state: Pick<SessionState, 'registrationDraft' | 'qu
   return null;
 };
 
+const destinationsEqual = (a: ResumeDestination | null, b: ResumeDestination | null) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.screen !== b.screen) return false;
+  const paramsA = JSON.stringify(a.params ?? {});
+  const paramsB = JSON.stringify(b.params ?? {});
+  return paramsA === paramsB;
+};
+
 const buildResumeDestination = (state: {
   resumeTarget: FlowTarget | null;
   registrationDraft: RegistrationDraft | null;
@@ -148,6 +157,9 @@ export const useSessionStore = create<SessionState>()(
             characterDraft: state.characterDraft,
             createAccountDraft: state.createAccountDraft,
           });
+          if (state.resumeTarget === nextTarget && destinationsEqual(state.resumeDestination, destination)) {
+            return {};
+          }
           return { resumeTarget: nextTarget, resumeDestination: destination };
         }),
       setRegistrationDraft: (draft) =>
@@ -370,6 +382,7 @@ export const useSessionStore = create<SessionState>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         resumeTarget: state.resumeTarget,
+        resumeDestination: state.resumeDestination,
         registrationDraft: state.registrationDraft,
         questionnaireDraft: state.questionnaireDraft,
         characterDraft: state.characterDraft,
