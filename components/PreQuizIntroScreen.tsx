@@ -6,12 +6,20 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
 import { useTranslation } from '@context/LocaleContext';
-import { toRgb } from '@themes/index';
 import Button from '@components/common/Button';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { toRgb, toRgba } from '@themes/index';
 
 type Nav = StackNavigationProp<RootStackParamList, 'QuizIntro'>;
 type Route = RouteProp<RootStackParamList, 'QuizIntro'>;
 type Props = { navigation: Nav; route: Route };
+
+type IntroPointKey = 'profile' | 'expectations';
+
+const POINT_ICONS: Record<IntroPointKey, keyof typeof Ionicons.glyphMap> = {
+  profile: 'person-circle-outline',
+  expectations: 'sparkles-outline',
+};
 
 const PreQuizIntroScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -43,30 +51,50 @@ const PreQuizIntroScreen: React.FC<Props> = ({ navigation, route }) => {
     [juggle],
   );
 
+  const background = toRgb(theme.colors['--bg']);
+  const primaryBtnColor = toRgb(theme.colors['--brand-primary']);
+  const textPrimary = toRgb(theme.colors['--text-primary']);
+  const textSecondary = toRgb(theme.colors['--text-secondary']);
+  const iconAccent = toRgb(theme.colors['--accent-cyan']);
+  const badgeBg = toRgba(theme.colors['--surface'], 0.32);
+  const borderColor = toRgba(theme.colors['--border'], 0.35);
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--brand-primary']) }]}>
+    <SafeAreaView edges={['top', 'bottom']} style={[styles.container, { backgroundColor: background }]}>
       <View style={styles.inner}>
-        <Animated.View style={[styles.badge, scaleStyle]}>
-          <Text style={styles.badgeText}>{t('preQuizIntro.badge')}</Text>
+        <Animated.View style={[styles.badge, { backgroundColor: badgeBg }, scaleStyle]}>
+          <Text style={[styles.badgeText, { color: textPrimary }]}>{t('preQuizIntro.badge')}</Text>
         </Animated.View>
-        <Text style={styles.heading}>{t('preQuizIntro.heading')}</Text>
-        <Text style={styles.message}>{t('preQuizIntro.message')}</Text>
+        <Text style={[styles.heading, { color: textPrimary }]}>{t('preQuizIntro.heading')}</Text>
+        <Text style={[styles.message, { color: textSecondary }]}>{t('preQuizIntro.message')}</Text>
         <View style={styles.list}>
-          <Text style={styles.listItem}>• {t('preQuizIntro.points.profile')}</Text>
-          <Text style={styles.listItem}>• {t('preQuizIntro.points.expectations')}</Text>
+          {(['profile', 'expectations'] as IntroPointKey[]).map((key) => (
+            <View key={key} style={styles.listRow}>
+              <Ionicons name={POINT_ICONS[key]} size={18} color={iconAccent} style={styles.listIcon} />
+              <Text style={[styles.listText, { color: textSecondary }]}>{t(`preQuizIntro.points.${key}`)}</Text>
+            </View>
+          ))}
         </View>
         <View style={styles.actions}>
-          <Button
-            title={t('preQuizIntro.continue')}
-            onPress={() => navigation.replace('Registration', email ? { email } : undefined)}
-            variant="neutral"
-            style={styles.primaryAction}
-          />
           <Button
             title={t('preQuizIntro.back')}
             onPress={() => navigation.goBack()}
             variant="neutral"
-            style={styles.secondaryAction}
+            style={[
+              styles.buttonHalf,
+              styles.secondaryButton,
+              { borderColor },
+            ]}
+          />
+          <Button
+            title={t('preQuizIntro.continue')}
+            onPress={() => navigation.replace('Registration', email ? { email } : undefined)}
+            variant="primary"
+            style={[
+              styles.buttonHalf,
+              styles.primaryButton,
+              { backgroundColor: primaryBtnColor, borderColor },
+            ]}
           />
         </View>
       </View>
@@ -87,41 +115,53 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#f8fafc',
     marginBottom: 12,
   },
   message: {
-    color: '#f8fafc',
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  list: {
-    marginTop: 18,
-    marginBottom: 32,
-  },
-  listItem: {
-    color: '#f1f5f9',
     fontSize: 15,
     lineHeight: 22,
   },
-  actions: {},
-  primaryAction: {
-    backgroundColor: 'rgba(12, 10, 24, 0.65)',
-    marginBottom: 12,
+  list: {
+    marginTop: 18,
+    marginBottom: 28,
+    gap: 12,
   },
-  secondaryAction: {
-    backgroundColor: 'rgba(12, 10, 24, 0.18)',
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  listIcon: {
+    marginRight: 10,
+  },
+  listText: {
+    fontSize: 14,
+    lineHeight: 20,
+    flexShrink: 1,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 28,
+    alignItems: 'stretch',
+    width: '100%',
+  },
+  buttonHalf: {
+    flex: 1,
+  },
+  primaryButton: {
+    borderWidth: 1,
+  },
+  secondaryButton: {
+    borderWidth: 1,
   },
   badge: {
     borderRadius: 999,
     alignSelf: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: 'rgba(10, 9, 30, 0.35)',
     marginBottom: 20,
   },
   badgeText: {
-    color: '#e0e7ff',
     fontWeight: '600',
     fontSize: 13,
     letterSpacing: 0.3,
