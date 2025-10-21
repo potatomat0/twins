@@ -57,6 +57,37 @@ export const translations: Record<Locale, TranslationDictionary> = {
         genericMessage: 'An unexpected error occurred.',
       },
     },
+    preQuizIntro: {
+      badge: 'Step 1 · Profile setup',
+      heading: 'Before we get started',
+      message: 'Before you can create an account, we need a few basics to personalize your experience.',
+      points: {
+        profile: 'We will ask for your name, email, age group, and gender.',
+        expectations: 'It only takes a minute and prepares the results summary just for you.',
+      },
+      continue: 'Start profile setup',
+      back: 'Back to login',
+    },
+    quizPrimer: {
+      slides: {
+        overview: {
+          title: 'What to expect',
+          body: 'The Twins personality quiz helps us understand how you see yourself across everyday situations.',
+          points: {
+            length: '50 quick statements—answer each one before you can continue.',
+            time: 'Most people finish in about 7-8 minutes.',
+            honesty: 'Answer honestly; there are no right or wrong choices.',
+          },
+        },
+        scale: {
+          title: 'Your response scale',
+          body: 'Tap the icon that matches how strongly you agree with each statement:',
+        },
+      },
+      next: 'Next',
+      begin: 'Start the quiz',
+      back: 'Back to registration',
+    },
     questionnaire: {
       title: 'Personality Questionnaire',
       buttons: {
@@ -326,6 +357,37 @@ export const translations: Record<Locale, TranslationDictionary> = {
         genericMessage: '予期しないエラーが発生しました。',
       },
     },
+    preQuizIntro: {
+      badge: 'ステップ1・プロフィール',
+      heading: 'はじめる前に',
+      message: 'アカウントを作成する前に、体験を調整するための基本情報を教えてください。',
+      points: {
+        profile: 'お名前・メールアドレス・年齢層・性別をお伺いします。',
+        expectations: '1分ほどで完了し、結果レポートをあなた向けに準備できます。',
+      },
+      continue: 'プロフィール入力を始める',
+      back: 'ログインへ戻る',
+    },
+    quizPrimer: {
+      slides: {
+        overview: {
+          title: '診断の流れ',
+          body: 'Twinsの性格診断では、日常のシーンでのあなた自身の感じ方を測定します。',
+          points: {
+            length: '全50問。すべて回答すると次へ進めます。',
+            time: '所要時間はおよそ7〜8分です。',
+            honesty: '正解・不正解はありません。素直な気持ちでお答えください。',
+          },
+        },
+        scale: {
+          title: '回答スケール',
+          body: '各設問について、感じ方に一番近いアイコンをタップしてください。',
+        },
+      },
+      next: '次へ',
+      begin: '診断を開始する',
+      back: '登録画面に戻る',
+    },
     questionnaire: {
       title: '性格診断',
       buttons: {
@@ -594,6 +656,37 @@ export const translations: Record<Locale, TranslationDictionary> = {
         genericTitle: 'Lỗi',
         genericMessage: 'Đã xảy ra lỗi không mong muốn.',
       },
+    },
+    preQuizIntro: {
+      badge: 'Bước 1 · Hồ sơ',
+      heading: 'Trước khi bắt đầu',
+      message: 'Trước khi tạo tài khoản, chúng tôi cần một vài thông tin cơ bản để cá nhân hóa trải nghiệm của bạn.',
+      points: {
+        profile: 'Chúng tôi sẽ hỏi tên, email, nhóm tuổi và giới tính của bạn.',
+        expectations: 'Chỉ mất khoảng một phút và giúp chuẩn bị phần kết quả dành riêng cho bạn.',
+      },
+      continue: 'Bắt đầu nhập thông tin',
+      back: 'Quay lại đăng nhập',
+    },
+    quizPrimer: {
+      slides: {
+        overview: {
+          title: 'Bạn sẽ trải qua điều gì',
+          body: 'Bài trắc nghiệm Twins giúp chúng tôi hiểu bạn nhìn nhận bản thân như thế nào trong cuộc sống hàng ngày.',
+          points: {
+            length: '50 câu phát biểu ngắn — cần trả lời hết để tiếp tục.',
+            time: 'Hầu hết mọi người hoàn thành trong khoảng 7-8 phút.',
+            honesty: 'Hãy trả lời chân thật; không có đáp án đúng hay sai.',
+          },
+        },
+        scale: {
+          title: 'Thang điểm của bạn',
+          body: 'Chọn biểu tượng thể hiện mức độ đồng ý của bạn với mỗi phát biểu:',
+        },
+      },
+      next: 'Tiếp theo',
+      begin: 'Bắt đầu bài trắc nghiệm',
+      back: 'Quay lại đăng ký',
     },
     questionnaire: {
       title: 'Bảng câu hỏi tính cách',

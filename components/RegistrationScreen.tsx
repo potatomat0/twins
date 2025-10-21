@@ -268,7 +268,7 @@ const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           onPress={() => {
             const uname = username.trim();
             const mail = email.trim();
-            navigation.navigate('Questionnaire', {
+            navigation.navigate('QuizPrimer', {
               username: uname,
               email: mail,
               ageGroup,

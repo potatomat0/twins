@@ -328,7 +328,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>{t('login.quizPrompt')}</Text>
             <Button
               title={t('login.quizCta')}
-              onPress={() => navigation.navigate('Registration', { email })}
+              onPress={() => navigation.navigate('QuizIntro', { email })}
             />
           </Card>
         </ScrollView>

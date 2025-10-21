@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { create } from 'zustand';
+import { createWithEqualityFn } from 'zustand/traditional';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { RootStackParamList } from '@navigation/AppNavigator';
 
@@ -138,7 +138,7 @@ const buildResumeDestination = (state: {
   return null;
 };
 
-export const useSessionStore = create<SessionState>()(
+export const useSessionStore = createWithEqualityFn<SessionState>()(
   persist(
     (set, get) => ({
       resumeTarget: null,

@@ -7,10 +7,14 @@ import CreateAccountScreen from '@components/CreateAccountScreen';
 import LoginScreen from '@components/LoginScreen';
 import SwipeHeader from '@components/common/SwipeHeader';
 import DashboardScreen from '@components/DashboardScreen';
+import PreQuizIntroScreen from '@components/PreQuizIntroScreen';
+import QuizPrimerScreen from '@components/QuizPrimerScreen';
 
 export type RootStackParamList = {
   Login: undefined;
+  QuizIntro: { email?: string } | undefined;
   Registration: { email?: string } | undefined;
+  QuizPrimer: { username: string; email: string; ageGroup: string; gender: string };
   Questionnaire: { username: string; email: string; ageGroup: string; gender: string } | undefined;
   Results: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
   Character: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
@@ -32,6 +36,14 @@ const AppNavigator = () => {
     >
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen
+        name="QuizIntro"
+        component={PreQuizIntroScreen}
+        options={{
+          headerShown: false,
+          gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
         name="Registration"
         component={RegistrationScreen}
         options={({ navigation }) => ({
@@ -39,6 +51,14 @@ const AppNavigator = () => {
           gestureEnabled: false,
           header: () => <SwipeHeader title="Registration" onBack={() => navigation.goBack()} />,
         })}
+      />
+      <Stack.Screen
+        name="QuizPrimer"
+        component={QuizPrimerScreen}
+        options={{
+          headerShown: false,
+          gestureEnabled: false,
+        }}
       />
       <Stack.Screen
         name="Questionnaire"

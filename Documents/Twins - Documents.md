@@ -28,7 +28,7 @@ _____
 - On app launch, users land on the Login screen:
 
 	- Email (required) | Password (required, with show/hide toggle) | Login (connected to Supabase: creates/updates a user row and authenticates against the public.User table for prototype purposes)
-	- Below: a button "Start Personality Quiz" with helper text "Or, start our personality quiz to start making an account" which navigates to the Registration screen (prefills email if entered).
+	- Below: a button "Start Personality Quiz" with helper text "Or, start our personality quiz to start making an account". Selecting it opens a branded pre-quiz intro splash that explains why we collect profile basics (name/email/age group/gender) and offers “Start profile setup” or “Back to login”. Continuing navigates to the Registration screen (prefilling email if entered).
 
 - Create Account (after Results via "Complete your profile"):
 
@@ -41,6 +41,7 @@ _____
 
 ### Questionaire screen 
 
+- Preceded by a quiz primer splash: a two-slide carousel that outlines the 50-question flow (time expectation, honesty reminder) and demonstrates the 5-point Likert scale using the same icons/colors employed in the questionnaire. Users tap “Start the quiz” to enter the first question.
 - layout format: one question at a time (stepper). The user navigates with "Previous" and "Next". A progress bar and counters (e.g., "Question X/50" and "answered Y/50") reflect completion.
 - question format: `{number}. I {question}` (e.g., `15. I am proactive in romance.`)
 - scale: coded 1–5, rendered horizontally as buttons:
@@ -114,6 +115,7 @@ prop buttons:
 - SocialButton: provider-colored sign-in buttons (Google, Facebook, Apple, Microsoft) with brand icons. Currently mocked; to be wired with Firebase Auth providers.
 - Terms/Privacy Acknowledgment: a mandatory checkbox row before account creation to confirm acceptance of Terms and Privacy Policy. Submission is disabled until acknowledged.
  - Auto-advance inputs: text inputs move focus to the next field on return/enter; Dropdowns auto-open the next selector or focus the next input after a choice. Final fields submit if valid.
+- PreQuizIntro & QuizPrimer: lightweight splash screens that gate the questionnaire flow. The first uses the brand primary background with a subtle badge animation to set expectations for profile data collection; the second is a 2-slide carousel that explains quiz pacing and reintroduces the Likert scale icons/colors before users start answering items.
 - LocaleProvider: wraps the app and drives all copy via translation keys. The login screen exposes a language dropdown (English/Japanese/Vietnamese) and each screen reads strings from `i18n/translations.ts`.
 - SessionStore: onboarding/questionnaire/account drafts persist locally using Zustand + AsyncStorage so users can resume unfinished steps after relaunch. The login screen surfaces a resume modal when stored progress exists.
 
