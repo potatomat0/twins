@@ -138,7 +138,7 @@ const QuizPrimerScreen: React.FC<Props> = ({ navigation, route }) => {
           {slides.map((slide) => {
             const isOverview = slide.key === 'overview';
             return (
-              <View key={slide.key} style={[styles.slide, { width: slideWidth, height: cardHeight }]}>
+              <View key={slide.key} style={[styles.slide, { width: slideWidth, height: cardHeight*0.9 }]}>
                 <View
                   style={[
                     styles.slideSurface,
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   scaleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 7 ,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 14,
   },
