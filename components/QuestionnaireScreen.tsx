@@ -10,7 +10,7 @@ import { toRgb, toRgba } from '@themes/index';
 import { QUESTIONS } from '@data/questions';
 import { getQuestionText } from '@data/questionTexts';
 import Button from '@components/common/Button';
-import { AnswerMap, computeBigFiveScores, normalizeScoresTo100 } from '@services/profileAnalyzer';
+import { AnswerMap, computeBigFiveScores, normalizeScoresToUnitRange } from '@services/profileAnalyzer';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import SwipeHeader from '@components/common/SwipeHeader';
 import NotificationModal from '@components/common/NotificationModal';
@@ -110,7 +110,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const onFinish = () => {
     const sums = computeBigFiveScores(answers);
-    const normalized = normalizeScoresTo100(sums);
+    const normalized = normalizeScoresToUnitRange(sums);
     clearQuestionnaireDraft();
     navigation.navigate('Results', {
       username: route.params?.username ?? '',

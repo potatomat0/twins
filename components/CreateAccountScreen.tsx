@@ -39,8 +39,14 @@ type NoticeState = {
 // TODO: replace this mock with TensorFlow Lite model output
 function mockFingerprint(scores: Record<string, number> | undefined) {
   if (!scores) return 'fp(—, —)';
-  const x = ((scores['Extraversion'] ?? 50) - (100 - (scores['Emotional Stability'] ?? 50)) + (scores['Intellect/Imagination'] ?? 50)) / 3;
-  const y = ((scores['Agreeableness'] ?? 50) + (scores['Conscientiousness'] ?? 50)) / 2;
+  const toPct = (value?: number) => (value ?? 0) * 100;
+  const extraversion = toPct(scores['Extraversion']);
+  const stability = toPct(scores['Emotional Stability']);
+  const openness = toPct(scores['Intellect/Imagination']);
+  const agreeableness = toPct(scores['Agreeableness']);
+  const conscientiousness = toPct(scores['Conscientiousness']);
+  const x = (extraversion - (100 - stability) + openness) / 3;
+  const y = (agreeableness + conscientiousness) / 2;
   const xf = Math.max(0, Math.min(100, Math.round(x)));
   const yf = Math.max(0, Math.min(100, Math.round(y)));
   return `fp(${xf}, ${yf})`;
@@ -65,10 +71,11 @@ function passwordStrength(pw: string) {
 // Determine character group from normalized scores
 function determineCharacterGroup(scores?: Record<string, number>) {
   if (!scores) return null;
-  const E = scores['Extraversion'] ?? 0;
-  const A = scores['Agreeableness'] ?? 0;
-  const C = scores['Conscientiousness'] ?? 0;
-  const O = scores['Intellect/Imagination'] ?? 0; // Openness
+  const toPct = (value?: number) => (value ?? 0) * 100;
+  const E = toPct(scores['Extraversion']);
+  const A = toPct(scores['Agreeableness']);
+  const C = toPct(scores['Conscientiousness']);
+  const O = toPct(scores['Intellect/Imagination']); // Openness
   const HIGH = 70;
   const VERY_HIGH = 85;
   if (O >= VERY_HIGH) return 'Creator';

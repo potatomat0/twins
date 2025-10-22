@@ -19,10 +19,11 @@ type Props = { navigation: Nav; route: Route };
 
 function determineCharacterGroup(scores?: Record<string, number>) {
   if (!scores) return null;
-  const E = scores['Extraversion'] ?? 0;
-  const A = scores['Agreeableness'] ?? 0;
-  const C = scores['Conscientiousness'] ?? 0;
-  const O = scores['Intellect/Imagination'] ?? 0;
+  const toPct = (value?: number) => (value ?? 0) * 100;
+  const E = toPct(scores['Extraversion']);
+  const A = toPct(scores['Agreeableness']);
+  const C = toPct(scores['Conscientiousness']);
+  const O = toPct(scores['Intellect/Imagination']);
   const HIGH = 70, VERY_HIGH = 85;
   if (O >= VERY_HIGH) return 'Creator';
   if (E >= HIGH && O >= HIGH) return 'Explorer';

@@ -27,20 +27,20 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
   const gender = route.params?.gender ?? '';
   const { width: windowWidth } = useWindowDimensions();
   const scores = route.params?.scores ?? {
-    'Extraversion': 50,
-    'Agreeableness': 50,
-    'Conscientiousness': 50,
-    'Emotional Stability': 50,
-    'Intellect/Imagination': 50,
+    'Extraversion': 0.5,
+    'Agreeableness': 0.5,
+    'Conscientiousness': 0.5,
+    'Emotional Stability': 0.5,
+    'Intellect/Imagination': 0.5,
   };
 
   const chartData = useMemo(
     () => [
-      { label: 'Extraversion', score: scores['Extraversion'] },
-      { label: 'Agreeableness', score: scores['Agreeableness'] },
-      { label: 'Conscientiousness', score: scores['Conscientiousness'] },
-      { label: 'Emotional Stability', score: scores['Emotional Stability'] },
-      { label: 'Intellect/Imagination', score: scores['Intellect/Imagination'] },
+      { label: 'Extraversion', score: (scores['Extraversion'] ?? 0) * 100 },
+      { label: 'Agreeableness', score: (scores['Agreeableness'] ?? 0) * 100 },
+      { label: 'Conscientiousness', score: (scores['Conscientiousness'] ?? 0) * 100 },
+      { label: 'Emotional Stability', score: (scores['Emotional Stability'] ?? 0) * 100 },
+      { label: 'Intellect/Imagination', score: (scores['Intellect/Imagination'] ?? 0) * 100 },
     ],
     [scores],
   );
@@ -91,9 +91,10 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
             {top3.map(([key, value]) => {
               const labelKey = FACTOR_LABEL_KEYS[key as keyof typeof FACTOR_LABEL_KEYS];
               const factorLabel = labelKey ? t(labelKey) : key;
+              const percent = Math.round((value ?? 0) * 100);
               return (
                 <Text key={key} style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 4 }}>
-                  {t('results.screen.strengthEntry', { factor: factorLabel, value })}
+                  {t('results.screen.strengthEntry', { factor: factorLabel, value: `${percent}%` })}
                 </Text>
               );
             })}

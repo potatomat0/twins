@@ -25,11 +25,12 @@ const icons: Record<string, any> = {
 };
 
 function determineGroup(scores: Record<string, number>) {
-  const E = scores['Extraversion'] ?? 0;
-  const A = scores['Agreeableness'] ?? 0;
-  const C = scores['Conscientiousness'] ?? 0;
-  const S = scores['Emotional Stability'] ?? 0; // not used directly
-  const O = scores['Intellect/Imagination'] ?? 0; // Openness
+  const toPct = (value?: number) => (value ?? 0) * 100;
+  const E = toPct(scores['Extraversion']);
+  const A = toPct(scores['Agreeableness']);
+  const C = toPct(scores['Conscientiousness']);
+  const S = toPct(scores['Emotional Stability']); // not used directly
+  const O = toPct(scores['Intellect/Imagination']); // Openness
 
   const HIGH = 70;
   const VERY_HIGH = 85;

@@ -31,12 +31,12 @@ export function computeBigFiveScores(answers: AnswerMap): Record<Factor, number>
 }
 
 // Convert raw sums (min 10, max 50 per factor) to 0-100 scale.
-export function normalizeScoresTo100(sums: Record<Factor, number>): Record<Factor, number> {
+export function normalizeScoresToUnitRange(sums: Record<Factor, number>): Record<Factor, number> {
   const out = { ...sums } as Record<Factor, number>;
   for (const f of FACTORS) {
     const v = sums[f];
-    const pct = ((v - 10) / 40) * 100; // 10 items per factor
-    out[f] = Math.max(0, Math.min(100, Math.round(pct)));
+    const scaled = (v - 10) / 40; // 10 items per factor, Likert 1-5
+    out[f] = Math.max(0, Math.min(1, scaled));
   }
   return out;
 }
@@ -47,4 +47,3 @@ export function topFactors(sums: Record<Factor, number>, n = 3): { factor: Facto
     .sort((a, b) => b.value - a.value)
     .slice(0, n);
 }
-
