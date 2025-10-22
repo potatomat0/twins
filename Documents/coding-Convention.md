@@ -1,0 +1,9 @@
+- Append ./progress.md upon noticable changes 
+- Always use Safe area view for component at the bottom of the screen to make it sit on top of the Android App Navigation OS bar. 
+- i18n is implemented for English, Japanese and Vietnamese, so new text contents must be written in the i18n translation.ts first 
+- For UI texts, make them short and utilize icons 
+- Yarn is the package management
+- App run is prohibited in coding as it is already run 
+- use preset colors, if we ever need new color, define them both in dark and light theme (change accordingly for readability). colors are at ../themes/index.ts, the function `toRgb()` converts the rbg values from the theme index file to usable typescript values type. 
+- Add snappy haptics for navigation buttons 
+- Keep `Documents/file-map.md` in sync with the actual project layout; update the map whenever directories or ownership change, and follow it when adding new surface areas.
