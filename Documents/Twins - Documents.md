@@ -174,9 +174,7 @@ Using **Expo** is highly recommended to streamline development, particularly f
         
 - **Machine Learning:**
     
-    - @tensorflow/tfjs: The core TensorFlow.js library.
-        
-    - @tensorflow/tfjs-react-native: Platform adapter for running TF.js efficiently on native, including WebGL acceleration via expo-gl.
+    - @tensorflow/tfjs: Base library reserved for future on-device modelling work.
         
 - **Fonts:** expo-font for loading the custom 'Inter' font family.
     
