@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -23,13 +23,24 @@ import { shallow } from 'zustand/shallow';
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 type Props = { navigation: Nav };
 
+type ModalConfig = {
+  visible: boolean;
+  title?: string;
+  message?: string;
+  primaryText?: string;
+  secondaryText?: string;
+  onPrimary?: () => void;
+  onSecondary?: () => void;
+  primaryVariant?: 'primary' | 'danger' | 'accent';
+  secondaryVariant?: 'muted' | 'accent' | 'primary';
+  stacked?: boolean;
+};
+
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
   const { t, locale, setLocale, availableLocales } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
-  const [modal, setModal] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalMsg, setModalMsg] = useState('');
+  const [modalState, setModalState] = useState<ModalConfig>({ visible: false });
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,10 +50,28 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const emailRef = useRef<TextInput>(null as any);
   const passwordRef = useRef<TextInput>(null as any);
 
+  const openModal = useCallback(
+    (config: Omit<ModalConfig, 'visible'>) => {
+      setModalState({ visible: true, ...config });
+    },
+    [setModalState],
+  );
+  const closeModal = useCallback(() => setModalState({ visible: false }), [setModalState]);
+  const handleModalPrimary = useCallback(() => {
+    const cb = modalState.onPrimary;
+    closeModal();
+    cb?.();
+  }, [modalState, closeModal]);
+  const handleModalSecondary = useCallback(() => {
+    const cb = modalState.onSecondary;
+    closeModal();
+    cb?.();
+  }, [modalState, closeModal]);
+
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const canLogin = emailValid && password.length >= 1;
   const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
-  const { resumeDestination, clearAllDrafts, resumeSignature } = useSessionStore(
+  const { resumeDestination, clearAllDrafts, resumeSignature, createAccountDraft, setResumeTarget } = useSessionStore(
     (state) => {
       const timestamps = [
         state.registrationDraft?.lastUpdated ?? 0,
@@ -56,6 +85,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         resumeDestination: state.resumeDestination,
         clearAllDrafts: state.clearAllDrafts,
         resumeSignature: state.resumeDestination ? `${destinationSignature}|${latestTimestamp}` : null,
+        createAccountDraft: state.createAccountDraft,
+        setResumeTarget: state.setResumeTarget,
       };
     },
     shallow,
@@ -123,6 +154,69 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       cancelled = true;
     };
   }, []);
+
+  const handleLogin = useCallback(async () => {
+    if (!canLogin) return;
+    const mail = email.trim();
+    const fallbackName = mail.split('@')[0] || 'User';
+    try {
+      const { data, error } = await signInWithPassword(mail, password);
+      console.log('[Login] signIn response:', { data, error });
+      if (error) {
+        const normalized = (error.message ?? '').toLowerCase();
+        if (normalized.includes('email not confirmed') || normalized.includes('email_not_confirmed')) {
+          const draftParams = createAccountDraft?.params;
+          const draftForm = createAccountDraft?.form;
+          const payload = {
+            email: mail,
+            password,
+            username: draftParams?.username ?? draftForm?.username ?? fallbackName,
+            ageGroup: draftParams?.ageGroup ?? draftForm?.ageGroup ?? '',
+            gender: draftParams?.gender ?? draftForm?.gender ?? '',
+            scores: draftParams?.scores ?? {},
+          };
+          openModal({
+            title: t('login.errors.emailNotConfirmedTitle'),
+            message: t('login.errors.emailNotConfirmedMessage'),
+            primaryText: t('login.errors.emailNotConfirmedCta'),
+            secondaryText: t('common.cancel'),
+            onPrimary: () => {
+              setResumeTarget('createAccount');
+              navigation.navigate('VerifyEmail' as any, payload);
+            },
+          });
+        } else {
+          openModal({
+            title: t('login.errors.invalidCredentialsTitle'),
+            message: error.message || t('login.errors.invalidCredentialsMessage'),
+          });
+        }
+        return;
+      }
+      const authUser = data.user;
+      const userId = authUser?.id;
+      let username = (authUser?.user_metadata as any)?.username || fallbackName;
+      if (userId) {
+        const { data: prof, error: profErr } = await fetchProfile(userId);
+        console.log('[Login] fetchProfile:', { prof, profErr });
+        if (!prof) {
+          // create minimal profile with email captured
+          const { data: created, error: upErr } = await upsertProfile({ id: userId, username });
+          console.log('[Login] upsertProfile (create):', { created, upErr });
+          if (created?.username) username = created.username;
+        } else if (prof.username) {
+          username = prof.username;
+        }
+      }
+      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email: mail } }] });
+    } catch (e: any) {
+      console.log('[Login] exception:', e);
+      openModal({
+        title: t('login.errors.genericTitle'),
+        message: e?.message || t('login.errors.genericMessage'),
+      });
+    }
+  }, [canLogin, email, password, createAccountDraft, openModal, t, setResumeTarget, navigation]);
 
   const handleResumeFlow = () => {
     const dest = resumeRef.current;
@@ -255,7 +349,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 secureTextEntry={!showPw}
                 ref={passwordRef}
                 returnKeyType="done"
-                onSubmitEditing={() => { if (canLogin) setModal(true); }}
+                onSubmitEditing={() => { if (canLogin) void handleLogin(); }}
                 onFocus={() => setPwFocus(true)}
                 onBlur={() => setPwFocus(false)}
               />
@@ -286,41 +380,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <View style={{ height: 12 }} />
             <Button
               title={t('login.submit')}
-              onPress={async () => {
-                const mail = email.trim();
-                const fallbackName = (mail.split('@')[0] || 'User');
-                try {
-                  const { data, error } = await signInWithPassword(mail, password);
-                  console.log('[Login] signIn response:', { data, error });
-                  if (error) {
-                    setModalTitle(t('login.errors.invalidCredentialsTitle'));
-                    setModalMsg(error.message || t('login.errors.invalidCredentialsMessage'));
-                    setModal(true);
-                    return;
-                  }
-                  const authUser = data.user;
-                  const userId = authUser?.id;
-                  let username = (authUser?.user_metadata as any)?.username || fallbackName;
-                  if (userId) {
-                    const { data: prof, error: profErr } = await fetchProfile(userId);
-                    console.log('[Login] fetchProfile:', { prof, profErr });
-                    if (!prof) {
-                      // create minimal profile with email captured
-                      const { data: created, error: upErr } = await upsertProfile({ id: userId, username });
-                      console.log('[Login] upsertProfile (create):', { created, upErr });
-                      if (created?.username) username = created.username;
-                    } else if (prof.username) {
-                      username = prof.username;
-                    }
-                  }
-                  navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email: mail } }] });
-                } catch (e: any) {
-                  console.log('[Login] exception:', e);
-                  setModalTitle(t('login.errors.genericTitle'));
-                  setModalMsg(e?.message || t('login.errors.genericMessage'));
-                  setModal(true);
-                }
-              }}
+              onPress={() => { void handleLogin(); }}
               disabled={!canLogin}
             />
 
@@ -335,12 +395,17 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         </KeyboardAvoidingView>
 
         <NotificationModal
-          visible={modal}
-          title={modalTitle || t('common.notice')}
-          message={modalMsg || t('login.noticeFallback')}
-          primaryText={t('common.ok')}
-          onPrimary={() => setModal(false)}
-          onRequestClose={() => setModal(false)}
+          visible={modalState.visible}
+          title={modalState.title ?? t('common.notice')}
+          message={modalState.message ?? t('login.noticeFallback')}
+          primaryText={modalState.primaryText ?? t('common.ok')}
+          primaryVariant={modalState.primaryVariant}
+          secondaryText={modalState.secondaryText}
+          secondaryVariant={modalState.secondaryVariant}
+          onPrimary={handleModalPrimary}
+          onSecondary={modalState.secondaryText ? handleModalSecondary : undefined}
+          onRequestClose={closeModal}
+          stacked={modalState.stacked}
         />
         <NotificationModal
           visible={resumeVisible}

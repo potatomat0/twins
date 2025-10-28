@@ -390,15 +390,16 @@ export const useSessionStore = createWithEqualityFn<SessionState>()(
       }),
       onRehydrateStorage: () => (state, error) => {
         if (error || !state) return;
-        const resumeTarget = state.resumeTarget ?? computeResumeTarget(state);
-        const resumeDestination = buildResumeDestination({
-          resumeTarget,
+        const nextTarget = state.resumeTarget ?? computeResumeTarget(state);
+        const nextDestination = buildResumeDestination({
+          resumeTarget: nextTarget,
           registrationDraft: state.registrationDraft,
           questionnaireDraft: state.questionnaireDraft,
           characterDraft: state.characterDraft,
           createAccountDraft: state.createAccountDraft,
         });
-        set(() => ({ resumeTarget, resumeDestination }));
+        state.resumeTarget = nextTarget;
+        state.resumeDestination = nextDestination;
       },
     },
   ),

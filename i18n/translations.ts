@@ -1,5 +1,7 @@
 export type TranslationValue = string | TranslationDictionary;
-export type TranslationDictionary = Record<string, TranslationValue>;
+export interface TranslationDictionary {
+  [key: string]: TranslationValue;
+}
 export type Locale = 'en' | 'ja' | 'vi';
 export const SUPPORTED_LOCALES: Locale[] = ['en', 'ja', 'vi'];
 export const DEFAULT_LOCALE: Locale = 'en';
@@ -53,6 +55,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
         invalidEmail: 'Please enter a valid email.',
         invalidCredentialsTitle: 'Invalid credentials',
         invalidCredentialsMessage: 'Email or password is incorrect.',
+        emailNotConfirmedTitle: 'Confirm your email',
+        emailNotConfirmedMessage: 'You need to confirm your Twins account using the verification screen before you can log in.',
+        emailNotConfirmedCta: 'Open verification screen',
         genericTitle: 'Error',
         genericMessage: 'An unexpected error occurred.',
       },
@@ -221,6 +226,16 @@ export const translations: Record<Locale, TranslationDictionary> = {
       profileErrorDuplicate: 'That username is already taken. Please choose a different username and try again.',
       profileErrorGeneric: 'We verified your email but could not finish setting up your profile. Please try again.',
       resendError: 'Failed to resend code.',
+      confirmExit: {
+        title: 'Leave verification?',
+        message: 'If you go to Login now, you will lose all your progress.',
+        leave: 'Leave',
+        stay: 'Stay',
+      },
+      verifiedTitle: 'You’re verified!',
+      verifiedMessage: 'Your account is ready. Continue to your dashboard or return to the login screen.',
+      verifiedDashboard: 'Go to dashboard',
+      verifiedBack: 'Back to Login',
     },
     createAccount: {
       title: 'Create your account',
@@ -353,6 +368,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
         invalidEmail: '有効なメールアドレスを入力してください。',
         invalidCredentialsTitle: '認証情報が無効です',
         invalidCredentialsMessage: 'メールアドレスまたはパスワードが正しくありません。',
+        emailNotConfirmedTitle: 'メールを確認してください',
+        emailNotConfirmedMessage: 'ログインする前に確認画面でアカウントの認証を完了してください。',
+        emailNotConfirmedCta: '確認画面を開く',
         genericTitle: 'エラー',
         genericMessage: '予期しないエラーが発生しました。',
       },
@@ -521,6 +539,16 @@ export const translations: Record<Locale, TranslationDictionary> = {
       profileErrorDuplicate: 'そのユーザー名は既に使用されています。別のユーザー名を選択して再度お試しください。',
       profileErrorGeneric: 'メールアドレスを確認しましたが、プロフィールの設定を完了できませんでした。もう一度お試しください。',
       resendError: 'コードの再送信に失敗しました。',
+      confirmExit: {
+        title: '確認を終了しますか？',
+        message: '今ログインに戻ると、進捗が失われます。',
+        leave: '終了',
+        stay: '続ける',
+      },
+      verifiedTitle: '確認が完了しました！',
+      verifiedMessage: 'アカウントの準備が整いました。ダッシュボードに進むか、ログイン画面に戻ることができます。',
+      verifiedDashboard: 'ダッシュボードへ',
+      verifiedBack: 'ログインに戻る',
     },
     createAccount: {
       title: 'アカウントを作成',
@@ -653,6 +681,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
         invalidEmail: 'Vui lòng nhập email hợp lệ.',
         invalidCredentialsTitle: 'Thông tin không hợp lệ',
         invalidCredentialsMessage: 'Email hoặc mật khẩu không đúng.',
+        emailNotConfirmedTitle: 'Xác nhận email',
+        emailNotConfirmedMessage: 'Vui lòng hoàn tất xác nhận tài khoản trong màn xác nhận trước khi đăng nhập.',
+        emailNotConfirmedCta: 'Mở màn xác nhận',
         genericTitle: 'Lỗi',
         genericMessage: 'Đã xảy ra lỗi không mong muốn.',
       },
@@ -821,6 +852,16 @@ export const translations: Record<Locale, TranslationDictionary> = {
       profileErrorDuplicate: 'Tên người dùng đó đã được sử dụng. Vui lòng chọn tên người dùng khác và thử lại.',
       profileErrorGeneric: 'Chúng tôi đã xác minh email nhưng không thể hoàn tất thiết lập hồ sơ của bạn. Vui lòng thử lại.',
       resendError: 'Gửi lại mã thất bại.',
+      confirmExit: {
+        title: 'Rời màn xác nhận?',
+        message: 'Nếu quay lại Đăng nhập bây giờ, bạn sẽ mất tiến trình.',
+        leave: 'Rời',
+        stay: 'Ở lại',
+      },
+      verifiedTitle: 'Xác minh thành công!',
+      verifiedMessage: 'Tài khoản đã sẵn sàng. Tiếp tục đến bảng điều khiển hoặc quay lại màn Đăng nhập.',
+      verifiedDashboard: 'Đến bảng điều khiển',
+      verifiedBack: 'Quay lại Đăng nhập',
     },
     createAccount: {
       title: 'Tạo tài khoản của bạn',

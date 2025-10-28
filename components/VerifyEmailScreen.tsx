@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
 import { useTranslation } from '@context/LocaleContext';
@@ -10,8 +10,10 @@ import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
+import SwipeHeader from '@components/common/SwipeHeader';
 import { resendEmailOtp, verifyEmailOtp, upsertProfile, signInWithPassword } from '@services/supabase';
 import { useSessionStore } from '@store/sessionStore';
+import { shallow } from 'zustand/shallow';
 
 type Nav = StackNavigationProp<RootStackParamList, 'VerifyEmail'>;
 type Route = RouteProp<RootStackParamList, 'VerifyEmail'>;
@@ -44,7 +46,13 @@ function determineCharacterGroup(scores?: Record<string, number>) {
 const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { clearAllDrafts } = useSessionStore();
+  const { clearAllDrafts, setResumeTarget } = useSessionStore(
+    (state) => ({
+      clearAllDrafts: state.clearAllDrafts,
+      setResumeTarget: state.setResumeTarget,
+    }),
+    shallow,
+  );
   const email = route.params?.email ?? '';
   const password = route.params?.password ?? '';
   const username = route.params?.username ?? '';
@@ -55,6 +63,34 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [code, setCode] = useState('');
   const [working, setWorking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirmExit, setConfirmExit] = useState(false);
+  const [verifiedPrompt, setVerifiedPrompt] = useState(false);
+  const allowExitRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setResumeTarget('createAccount');
+      return undefined;
+    }, [setResumeTarget]),
+  );
+
+  useEffect(() => {
+    navigation.setOptions({
+      header: () => <SwipeHeader title={t('verifyEmail.title')} onBack={() => setConfirmExit(true)} />,
+    });
+  }, [navigation, t]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      if (allowExitRef.current) {
+        allowExitRef.current = false;
+        return;
+      }
+      event.preventDefault();
+      setConfirmExit(true);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const onVerify = async () => {
     setWorking(true);
@@ -90,9 +126,10 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         setWorking(false);
         return;
       }
-      // Auto-login complete → go to Dashboard
+      // Auto-login complete → let the user choose next step
       clearAllDrafts();
-      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email } }] });
+      setConfirmExit(false);
+      setVerifiedPrompt(true);
     } catch (e: any) {
       console.log('[VerifyEmail] exception:', e);
       setNotice(e?.message ?? t('verifyEmail.genericError'));
@@ -137,7 +174,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={{ height: 8 }} />
             <Button title={t('verifyEmail.resend')} variant="neutral" onPress={onResend} />
             <View style={{ height: 8 }} />
-            <Button title={t('verifyEmail.backToLogin')} variant="neutral" onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })} />
+            <Button title={t('verifyEmail.backToLogin')} variant="neutral" onPress={() => setConfirmExit(true)} />
           </Card>
         </View>
       </KeyboardAvoidingView>
@@ -149,6 +186,41 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         primaryText={t('verifyEmail.noticeDismiss')}
         onPrimary={() => setNotice(null)}
         onRequestClose={() => setNotice(null)}
+      />
+      <NotificationModal
+        visible={confirmExit}
+        title={t('verifyEmail.confirmExit.title')}
+        message={t('verifyEmail.confirmExit.message')}
+        primaryText={t('verifyEmail.confirmExit.leave')}
+        onPrimary={() => {
+          allowExitRef.current = true;
+          setConfirmExit(false);
+          navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
+        }}
+        secondaryText={t('verifyEmail.confirmExit.stay')}
+        onSecondary={() => setConfirmExit(false)}
+        onRequestClose={() => setConfirmExit(false)}
+        primaryVariant="danger"
+        secondaryVariant="accent"
+      />
+      <NotificationModal
+        visible={verifiedPrompt}
+        title={t('verifyEmail.verifiedTitle')}
+        message={t('verifyEmail.verifiedMessage')}
+        primaryText={t('verifyEmail.verifiedDashboard')}
+        secondaryText={t('verifyEmail.verifiedBack')}
+        onPrimary={() => {
+          allowExitRef.current = true;
+          setVerifiedPrompt(false);
+          navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email } }] });
+        }}
+        onSecondary={() => {
+          allowExitRef.current = true;
+          setVerifiedPrompt(false);
+          navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
+        }}
+        onRequestClose={() => setVerifiedPrompt(false)}
+        secondaryVariant="muted"
       />
     </SafeAreaView>
   );
