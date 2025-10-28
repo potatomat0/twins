@@ -59,6 +59,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
   const ageGroup = route.params?.ageGroup ?? '';
   const gender = route.params?.gender ?? '';
   const scores = route.params?.scores ?? {};
+  const origin = route.params?.origin ?? 'login';
 
   const [code, setCode] = useState('');
   const [working, setWorking] = useState(false);
@@ -69,16 +70,18 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
 
   useFocusEffect(
     useCallback(() => {
-      setResumeTarget('createAccount');
+      if (origin === 'signup') {
+        setResumeTarget('createAccount');
+      }
       return undefined;
-    }, [setResumeTarget]),
+    }, [origin, setResumeTarget]),
   );
 
   useEffect(() => {
     navigation.setOptions({
       header: () => <SwipeHeader title={t('verifyEmail.title')} onBack={() => setConfirmExit(true)} />,
     });
-  }, [navigation, t]);
+  }, [navigation, origin, t]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
@@ -195,7 +198,11 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         onPrimary={() => {
           allowExitRef.current = true;
           setConfirmExit(false);
-          navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
+          if (origin === 'signup') {
+            navigation.goBack();
+          } else {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
+          }
         }}
         secondaryText={t('verifyEmail.confirmExit.stay')}
         onSecondary={() => setConfirmExit(false)}

@@ -19,7 +19,15 @@ export type RootStackParamList = {
   Results: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
   Character: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
   CreateAccount: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
-  VerifyEmail: { email: string; password: string; username: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
+  VerifyEmail: {
+    email: string;
+    password: string;
+    username: string;
+    ageGroup: string;
+    gender: string;
+    scores: Record<string, number>;
+    origin?: 'signup' | 'login';
+  } | undefined;
   Dashboard: { username: string; email: string } | undefined;
 };
 

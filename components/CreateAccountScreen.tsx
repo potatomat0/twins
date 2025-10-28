@@ -17,7 +17,7 @@ import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
+import supabase, { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
 import { useSessionStore } from '@store/sessionStore';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
@@ -272,6 +272,69 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     const uname = username.trim();
     setCreating(true);
     try {
+      const normalizedEmail = mail.toLowerCase();
+      const { count: existingEmailCount, error: emailLookupError } = await supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .eq('email', normalizedEmail);
+      if (emailLookupError) {
+        console.warn('[CreateAccount] email lookup failed', emailLookupError);
+      } else if ((existingEmailCount ?? 0) > 0) {
+        console.log('[CreateAccount] email already registered', normalizedEmail);
+        openNotice({
+          title: t('createAccount.notices.emailExistsTitle'),
+          message: t('createAccount.notices.emailExistsMessage'),
+          primaryVariant: 'danger',
+        });
+        return;
+      }
+      console.log('[CreateAccount] email availability check complete', {
+        email: normalizedEmail,
+        existingEmailCount,
+        emailLookupError: emailLookupError?.message,
+      });
+
+      let usernameTaken = false;
+      const { count: existingUsernameCount, error: usernameLookupError } = await supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .ilike('raw_user_meta_data->>username', uname);
+      if (usernameLookupError) {
+        console.warn('[CreateAccount] username lookup against public.users failed', usernameLookupError);
+      } else if ((existingUsernameCount ?? 0) > 0) {
+        usernameTaken = true;
+        console.log('[CreateAccount] username already present in auth metadata', { username: uname });
+      }
+
+      if (!usernameTaken) {
+        const { count: profileUsernameCount, error: profileUsernameError } = await supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .ilike('username', uname);
+        if (profileUsernameError) {
+          console.warn('[CreateAccount] username lookup against profiles failed', profileUsernameError);
+        } else if ((profileUsernameCount ?? 0) > 0) {
+          usernameTaken = true;
+          console.log('[CreateAccount] username already present in profiles', { username: uname });
+        }
+        console.log('[CreateAccount] username availability check complete', {
+          username: uname,
+          usersCount: existingUsernameCount,
+          profilesCount: profileUsernameCount,
+          usernameLookupError: usernameLookupError?.message,
+          profileUsernameError: profileUsernameError?.message,
+        });
+      }
+
+      if (usernameTaken) {
+        openNotice({
+          title: t('createAccount.notices.usernameUnavailableTitle'),
+          message: t('createAccount.notices.usernameUnavailableMessage'),
+          primaryVariant: 'danger',
+        });
+        return;
+      }
+
       const { data, error } = await signUpWithPassword(mail, password, { username: uname, age_group: ageGroup, gender });
       console.log('[CreateAccount] signUp response:', { data, error });
       if (error) {
@@ -363,7 +426,15 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
         return;
       }
 
-      navigation.navigate('VerifyEmail' as any, { email: mail, password, username: uname, ageGroup, gender, scores: route.params?.scores ?? {} });
+      navigation.navigate('VerifyEmail' as any, {
+        email: mail,
+        password,
+        username: uname,
+        ageGroup,
+        gender,
+        scores: route.params?.scores ?? {},
+        origin: 'signup',
+      });
     } catch (err: any) {
       console.log('[CreateAccount] signUp exception', err);
       openNotice({

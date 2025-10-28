@@ -125,6 +125,7 @@ Why a view? It avoids duplicating email in two tables and keeps auth.users as th
 ## 5) How the app uses the schema
 
 - Authentication (sign up / sign in / sign out): Supabase Auth (`auth.users`).
+- Signup preflight checks: the app queries a `public.users` view (exposing `auth.users`) to catch duplicate emails or usernames before attempting `auth.signUp`. Ensure this view grants select access to anonymous/unauthenticated clients if you rely on the same UX.
 - Profile data writes: `public.profiles` via `upsertProfile({ id, username, age_group, gender, character_group })`.
 - Profile reads with email (when needed): `select * from public.my_profile` via `fetchMyProfile()`.
 - Character group: computed on-device from questionnaire results (not user-editable), saved in `public.profiles.character_group`.
@@ -132,7 +133,7 @@ Why a view? It avoids duplicating email in two tables and keeps auth.users as th
   1) User signs up in Create Account.
   2) If no session is returned (email unconfirmed), app navigates to Verify Email screen.
   3) User enters the 6-digit code → `verifyOtp()`; if session still absent, app signs in with email/password.
-  4) App upserts profile under the authenticated session and navigates to Dashboard (auto-login).
+  4) App upserts profile under the authenticated session and navigates to Dashboard (auto-login). In other words, `auth.users` receives the initial signup payload, and only after the email is confirmed do we write to `public.profiles`.
 
 Relevant code files:
 - `services/supabase.ts` – client creation, auth helpers, `upsertProfile`, `fetchProfile`, `fetchMyProfile`, OTP helpers.
@@ -180,4 +181,3 @@ Relevant code files:
 - Review RLS policies for each table you add.
 
 You’re set! After this, the app’s registration, OTP verification, and profile upsert should work end-to-end with your Supabase project.
-
