@@ -19,6 +19,10 @@ export const translations: Record<Locale, TranslationDictionary> = {
       select: 'Select',
       signInWithProvider: 'Sign in with {provider}',
       notice: 'Notice',
+      themeToggle: {
+        toLight: 'Switch to light mode',
+        toDark: 'Switch to dark mode',
+      },
     },
     alerts: {
       accountExists: 'Looks like that email or username is already tied to a Twins account.',
@@ -51,6 +55,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
         showPassword: 'Show password',
         hidePassword: 'Hide password',
       },
+      themeToggle: 'Theme',
       errors: {
         invalidEmail: 'Please enter a valid email.',
         invalidCredentialsTitle: 'Invalid credentials',
@@ -272,9 +277,11 @@ export const translations: Record<Locale, TranslationDictionary> = {
         profileSaveMessage: 'We saved your account, but could not finish your profile. Please try again in a moment.',
         usernameUnavailableTitle: 'Username unavailable',
         usernameUnavailableMessage: 'That username is already taken. Please choose a different one to continue.',
-        successTitle: 'Account created',
-        successMessage: 'Your account is ready!',
-      },
+      usersViewMissingTitle: 'Setup required',
+      usersViewMissingMessage: 'Add the public.users view described in our Supabase guide so Twins can check for duplicate emails and usernames before signup.',
+      successTitle: 'Account created',
+      successMessage: 'Your account is ready!',
+    },
       success: {
         loginNow: 'Login now',
         useDifferent: 'Use a different account',
@@ -332,6 +339,10 @@ export const translations: Record<Locale, TranslationDictionary> = {
       select: '選択',
       signInWithProvider: '{provider}でサインイン',
       notice: 'お知らせ',
+      themeToggle: {
+        toLight: 'ライトモードに切り替え',
+        toDark: 'ダークモードに切り替え',
+      },
     },
     alerts: {
       accountExists: 'このメールアドレスまたはユーザー名は既にTwinsアカウントに登録されています。',
@@ -364,6 +375,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
         showPassword: 'パスワードを表示',
         hidePassword: 'パスワードを非表示',
       },
+      themeToggle: 'テーマ',
       errors: {
         invalidEmail: '有効なメールアドレスを入力してください。',
         invalidCredentialsTitle: '認証情報が無効です',
@@ -585,6 +597,8 @@ export const translations: Record<Locale, TranslationDictionary> = {
         profileSaveMessage: 'アカウントは保存されましたが、プロフィールを完了できませんでした。しばらくしてから再度お試しください。',
         usernameUnavailableTitle: 'ユーザー名が利用できません',
         usernameUnavailableMessage: 'そのユーザー名は既に使用されています。別のユーザー名を選択してください。',
+        usersViewMissingTitle: '設定が必要です',
+        usersViewMissingMessage: 'サインアップ前に重複メールとユーザー名を確認するには、Supabaseガイドで説明している public.users ビューを追加してください。',
         successTitle: 'アカウントが作成されました',
         successMessage: 'アカウントの準備ができました！',
       },
@@ -645,6 +659,10 @@ export const translations: Record<Locale, TranslationDictionary> = {
       select: 'Chọn',
       signInWithProvider: 'Đăng nhập với {provider}',
       notice: 'Thông báo',
+      themeToggle: {
+        toLight: 'Chuyển sang chế độ sáng',
+        toDark: 'Chuyển sang chế độ tối',
+      },
     },
     alerts: {
       accountExists: 'Email hoặc tên người dùng này đã được liên kết với tài khoản Twins.',
@@ -677,6 +695,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
         showPassword: 'Hiện mật khẩu',
         hidePassword: 'Ẩn mật khẩu',
       },
+      themeToggle: 'Chế độ',
       errors: {
         invalidEmail: 'Vui lòng nhập email hợp lệ.',
         invalidCredentialsTitle: 'Thông tin không hợp lệ',
@@ -898,6 +917,8 @@ export const translations: Record<Locale, TranslationDictionary> = {
         profileSaveMessage: 'Chúng tôi đã lưu tài khoản của bạn, nhưng không thể hoàn tất hồ sơ. Vui lòng thử lại sau.',
         usernameUnavailableTitle: 'Tên người dùng không khả dụng',
         usernameUnavailableMessage: 'Tên người dùng đó đã được sử dụng. Vui lòng chọn tên khác để tiếp tục.',
+        usersViewMissingTitle: 'Cần thiết lập',
+        usersViewMissingMessage: 'Hãy thêm view public.users như hướng dẫn Supabase để kiểm tra trùng email/tên người dùng trước khi đăng ký.',
         successTitle: 'Đã tạo tài khoản',
         successMessage: 'Tài khoản của bạn đã sẵn sàng!',
       },

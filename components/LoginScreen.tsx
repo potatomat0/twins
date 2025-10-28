@@ -37,7 +37,7 @@ type ModalConfig = {
 };
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const { theme } = useTheme();
+  const { theme, name: themeName, setTheme } = useTheme();
   const { t, locale, setLocale, availableLocales } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
   const [modalState, setModalState] = useState<ModalConfig>({ visible: false });
@@ -49,6 +49,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [pwFocus, setPwFocus] = useState(false);
   const emailRef = useRef<TextInput>(null as any);
   const passwordRef = useRef<TextInput>(null as any);
+
+  const themeToggleLabel = useMemo(
+    () => (themeName === 'dark' ? t('common.themeToggle.toLight') : t('common.themeToggle.toDark')),
+    [themeName, t],
+  );
+  const themeIcon = themeName === 'dark' ? 'wb-sunny' : 'nightlight-round';
+  const handleToggleTheme = useCallback(() => {
+    setTheme(themeName === 'dark' ? 'light' : 'dark');
+  }, [setTheme, themeName]);
 
   const openModal = useCallback(
     (config: Omit<ModalConfig, 'visible'>) => {
@@ -265,12 +274,30 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={[styles.languageLabel, { color: toRgb(theme.colors['--text-secondary']) }]}>
                <Entypo name="language" /> | {t('login.languageLabel')}
               </Text>
-              <Dropdown
-                options={languageOptions}
-                value={locale}
-                onChange={(next) => setLocale(next as Locale)}
-                placeholder={t('login.languagePlaceholder')}
-              />
+              <View style={styles.languageControls}>
+                <View style={{ flex: 1 }}>
+                  <Dropdown
+                    options={languageOptions}
+                    value={locale}
+                    onChange={(next) => setLocale(next as Locale)}
+                    placeholder={t('login.languagePlaceholder')}
+                  />
+                </View>
+                <Pressable
+                  style={[
+                    styles.themeSwitch,
+                    { backgroundColor: toRgba(theme.colors['--border'], 0.08), borderColor: toRgba(theme.colors['--border'], 0.16) },
+                  ]}
+                  onPress={handleToggleTheme}
+                  accessibilityRole="button"
+                  accessibilityLabel={themeToggleLabel}
+                >
+                  <MaterialIcons name={themeIcon as any} size={16} color={toRgb(theme.colors['--text-primary'])} />
+                  <Text style={[styles.themeSwitchText, { color: toRgb(theme.colors['--text-secondary']) }]} numberOfLines={1}>
+                    {themeToggleLabel}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>{t('login.welcomeTitle')}</Text>
@@ -440,6 +467,16 @@ const styles = StyleSheet.create({
   iconLeft: { position: 'absolute', left: -24, top: 14 },
   languageSwitcher: { marginBottom: 12 },
   languageLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
+  languageControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  themeSwitch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  themeSwitchText: { fontSize: 12, fontWeight: '600', marginLeft: 6 },
   showBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   clearBtn: { position: 'absolute', right: 12, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
   clearBtnLeft: { position: 'absolute', right: 52, top: 10, padding: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },

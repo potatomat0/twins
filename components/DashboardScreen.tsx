@@ -8,6 +8,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import Button from '@components/common/Button';
 import { signOut } from '@services/supabase';
+import { useTranslation } from '@context/LocaleContext';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Dashboard'>;
 type Route = RouteProp<RootStackParamList, 'Dashboard'>;
@@ -15,6 +16,7 @@ type Props = { navigation: Nav; route: Route };
 
 const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme, name, setTheme } = useTheme();
+  const { t } = useTranslation();
   const username = route.params?.username || 'Friend';
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}> 
@@ -25,7 +27,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
         </Text>
         <View style={{ height: 16 }} />
         <Button
-          title={name === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          title={name === 'dark' ? t('common.themeToggle.toLight') : t('common.themeToggle.toDark')}
           onPress={() => setTheme(name === 'dark' ? 'light' : 'dark')}
         />
         <View style={{ height: 16 }} />

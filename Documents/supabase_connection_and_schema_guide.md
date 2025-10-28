@@ -126,6 +126,18 @@ Why a view? It avoids duplicating email in two tables and keeps auth.users as th
 
 - Authentication (sign up / sign in / sign out): Supabase Auth (`auth.users`).
 - Signup preflight checks: the app queries a `public.users` view (exposing `auth.users`) to catch duplicate emails or usernames before attempting `auth.signUp`. Ensure this view grants select access to anonymous/unauthenticated clients if you rely on the same UX.
+- Recommended helper view:
+  ```
+  create or replace view public.users as
+  select
+    id,
+    email,
+    raw_user_meta_data
+  from auth.users;
+
+  revoke all on public.users from public;
+  grant select on public.users to anon;
+  ```
 - Profile data writes: `public.profiles` via `upsertProfile({ id, username, age_group, gender, character_group })`.
 - Profile reads with email (when needed): `select * from public.my_profile` via `fetchMyProfile()`.
 - Character group: computed on-device from questionnaire results (not user-editable), saved in `public.profiles.character_group`.

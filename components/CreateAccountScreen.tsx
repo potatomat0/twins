@@ -273,14 +273,28 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     setCreating(true);
     try {
       const normalizedEmail = mail.toLowerCase();
-      const { count: existingEmailCount, error: emailLookupError } = await supabase
+      const { count: emailCount, error: emailLookupError } = await supabase
         .from('users')
         .select('id', { count: 'exact', head: true })
         .eq('email', normalizedEmail);
       if (emailLookupError) {
         console.warn('[CreateAccount] email lookup failed', emailLookupError);
-      } else if ((existingEmailCount ?? 0) > 0) {
-        console.log('[CreateAccount] email already registered', normalizedEmail);
+        if ((emailLookupError as any)?.code === 'PGRST205') {
+          openNotice({
+            title: t('createAccount.notices.usersViewMissingTitle'),
+            message: t('createAccount.notices.usersViewMissingMessage'),
+            primaryVariant: 'danger',
+          });
+          return;
+        }
+      }
+      const emailExists = (emailCount ?? 0) > 0;
+      console.log('[CreateAccount] email availability check complete', {
+        email: normalizedEmail,
+        emailExists,
+        emailLookupError: emailLookupError?.message,
+      });
+      if (emailExists) {
         openNotice({
           title: t('createAccount.notices.emailExistsTitle'),
           message: t('createAccount.notices.emailExistsMessage'),
@@ -288,23 +302,29 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
         });
         return;
       }
-      console.log('[CreateAccount] email availability check complete', {
-        email: normalizedEmail,
-        existingEmailCount,
-        emailLookupError: emailLookupError?.message,
-      });
 
       let usernameTaken = false;
-      const { count: existingUsernameCount, error: usernameLookupError } = await supabase
+      const { count: usernameCount, error: usernameLookupError } = await supabase
         .from('users')
         .select('id', { count: 'exact', head: true })
-        .ilike('raw_user_meta_data->>username', uname);
+        .filter('raw_user_meta_data->>username', 'ilike', uname);
       if (usernameLookupError) {
         console.warn('[CreateAccount] username lookup against public.users failed', usernameLookupError);
-      } else if ((existingUsernameCount ?? 0) > 0) {
-        usernameTaken = true;
-        console.log('[CreateAccount] username already present in auth metadata', { username: uname });
+        if ((usernameLookupError as any)?.code === 'PGRST205') {
+          openNotice({
+            title: t('createAccount.notices.usersViewMissingTitle'),
+            message: t('createAccount.notices.usersViewMissingMessage'),
+            primaryVariant: 'danger',
+          });
+          return;
+        }
       }
+      usernameTaken = (usernameCount ?? 0) > 0;
+      console.log('[CreateAccount] username availability check (auth.users metadata)', {
+        username: uname,
+        usernameTakenViaAuth: usernameTaken,
+        usernameLookupError: usernameLookupError?.message,
+      });
 
       if (!usernameTaken) {
         const { count: profileUsernameCount, error: profileUsernameError } = await supabase
@@ -313,15 +333,11 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           .ilike('username', uname);
         if (profileUsernameError) {
           console.warn('[CreateAccount] username lookup against profiles failed', profileUsernameError);
-        } else if ((profileUsernameCount ?? 0) > 0) {
-          usernameTaken = true;
-          console.log('[CreateAccount] username already present in profiles', { username: uname });
         }
-        console.log('[CreateAccount] username availability check complete', {
+        usernameTaken = usernameTaken || (profileUsernameCount ?? 0) > 0;
+        console.log('[CreateAccount] username availability check (profiles fallback)', {
           username: uname,
-          usersCount: existingUsernameCount,
-          profilesCount: profileUsernameCount,
-          usernameLookupError: usernameLookupError?.message,
+          usernameTakenViaProfiles: (profileUsernameCount ?? 0) > 0,
           profileUsernameError: profileUsernameError?.message,
         });
       }

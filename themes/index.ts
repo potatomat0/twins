@@ -7,34 +7,34 @@ export type ThemeName = 'dark' | 'light';
 export const themes: Record<ThemeName, ThemeSpec> = {
   dark: {
     colors: {
-      '--bg': '11 11 14',
-      '--surface': '20 20 24',
-      '--border': '255 255 255',
-      '--text-primary': '240 240 245',
-      '--text-secondary': '180 180 190',
-      '--text-muted': '136 136 150',
-      '--focus': '163 118 162',
-      '--brand-primary': '99 102 241',
-      '--accent-cyan': '34 211 238',
-      '--danger': '239 68 68',
-      '--warning': '234 179 8',
-      '--neutral': '120 120 130'
+      '--bg': '16 17 24',
+      '--surface': '28 30 40',
+      '--border': '82 84 104',
+      '--text-primary': '231 233 243',
+      '--text-secondary': '182 186 205',
+      '--text-muted': '136 140 165',
+      '--focus': '176 134 255',
+      '--brand-primary': '129 140 255',
+      '--accent-cyan': '45 212 191',
+      '--danger': '248 113 113',
+      '--warning': '249 168 37',
+      '--neutral': '148 163 184'
     }
   },
   light: {
     colors: {
-      '--bg': '141 95 140',
+      '--bg': '250 247 255',
       '--surface': '255 255 255',
-      '--border': '0 0 0',
-      '--text-primary': '20 20 24',
-      '--text-secondary': '95 95 105',
-      '--text-muted': '130 130 140',
-      '--focus': '163 118 162',
-      '--brand-primary': '79 70 229',
-      '--accent-cyan': '14 165 233',
+      '--border': '204 206 224',
+      '--text-primary': '28 28 36',
+      '--text-secondary': '92 94 112',
+      '--text-muted': '136 138 158',
+      '--focus': '112 84 212',
+      '--brand-primary': '88 80 236',
+      '--accent-cyan': '6 182 212',
       '--danger': '220 38 38',
-      '--warning': '202 138 4',
-      '--neutral': '108 115 125'
+      '--warning': '245 158 11',
+      '--neutral': '107 114 128'
     }
   }
 };
