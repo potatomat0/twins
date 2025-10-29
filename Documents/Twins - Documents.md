@@ -111,6 +111,7 @@ prop buttons:
 
 - NotificationModal: reusable, compact modal for system messages and guidance. Used in the questionnaire to inform users at question 50 that all questions must be answered before viewing results. Optimizes text space and keeps context without full-screen takeovers.
 - KeyboardDismissable: wrapper that dismisses the virtual keyboard when tapping outside input areas (no haptics on dismiss).
+- Auto-dismiss keyboard: form-level helper that automatically closes the virtual keyboard once all required fields are filled (currently used on Login and Create Account to reduce manual dismiss taps).
 - Haptics: powered by Expo Haptics; generally minimal/subtle. A single subtle selection cue fires only when the final unanswered item is completed.
 - SocialButton: provider-colored sign-in buttons (Google, Facebook, Apple, Microsoft) with brand icons. Currently mocked; to be wired with Firebase Auth providers.
 - Terms/Privacy Acknowledgment: a mandatory checkbox row before account creation to confirm acceptance of Terms and Privacy Policy. Submission is disabled until acknowledged.

@@ -19,6 +19,7 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import supabase, { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
 import { useSessionStore } from '@store/sessionStore';
+import { useAutoDismissKeyboard } from '@hooks/useAutoDismissKeyboard';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
 type Route = RouteProp<RootStackParamList, 'CreateAccount'>;
@@ -138,7 +139,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const strength = useMemo(() => passwordStrength(password), [password]);
   const strengthLabel = useMemo(() => t(`createAccount.passwordStrength.${strength.key}`), [strength.key, t]);
   const confirmValid = useMemo(() => confirm.length > 0 && confirm === password, [confirm, password]);
-  const canSubmit = usernameValid && emailValid && ageGroup && gender && password.length >= 8 && confirmValid && agreed;
+  const canSubmit = usernameValid && emailValid && !!ageGroup && !!gender && password.length >= 8 && confirmValid && agreed;
+  useAutoDismissKeyboard(canSubmit);
 
   const ageOptions = useMemo(
     () => AGE_KEYS.map((key, idx) => ({ label: t(`registration.options.ageGroups.${key}`), value: AGE_VALUES[idx] })),

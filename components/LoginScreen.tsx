@@ -19,6 +19,7 @@ import supabase, { signInWithPassword, fetchProfile, upsertProfile } from '@serv
 import { Locale } from '@i18n/translations';
 import { useSessionStore } from '@store/sessionStore';
 import { shallow } from 'zustand/shallow';
+import { useAutoDismissKeyboard } from '@hooks/useAutoDismissKeyboard';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 type Props = { navigation: Nav };
@@ -79,6 +80,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
   const canLogin = emailValid && password.length >= 1;
+  useAutoDismissKeyboard(canLogin);
   const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
   const { resumeDestination, clearAllDrafts, resumeSignature, createAccountDraft, setResumeTarget } = useSessionStore(
     (state) => {
