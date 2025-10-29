@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
 import { SvgXml } from 'react-native-svg';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb } from '@themes/index';
@@ -19,10 +18,6 @@ const AnimatedSplash: React.FC<Props> = ({ ready, onFinish }) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
   const loopRef = useRef<Animated.CompositeAnimation | null>(null);
-
-  useEffect(() => {
-    SplashScreen.hideAsync().catch(() => {});
-  }, []);
 
   useEffect(() => {
     const up = Animated.timing(translateY, {

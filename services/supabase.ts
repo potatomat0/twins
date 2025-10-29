@@ -1,6 +1,7 @@
 // Supabase client singleton
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const extra = (Constants?.expoConfig?.extra ?? {}) as any;
 const SUPABASE_URL = extra.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -11,7 +12,12 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 export const supabase = createClient(SUPABASE_URL as string, SUPABASE_ANON_KEY as string, {
-  auth: { persistSession: false },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+    storage: AsyncStorage as any,
+  },
 });
 
 export default supabase;

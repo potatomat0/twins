@@ -7,8 +7,8 @@ import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import Button from '@components/common/Button';
-import { signOut } from '@services/supabase';
 import { useTranslation } from '@context/LocaleContext';
+import { useAuth } from '@context/AuthContext';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Dashboard'>;
 type Route = RouteProp<RootStackParamList, 'Dashboard'>;
@@ -17,7 +17,13 @@ type Props = { navigation: Nav; route: Route };
 const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme, name, setTheme } = useTheme();
   const { t } = useTranslation();
-  const username = route.params?.username || 'Friend';
+  const { signOut, user, profile } = useAuth();
+  const email = user?.email ?? '';
+  const username =
+    route.params?.username ||
+    profile?.username ||
+    (user?.user_metadata as any)?.username ||
+    (email ? email.split('@')[0] : 'Friend');
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}> 
       <View style={styles.center}>
@@ -36,7 +42,6 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
           variant="neutral"
           onPress={async () => {
             await signOut();
-            // Clear stack and go back to Login
             navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
           }}
         />

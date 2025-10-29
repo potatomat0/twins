@@ -181,12 +181,13 @@ export const useSessionStore = createWithEqualityFn<SessionState>()(
           ) {
             return {};
           }
-          const resumeTarget = computeResumeTarget({
-            registrationDraft: next,
-            questionnaireDraft: state.questionnaireDraft,
-            characterDraft: state.characterDraft,
-            createAccountDraft: state.createAccountDraft,
-          }) ?? 'registration';
+          const resumeTarget =
+            computeResumeTarget({
+              registrationDraft: next,
+              questionnaireDraft: state.questionnaireDraft,
+              characterDraft: state.characterDraft,
+              createAccountDraft: state.createAccountDraft,
+            }) ?? 'registration';
           const resumeDestination = buildResumeDestination({
             resumeTarget,
             registrationDraft: next,
