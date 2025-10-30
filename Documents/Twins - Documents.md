@@ -328,6 +328,7 @@ Use Pressable for optimal feedback control.
 ### Questionnaire Answer Buttons
 
 - **UX Note:** These are the most frequently touched elements in the app. Their feel is critical. When a button is selected, it should smoothly scale up (transform: [{ scale: 1.1 }]) and show a prominent ring effect, as in the web version. This confirms the user's choice with strong, positive feedback. The other options should remain unselected.
+- **Question Set:** We maintain a localized pool of 125 prompts. Each session samples 25 questions (`round(total/5)` per trait) with an even mix of positively and negatively keyed statements for every factor. The selected question IDs are persisted so the flow resumes with the same subset if the user leaves mid-session.
     
 
 ## 5. Screens & Data Flow

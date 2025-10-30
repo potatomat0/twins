@@ -17,6 +17,7 @@ export type QuestionnaireDraft = {
   answers: Record<number, 1 | 2 | 3 | 4 | 5>;
   index: number;
   params?: RootStackParamList['Questionnaire'];
+  questionIds?: number[];
   lastUpdated: number;
 };
 

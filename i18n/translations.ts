@@ -19,6 +19,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       select: 'Select',
       signInWithProvider: 'Sign in with {provider}',
       notice: 'Notice',
+      loading: 'Loading...',
       themeToggle: {
         toLight: 'Switch to light mode',
         toDark: 'Switch to dark mode',
@@ -339,6 +340,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       select: '選択',
       signInWithProvider: '{provider}でサインイン',
       notice: 'お知らせ',
+      loading: '読み込み中...',
       themeToggle: {
         toLight: 'ライトモードに切り替え',
         toDark: 'ダークモードに切り替え',
@@ -659,6 +661,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       select: 'Chọn',
       signInWithProvider: 'Đăng nhập với {provider}',
       notice: 'Thông báo',
+      loading: 'Đang tải...',
       themeToggle: {
         toLight: 'Chuyển sang chế độ sáng',
         toDark: 'Chuyển sang chế độ tối',

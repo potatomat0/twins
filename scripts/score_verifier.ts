@@ -1,3 +1,4 @@
+import { QUESTIONS } from '../data/questions';
 import { computeBigFiveScores, normalizeScoresToUnitRange, FACTORS } from '../services/profileAnalyzer';
 
 type FactorScores = Record<(typeof FACTORS)[number], number>;
@@ -61,6 +62,7 @@ const scenarios: Array<{
 ];
 
 const TOLERANCE = 1e-6;
+const BASE_QUESTION_SET = QUESTIONS.slice(0, 50);
 
 function assertClose(label: string, actual: number, expected: number) {
   if (Math.abs(actual - expected) > TOLERANCE) {
@@ -73,7 +75,7 @@ function verifyScenario(label: string, responses: number[], expectedScaled: Fact
     throw new Error(`${label}: expected 50 responses, received ${responses.length}`);
   }
 
-  const raw = computeBigFiveScores(
+  const { sums: raw, counts } = computeBigFiveScores(
     responses.reduce<Record<number, 1 | 2 | 3 | 4 | 5>>((acc, value, idx) => {
       if (value < 1 || value > 5) {
         throw new Error(`${label}: response at index ${idx} is out of range: ${value}`);
@@ -81,8 +83,9 @@ function verifyScenario(label: string, responses: number[], expectedScaled: Fact
       acc[idx + 1] = value as 1 | 2 | 3 | 4 | 5;
       return acc;
     }, {}),
+    BASE_QUESTION_SET,
   );
-  const scaled = normalizeScoresToUnitRange(raw);
+  const scaled = normalizeScoresToUnitRange(raw, counts);
 
   FACTORS.forEach((factor) => {
     const expected = expectedScaled[factor];
@@ -91,7 +94,8 @@ function verifyScenario(label: string, responses: number[], expectedScaled: Fact
     }
     const actual = Number(scaled[factor].toFixed(6));
     assertClose(`${label} (${factor})`, actual, expected);
-    const derivedRaw = expected * 40 + 10;
+    const totalItems = counts[factor].total;
+    const derivedRaw = expected * (totalItems * 4) + totalItems;
     assertClose(`${label} raw (${factor})`, raw[factor], derivedRaw);
   });
 }

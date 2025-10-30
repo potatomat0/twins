@@ -57,3 +57,4 @@ gantt
 - 2025-10-28: Theming — refreshed the dark/light palettes for stronger contrast, mirrored light mode against the new dark baseline, defaulted the app theme to the system setting, and surfaced the manual theme toggle on both Dashboard and Login.
 - 2025-10-28: Auth persistence — introduced an AuthProvider that restores Supabase sessions via AsyncStorage during the splash sequence, ensuring valid users land on the Dashboard automatically and invalid tokens drop back to Login.
 - 2025-10-28: Form QoL — added an auto-dismiss keyboard helper so the virtual keyboard closes automatically once all required fields are filled on Login and Create Account.
+- 2025-10-30: Questionnaire — expanded the question pool to 125 localized items and implemented balanced sampling (25 questions per session, even trait coverage, even positive/negative mix) with persisted subsets for resume flows.

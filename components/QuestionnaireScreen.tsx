@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, useWindowDimensions, ScrollView, RefreshControl, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions, ScrollView, RefreshControl, Animated, Easing, Keyboard } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp, useFocusEffect } from '@react-navigation/native';
@@ -7,10 +7,10 @@ import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
 import { useTranslation } from '@context/LocaleContext';
 import { toRgb, toRgba } from '@themes/index';
-import { QUESTIONS } from '@data/questions';
+import { QUESTIONS, type Question } from '@data/questions';
 import { getQuestionText } from '@data/questionTexts';
 import Button from '@components/common/Button';
-import { AnswerMap, computeBigFiveScores, normalizeScoresToUnitRange } from '@services/profileAnalyzer';
+import { AnswerMap, computeBigFiveScores, normalizeScoresToUnitRange, FACTORS, type Factor } from '@services/profileAnalyzer';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import SwipeHeader from '@components/common/SwipeHeader';
 import NotificationModal from '@components/common/NotificationModal';
@@ -33,6 +33,98 @@ const OPTION_COLORS: Record<1|2|3|4|5, string> = {
   5: '59 130 246', // blue
 };
 
+const TOTAL_ACTIVE_QUESTIONS = 25;
+
+type FactorPools = Record<Factor, { positive: Question[]; negative: Question[] }>;
+
+function buildFactorPools(): FactorPools {
+  const pools = {} as FactorPools;
+  for (const factor of FACTORS) {
+    pools[factor] = { positive: [], negative: [] };
+  }
+  for (const q of QUESTIONS) {
+    const pool = pools[q.Factor_Name];
+    if (q.Direction === '+') {
+      pool.positive.push(q);
+    } else {
+      pool.negative.push(q);
+    }
+  }
+  return pools;
+}
+
+function shuffleArray<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function pullRandom<T>(items: T[]): T | undefined {
+  if (items.length === 0) return undefined;
+  const index = Math.floor(Math.random() * items.length);
+  return items.splice(index, 1)[0];
+}
+
+function generateQuestionSet(): Question[] {
+  const pools = buildFactorPools();
+  const workingPools: FactorPools = {} as FactorPools;
+  for (const factor of FACTORS) {
+    workingPools[factor] = {
+      positive: [...pools[factor].positive],
+      negative: [...pools[factor].negative],
+    };
+  }
+
+  const perTrait = Math.round(TOTAL_ACTIVE_QUESTIONS / FACTORS.length);
+  const basePerDirection = Math.floor(perTrait / 2);
+  const remainderPerTrait = perTrait - basePerDirection * 2;
+  let extraDirection: '+' | '-' = '+';
+  const chosen: Question[] = [];
+
+  for (const factor of FACTORS) {
+    const pool = workingPools[factor];
+    const factorSelection: Question[] = [];
+
+    for (let i = 0; i < basePerDirection; i += 1) {
+      const pos = pullRandom(pool.positive);
+      if (pos) factorSelection.push(pos);
+      const neg = pullRandom(pool.negative);
+      if (neg) factorSelection.push(neg);
+    }
+
+    for (let r = 0; r < remainderPerTrait; r += 1) {
+      const wantPositive = extraDirection === '+';
+      let pick = wantPositive ? pullRandom(pool.positive) : pullRandom(pool.negative);
+      if (!pick) {
+        pick = wantPositive ? pullRandom(pool.negative) : pullRandom(pool.positive);
+      }
+      if (!pick) {
+        pick = pullRandom(pool.positive.length ? pool.positive : pool.negative);
+      }
+      if (pick) {
+        factorSelection.push(pick);
+        extraDirection = extraDirection === '+' ? '-' : '+';
+      }
+    }
+
+    chosen.push(...factorSelection);
+  }
+
+  if (chosen.length < TOTAL_ACTIVE_QUESTIONS) {
+    const selectedIds = new Set(chosen.map((q) => q.Item_Number));
+    const remaining = shuffleArray(QUESTIONS.filter((q) => !selectedIds.has(q.Item_Number)));
+    for (const q of remaining) {
+      chosen.push(q);
+      if (chosen.length >= TOTAL_ACTIVE_QUESTIONS) break;
+    }
+  }
+
+  return shuffleArray(chosen.slice(0, TOTAL_ACTIVE_QUESTIONS));
+}
+
 const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -42,6 +134,20 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   useEffect(() => {
     paramsRef.current = route.params;
   }, [route.params]);
+  const questionMap = useMemo(() => {
+    const map = new Map<number, Question>();
+    for (const q of QUESTIONS) {
+      map.set(q.Item_Number, q);
+    }
+    return map;
+  }, []);
+  const [questionIds, setQuestionIds] = useState<number[]>([]);
+  const questionSet = useMemo(() => {
+    if (questionIds.length === 0) return [] as Question[];
+    return questionIds
+      .map((id) => questionMap.get(id))
+      .filter((q): q is Question => Boolean(q));
+  }, [questionIds, questionMap]);
   const insets = useSafeAreaInsets();
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [index, setIndex] = useState(0);
@@ -49,10 +155,22 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const isSmall = windowWidth < 380;
   // Gating flow: no need for modals or cycling state
 
-  const total = QUESTIONS.length;
-  const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
-  // Progress follows question index (X/50) for a clearer sense of progress
-  const progress = useMemo(() => Math.round(((index + 1) / total) * 100), [index, total]);
+  useEffect(() => {
+    if (questionIds.length > 0) return;
+    const saved = questionnaireDraft?.questionIds;
+    if (saved && saved.length > 0 && saved.every((id) => questionMap.has(id))) {
+      setQuestionIds(saved);
+    } else {
+      const generated = generateQuestionSet().map((q) => q.Item_Number);
+      setQuestionIds(generated);
+    }
+  }, [questionnaireDraft, questionIds.length, questionMap]);
+
+
+  const total = questionSet.length;
+  const answeredCount = useMemo(() => questionSet.reduce((acc, q) => (answers[q.Item_Number] ? acc + 1 : acc), 0), [answers, questionSet]);
+  // Progress follows question index (X/total) for a clearer sense of progress
+  const progress = useMemo(() => (total > 0 ? Math.round(((index + 1) / total) * 100) : 0), [index, total]);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const [barWidth, setBarWidth] = useState(0);
   useEffect(() => {
@@ -65,9 +183,12 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
     }).start();
   }, [progress, barWidth]);
 
-  const current = QUESTIONS[index];
-  const currentValue = answers[current.Item_Number];
-  const questionText = useMemo(() => getQuestionText(locale, current.Item_Number), [locale, current.Item_Number]);
+  const current = total > 0 ? questionSet[index] : undefined;
+  const currentValue = current ? answers[current.Item_Number] : undefined;
+  const questionText = useMemo(
+    () => (current ? getQuestionText(locale, current.Item_Number) : ''),
+    [locale, current?.Item_Number],
+  );
 
   const optionLabels: Record<1 | 2 | 3 | 4 | 5, string> = useMemo(
     () => ({
@@ -109,8 +230,8 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const onFinish = () => {
-    const sums = computeBigFiveScores(answers);
-    const normalized = normalizeScoresToUnitRange(sums);
+    const { sums, counts } = computeBigFiveScores(answers, questionSet);
+    const normalized = normalizeScoresToUnitRange(sums, counts);
     clearQuestionnaireDraft();
     navigation.navigate('Results', {
       username: route.params?.username ?? '',
@@ -139,27 +260,39 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   );
 
   useEffect(() => {
-    if (!hydratedRef.current && questionnaireDraft) {
+    if (hydratedRef.current) return;
+    if (questionSet.length === 0) return;
+    if (questionnaireDraft) {
       setAnswers(questionnaireDraft.answers ?? {});
-      setIndex(questionnaireDraft.index ?? 0);
+      const nextIndex = questionnaireDraft.index ?? 0;
+      setIndex(Math.min(nextIndex, Math.max(questionSet.length - 1, 0)));
     }
     hydratedRef.current = true;
-  }, [questionnaireDraft]);
+  }, [questionSet.length, questionnaireDraft]);
 
   useEffect(() => {
-    if (!hydratedRef.current) return;
-    const hasProgress = Object.keys(answers).length > 0 || index > 0;
-    if (hasProgress) {
-      setQuestionnaireDraft({
-        answers,
-        index,
-        params: paramsRef.current,
-        lastUpdated: Date.now(),
-      });
-    } else if (questionnaireDraft) {
-      clearQuestionnaireDraft();
-    }
-  }, [answers, index, setQuestionnaireDraft, clearQuestionnaireDraft, questionnaireDraft]);
+    if (!hydratedRef.current || questionSet.length === 0 || questionIds.length === 0) return;
+    setQuestionnaireDraft({
+      answers,
+      index,
+      params: paramsRef.current,
+      questionIds,
+      lastUpdated: Date.now(),
+    });
+  }, [answers, index, questionIds, questionSet.length, setQuestionnaireDraft]);
+
+  if (!current) {
+    return (
+      <KeyboardDismissable>
+        <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}> 
+          <SwipeHeader title={t('questionnaire.title')} onBack={() => navigation.goBack()} />
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: toRgb(theme.colors['--text-secondary']), fontSize: 16 }}>{t('common.loading')}</Text>
+          </View>
+        </SafeAreaView>
+      </KeyboardDismissable>
+    );
+  }
 
   return (
     <KeyboardDismissable>
