@@ -140,7 +140,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const strengthLabel = useMemo(() => t(`createAccount.passwordStrength.${strength.key}`), [strength.key, t]);
   const confirmValid = useMemo(() => confirm.length > 0 && confirm === password, [confirm, password]);
   const canSubmit = usernameValid && emailValid && !!ageGroup && !!gender && password.length >= 8 && confirmValid && agreed;
-  useAutoDismissKeyboard(canSubmit);
+  const dismissKeyboardIfComplete = useAutoDismissKeyboard(() => canSubmit);
 
   const ageOptions = useMemo(
     () => AGE_KEYS.map((key, idx) => ({ label: t(`registration.options.ageGroups.${key}`), value: AGE_VALUES[idx] })),
@@ -187,7 +187,13 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const goNext = (from: 'username'|'email'|'gender'|'age'|'password'|'confirm') => {
     const next = nextEmptyAfter(from);
-    if (!next) { setJumpHint(true); setTimeout(() => setJumpHint(false), 1500); Keyboard.dismiss(); return; }
+    if (!next) {
+      setJumpHint(true);
+      setTimeout(() => setJumpHint(false), 1500);
+      dismissKeyboardIfComplete();
+      Keyboard.dismiss();
+      return;
+    }
     if (next === 'email') { emailRef.current?.focus?.(); return; }
     if (next === 'gender') { openDropdownAfterClose(() => genderRef.current?.open?.()); return; }
     if (next === 'age') { openDropdownAfterClose(() => ageRef.current?.open?.()); return; }
@@ -206,6 +212,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
       if (f === 'password' && !password) { openDropdownAfterClose(() => passwordRef.current?.focus?.()); return; }
       if (f === 'confirm' && !confirm) { openDropdownAfterClose(() => confirmRef.current?.focus?.()); return; }
     }
+    dismissKeyboardIfComplete();
     Keyboard.dismiss();
   };
 
@@ -671,7 +678,12 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
                 ref={confirmRef}
                 returnKeyType="done"
                 onSubmitEditing={() => {
-                  if (canSubmit) handleCreateAccount(); else focusNextUntouched('confirm');
+                  if (canSubmit) {
+                    dismissKeyboardIfComplete();
+                    handleCreateAccount();
+                  } else {
+                    focusNextUntouched('confirm');
+                  }
                 }}
                 onFocus={() => setCFocus(true)}
                 onBlur={() => setCFocus(false)}
@@ -748,7 +760,10 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               <Button
                 title={creating ? t('createAccount.creating') : t('createAccount.submit')}
                 style={{ width: '100%' }}
-                onPress={handleCreateAccount}
+                onPress={() => {
+                  dismissKeyboardIfComplete();
+                  handleCreateAccount();
+                }}
                 disabled={!canSubmit || creating}
               />
               <View style={{ height: 10 }} />

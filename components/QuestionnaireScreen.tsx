@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '800', marginBottom: 8 },
   progressWrap: { height: 14, borderRadius: 8, overflow: 'hidden' },
   stage: { flexGrow: 1, padding: 24, justifyContent: 'center', paddingBottom: 100 },
-  question: { borderWidth: 1, borderRadius: 12, padding: 24, minHeight: 220, justifyContent: 'center' },
+  question: { borderWidth: 2, borderRadius: 12, padding: 24, minHeight: 220, justifyContent: 'center' },
   qtext: { fontSize: 20, marginBottom: 20, fontWeight: '700', textAlign: 'center' },
   optionsRow: { flexDirection: 'row', alignItems: 'stretch', justifyContent: 'space-between' },
   optionV: { paddingVertical: 12, paddingHorizontal: 10, borderRadius: 10, justifyContent: 'center' },

@@ -60,6 +60,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     setTheme(themeName === 'dark' ? 'light' : 'dark');
   }, [setTheme, themeName]);
 
+  const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
+  const canLogin = emailValid && password.length >= 1;
+  const dismissKeyboardIfComplete = useAutoDismissKeyboard(() => canLogin);
+
   const openModal = useCallback(
     (config: Omit<ModalConfig, 'visible'>) => {
       setModalState({ visible: true, ...config });
@@ -78,9 +82,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     cb?.();
   }, [modalState, closeModal]);
 
-  const emailValid = useMemo(() => /.+@.+\..+/.test(email.trim()), [email]);
-  const canLogin = emailValid && password.length >= 1;
-  useAutoDismissKeyboard(canLogin);
   const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
   const { resumeDestination, clearAllDrafts, resumeSignature, createAccountDraft, setResumeTarget } = useSessionStore(
     (state) => {
@@ -379,7 +380,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 secureTextEntry={!showPw}
                 ref={passwordRef}
                 returnKeyType="done"
-                onSubmitEditing={() => { if (canLogin) void handleLogin(); }}
+                onSubmitEditing={() => {
+                  dismissKeyboardIfComplete();
+                  if (canLogin) void handleLogin();
+                }}
                 onFocus={() => setPwFocus(true)}
                 onBlur={() => setPwFocus(false)}
               />
@@ -410,7 +414,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <View style={{ height: 12 }} />
             <Button
               title={t('login.submit')}
-              onPress={() => { void handleLogin(); }}
+              onPress={() => {
+                dismissKeyboardIfComplete();
+                void handleLogin();
+              }}
               disabled={!canLogin}
             />
 

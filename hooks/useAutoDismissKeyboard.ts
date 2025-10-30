@@ -1,18 +1,24 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Keyboard } from 'react-native';
 
 /**
- * Dismisses the virtual keyboard automatically when the provided condition
- * transitions from false to true. Useful for closing the keyboard once
- * every required form field has been filled out.
+ * Returns an imperative trigger that dismisses the virtual keyboard only when the provided
+ * checker function returns true. Call the trigger from "Done" handlers or dropdown commits.
  */
-export function useAutoDismissKeyboard(shouldDismiss: boolean) {
-  const previous = useRef(false);
+export function useAutoDismissKeyboard(checkCompletion: () => boolean) {
+  const checkerRef = useRef(checkCompletion);
 
   useEffect(() => {
-    if (shouldDismiss && !previous.current) {
-      Keyboard.dismiss();
+    checkerRef.current = checkCompletion;
+  }, [checkCompletion]);
+
+  return useCallback(() => {
+    try {
+      if (checkerRef.current()) {
+        Keyboard.dismiss();
+      }
+    } catch {
+      // Ignore errors dismissing the keyboard.
     }
-    previous.current = shouldDismiss;
-  }, [shouldDismiss]);
+  }, []);
 }
