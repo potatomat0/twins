@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#A376A2"
     },
