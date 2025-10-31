@@ -83,7 +83,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   }, [modalState, closeModal]);
 
   const [supabaseOk, setSupabaseOk] = useState<boolean | null>(null);
-  const { resumeDestination, clearAllDrafts, resumeSignature, createAccountDraft, setResumeTarget } = useSessionStore(
+  const { resumeDestination, clearAllDrafts, resumeSignature, createAccountDraft, setResumeTarget, hydrated } = useSessionStore(
     (state) => {
       const timestamps = [
         state.registrationDraft?.lastUpdated ?? 0,
@@ -99,12 +99,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         resumeSignature: state.resumeDestination ? `${destinationSignature}|${latestTimestamp}` : null,
         createAccountDraft: state.createAccountDraft,
         setResumeTarget: state.setResumeTarget,
+        hydrated: state.hydrated,
       };
     },
     shallow,
   );
   const resumeRef = useRef(resumeDestination);
-  const [resumeVisible, setResumeVisible] = useState(false);
   const promptSignatureRef = useRef<string | null>(null);
   const isFocused = useIsFocused();
 
@@ -125,31 +125,21 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     resumeRef.current = resumeDestination;
+    if (__DEV__) {
+      console.log('[Login] resumeDestination updated', resumeDestination);
+    }
   }, [resumeDestination]);
 
   useEffect(() => {
-    if (!isFocused) {
-      if (resumeVisible) {
-        setResumeVisible(false);
-      }
+    if (!hydrated || !isFocused) {
       return;
     }
-
-    if (!resumeSignature) {
-      promptSignatureRef.current = null;
-      if (resumeVisible) {
-        setResumeVisible(false);
-      }
+    if (!resumeSignature || promptSignatureRef.current === resumeSignature) {
       return;
     }
-
-    if (promptSignatureRef.current === resumeSignature) {
-      return;
-    }
-
     promptSignatureRef.current = resumeSignature;
-    setResumeVisible(true);
-  }, [isFocused, resumeSignature, resumeVisible]);
+    navigation.navigate('ResumePrompt', { destination: resumeRef.current ?? null });
+  }, [hydrated, isFocused, resumeSignature, navigation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,36 +220,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       });
     }
   }, [canLogin, email, password, createAccountDraft, openModal, t, setResumeTarget, navigation]);
-
-  const handleResumeFlow = () => {
-    const dest = resumeRef.current;
-    if (!dest) {
-      setResumeVisible(false);
-      return;
-    }
-    setResumeVisible(false);
-    switch (dest.screen) {
-      case 'Registration':
-        navigation.navigate('Registration' as any);
-        break;
-      case 'Questionnaire':
-        navigation.navigate('Questionnaire' as any, dest.params ?? {});
-        break;
-      case 'Character':
-        navigation.navigate('Character' as any, dest.params);
-        break;
-      case 'CreateAccount':
-        navigation.navigate('CreateAccount' as any, dest.params);
-        break;
-      default:
-        break;
-    }
-  };
-
-  const handleDismissResume = () => {
-    setResumeVisible(false);
-    clearAllDrafts();
-  };
 
   return (
     <KeyboardDismissable>
@@ -443,16 +403,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           onSecondary={modalState.secondaryText ? handleModalSecondary : undefined}
           onRequestClose={closeModal}
           stacked={modalState.stacked}
-        />
-        <NotificationModal
-          visible={resumeVisible}
-          title={t('login.resumeTitle')}
-          message={t('login.resumeMessage')}
-          primaryText={t('login.resumeResume')}
-          onPrimary={handleResumeFlow}
-          secondaryText={t('login.resumeDismiss')}
-          onSecondary={handleDismissResume}
-          onRequestClose={handleDismissResume}
         />
       </SafeAreaView>
     </KeyboardDismissable>

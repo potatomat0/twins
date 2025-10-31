@@ -279,6 +279,13 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
       questionIds,
       lastUpdated: Date.now(),
     });
+    if (__DEV__) {
+      console.log('[Questionnaire] draft persisted', {
+        answered: Object.keys(answers).length,
+        index,
+        total: questionSet.length,
+      });
+    }
   }, [answers, index, questionIds, questionSet.length, setQuestionnaireDraft]);
 
   if (!current) {
@@ -296,7 +303,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <KeyboardDismissable>
-    <SafeAreaView style={[styles.container, { backgroundColor: `rgb(${theme.colors['--bg']})` }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>
       <SwipeHeader title={t('questionnaire.title')} onBack={() => setConfirmBack(true)} />
       <View style={styles.header}>
         <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']), textAlign: 'center' }]}>{index + 1}/{total}</Text>
@@ -333,7 +340,8 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.optionsRow}>
             {[1, 2, 3, 4, 5].map((v) => {
               const selected = currentValue === (v as 1 | 2 | 3 | 4 | 5);
-              const color = OPTION_COLORS[v as 1 | 2 | 3 | 4 | 5];
+              const colorTriplet = OPTION_COLORS[v as 1 | 2 | 3 | 4 | 5];
+              const color = toRgb(colorTriplet);
               const iconSize = isSmall ? 28 : 32;
               return (
                 <Pressable
@@ -345,7 +353,7 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
                       flex: 1,
                       marginHorizontal: 4,
                       alignItems: 'center',
-                      borderColor: selected ? `rgb(${color})` : toRgba(theme.colors['--border'], 0.12),
+                      borderColor: selected ? color : toRgba(theme.colors['--border'], 0.12),
                       borderWidth: selected ? 2 : 1,
                       backgroundColor: 'transparent',
                     },
@@ -359,18 +367,18 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
                       style={{
                         alignItems: 'center',
                         justifyContent: 'center',
-                        shadowColor: `rgb(${color})`,
+                        shadowColor: color,
                         shadowOpacity: selected ? 0.5 : 0,
                         shadowRadius: selected ? 12 : 0,
                         elevation: selected ? 6 : 0,
                         transform: [{ scale: selected ? 0.94 : pressed ? 0.92 : 1 }],
                       }}
                     >
-                      {v === 1 && <Feather name="x" size={iconSize} color={`rgb(${color})`} />}
-                      {v === 2 && <FontAwesome name="arrow-down" size={iconSize} color={`rgb(${color})`} />}
-                      {v === 3 && <FontAwesome name="circle" size={iconSize - 2} color={`rgb(${color})`} />}
-                      {v === 4 && <FontAwesome name="arrow-up" size={iconSize} color={`rgb(${color})`} />}
-                      {v === 5 && <FontAwesome name="check" size={iconSize} color={`rgb(${color})`} />}
+                      {v === 1 && <Feather name="x" size={iconSize} color={color} />}
+                      {v === 2 && <FontAwesome name="arrow-down" size={iconSize} color={color} />}
+                      {v === 3 && <FontAwesome name="circle" size={iconSize - 2} color={color} />}
+                      {v === 4 && <FontAwesome name="arrow-up" size={iconSize} color={color} />}
+                      {v === 5 && <FontAwesome name="check" size={iconSize} color={color} />}
                     </View>
                   )}
                 </Pressable>
