@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -67,6 +67,8 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [confirmExit, setConfirmExit] = useState(false);
   const [verifiedPrompt, setVerifiedPrompt] = useState(false);
   const allowExitRef = useRef(false);
+  const exitGuardEnabledRef = useRef(true);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -85,7 +87,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowExitRef.current) {
+      if (allowExitRef.current || !exitGuardEnabledRef.current) {
         allowExitRef.current = false;
         return;
       }
@@ -131,6 +133,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
       }
       // Auto-login complete → let the user choose next step
       clearAllDrafts();
+      exitGuardEnabledRef.current = false;
       setConfirmExit(false);
       setVerifiedPrompt(true);
     } catch (e: any) {
@@ -143,15 +146,40 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const onResend = async () => {
     try {
+      if (resendCooldown > 0) return;
       console.log('[VerifyEmail] resending OTP to', email);
       const { data, error } = await resendEmailOtp(email);
       console.log('[VerifyEmail] resend response:', { data, error });
       setNotice(error ? (error.message ?? t('verifyEmail.resendError')) : t('verifyEmail.resendSuccess'));
+      if (!error) {
+        setResendCooldown(60);
+      }
     } catch (e: any) {
       console.log('[VerifyEmail] resend exception:', e);
       setNotice(e?.message ?? t('verifyEmail.resendError'));
     }
   };
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const id = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(id);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [resendCooldown]);
+
+  const resendLabel = useMemo(() => {
+    if (resendCooldown > 0) {
+      return t('verifyEmail.resendCooldown', { seconds: resendCooldown });
+    }
+    return t('verifyEmail.resend');
+  }, [resendCooldown, t]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}> 
@@ -175,7 +203,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={{ height: 10 }} />
             <Button title={working ? t('verifyEmail.verifying') : t('verifyEmail.verify')} onPress={onVerify} disabled={working || code.trim().length < 6} />
             <View style={{ height: 8 }} />
-            <Button title={t('verifyEmail.resend')} variant="neutral" onPress={onResend} />
+            <Button title={resendLabel} variant="neutral" onPress={onResend} disabled={working || resendCooldown > 0} />
             <View style={{ height: 8 }} />
             <Button title={t('verifyEmail.backToLogin')} variant="neutral" onPress={() => setConfirmExit(true)} />
           </Card>
@@ -226,7 +254,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
           setVerifiedPrompt(false);
           navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
         }}
-        onRequestClose={() => setVerifiedPrompt(false)}
+        onRequestClose={() => {}}
         secondaryVariant="muted"
       />
     </SafeAreaView>
