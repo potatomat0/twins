@@ -9,6 +9,8 @@ import SwipeHeader from '@components/common/SwipeHeader';
 import DashboardScreen from '@components/DashboardScreen';
 import PreQuizIntroScreen from '@components/PreQuizIntroScreen';
 import QuizPrimerScreen from '@components/QuizPrimerScreen';
+import ResumePromptScreen from '@components/ResumePromptScreen';
+import type { ResumeDestination } from '@store/sessionStore';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -19,6 +21,7 @@ export type RootStackParamList = {
   Results: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
   Character: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
   CreateAccount: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
+  ResumePrompt: { destination: ResumeDestination | null } | undefined;
   VerifyEmail: {
     email: string;
     password: string;
@@ -65,6 +68,16 @@ const AppNavigator = () => {
         component={QuizPrimerScreen}
         options={{
           headerShown: false,
+          gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
+        name="ResumePrompt"
+        component={ResumePromptScreen}
+        options={{
+          headerShown: false,
+          presentation: 'transparentModal',
+          cardStyleInterpolator: CardStyleInterpolators.forFadeFromBottomAndroid,
           gestureEnabled: false,
         }}
       />

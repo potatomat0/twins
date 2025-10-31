@@ -175,7 +175,8 @@ const QuizPrimerScreen: React.FC<Props> = ({ navigation, route }) => {
                     ) : (
                       <View style={styles.scaleWrap}>
                         {[1, 2, 3, 4, 5].map((value) => {
-                          const rgb = LIKERT_COLORS[value as 1 | 2 | 3 | 4 | 5];
+                          const rgbTriplet = LIKERT_COLORS[value as 1 | 2 | 3 | 4 | 5];
+                          const rgbColor = toRgb(rgbTriplet);
                           const label = t(
                             `questionnaire.scale.${[
                               'disagree',
@@ -186,13 +187,13 @@ const QuizPrimerScreen: React.FC<Props> = ({ navigation, route }) => {
                             ][value - 1]}`,
                           );
                           return (
-                            <View key={value} style={[styles.scaleRow, { backgroundColor: toRgba(rgb, 0.2) }]}>
-                              <View style={[styles.iconCircle, { borderColor: `rgb(${rgb})` }]}>
-                                {value === 1 && <Feather name="x" size={18} color={`rgb(${rgb})`} />}
-                                {value === 2 && <FontAwesome name="arrow-down" size={18} color={`rgb(${rgb})`} />}
-                                {value === 3 && <FontAwesome name="circle" size={18} color={`rgb(${rgb})`} />}
-                                {value === 4 && <FontAwesome name="arrow-up" size={18} color={`rgb(${rgb})`} />}
-                                {value === 5 && <FontAwesome name="check" size={18} color={`rgb(${rgb})`} />}
+                            <View key={value} style={[styles.scaleRow, { backgroundColor: toRgba(rgbTriplet, 0.2) }]}>
+                              <View style={[styles.iconCircle, { borderColor: rgbColor }]}>
+                                {value === 1 && <Feather name="x" size={18} color={rgbColor} />}
+                                {value === 2 && <FontAwesome name="arrow-down" size={18} color={rgbColor} />}
+                                {value === 3 && <FontAwesome name="circle" size={18} color={rgbColor} />}
+                                {value === 4 && <FontAwesome name="arrow-up" size={18} color={rgbColor} />}
+                                {value === 5 && <FontAwesome name="check" size={18} color={rgbColor} />}
                               </View>
                               <Text style={[styles.scaleText, { color: textPrimary }]}>{label}</Text>
                             </View>

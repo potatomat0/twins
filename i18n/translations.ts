@@ -68,6 +68,15 @@ export const translations: Record<Locale, TranslationDictionary> = {
         genericMessage: 'An unexpected error occurred.',
       },
     },
+    resumePrompt: {
+      title: 'Resume where you left off?',
+      questionnaire: 'We found unfinished questionnaire progress. Resume the quiz?',
+      registration: 'We saved your profile details. Pick up registration again?',
+      character: 'We paused on your character summary. Continue?',
+      createAccount: 'We saved your account setup progress. Finish creating your account?',
+      resume: 'Resume',
+      dismiss: 'Start over',
+    },
     preQuizIntro: {
       badge: 'Step 1 · Profile setup',
       heading: 'Before we start',
@@ -389,6 +398,15 @@ export const translations: Record<Locale, TranslationDictionary> = {
         genericMessage: '予期しないエラーが発生しました。',
       },
     },
+    resumePrompt: {
+      title: '前回の続きから再開しますか？',
+      questionnaire: '未回答の質問があります。診断を再開しますか？',
+      registration: 'プロフィール入力が途中です。再開しますか？',
+      character: 'キャラクター結果の確認が途中です。続けますか？',
+      createAccount: 'アカウント作成が途中です。続けますか？',
+      resume: '再開する',
+      dismiss: '最初からやり直す',
+    },
     preQuizIntro: {
       badge: 'ステップ1・プロフィール',
       heading: 'はじめる前に',
@@ -709,6 +727,15 @@ export const translations: Record<Locale, TranslationDictionary> = {
         genericTitle: 'Lỗi',
         genericMessage: 'Đã xảy ra lỗi không mong muốn.',
       },
+    },
+    resumePrompt: {
+      title: 'Tiếp tục nơi bạn đã dừng?',
+      questionnaire: 'Bạn còn đang làm dang dở bài kiểm tra. Tiếp tục nhé?',
+      registration: 'Bạn chưa hoàn thành phần thông tin hồ sơ. Tiếp tục chứ?',
+      character: 'Bạn đang dở xem phần nhân vật. Muốn xem tiếp không?',
+      createAccount: 'Bạn chưa hoàn tất tạo tài khoản. Tiếp tục hoàn thành nhé?',
+      resume: 'Tiếp tục',
+      dismiss: 'Làm lại từ đầu',
     },
     preQuizIntro: {
       badge: 'Bước 1 · Hồ sơ',

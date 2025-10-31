@@ -46,50 +46,52 @@ function NavigationWithTheme({ onReady }: { onReady: () => void }) {
 }
 
 function AppShell() {
-  const resourcesReady = useAppResources();
+  const assetsReady = useAppResources();
   const { user, profile, loading } = useAuth();
+  const appReady = assetsReady && !loading;
   const [splashVisible, setSplashVisible] = useState(true);
   const [navReady, setNavReady] = useState(false);
-  const lastRouteKeyRef = useRef<string | null>(null);
-
-  const readyForNav = resourcesReady && !loading;
-
-  const handleSplashFinished = useCallback(() => {
-    setSplashVisible(false);
-  }, []);
+  const lastResolvedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!splashVisible && readyForNav) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [splashVisible, readyForNav]);
+    if (!appReady) return;
+    SplashScreen.hideAsync().catch(() => {});
+  }, [appReady]);
 
   useEffect(() => {
-    if (!readyForNav || !navReady || !navigationRef.isReady()) {
+    if (!appReady || !navReady || !navigationRef.isReady()) {
       return;
     }
+
     const email = user?.email ?? '';
     const metadataName = (user?.user_metadata as any)?.username;
     const derivedUsername = profile?.username ?? metadataName ?? (email ? email.split('@')[0] : 'Friend');
+    const currentRoute = navigationRef.getCurrentRoute();
     const targetKey = user ? `Dashboard:${user.id}` : 'Login';
-    if (lastRouteKeyRef.current === targetKey) {
-      return;
-    }
-    lastRouteKeyRef.current = targetKey;
+
     if (user) {
+      if (lastResolvedKeyRef.current === targetKey && currentRoute?.name === 'Dashboard') {
+        return;
+      }
+      lastResolvedKeyRef.current = targetKey;
       navigationRef.reset({
         index: 0,
         routes: [{ name: 'Dashboard', params: { username: derivedUsername, email } }],
       });
-    } else {
-      navigationRef.reset({ index: 0, routes: [{ name: 'Login' }] });
+      return;
     }
-  }, [readyForNav, navReady, user, profile]);
+
+    if (currentRoute?.name === 'Dashboard') {
+      lastResolvedKeyRef.current = targetKey;
+      navigationRef.reset({ index: 0, routes: [{ name: 'Login' }] });
+      return;
+    }
+  }, [appReady, navReady, user, profile]);
 
   return (
     <View style={{ flex: 1 }}>
-      {readyForNav && <NavigationWithTheme onReady={() => setNavReady(true)} />}
-      {splashVisible && <AnimatedSplash ready={readyForNav} onFinish={handleSplashFinished} />}
+      <NavigationWithTheme onReady={() => setNavReady(true)} />
+      {splashVisible && <AnimatedSplash ready={appReady} onFinish={() => setSplashVisible(false)} />}
     </View>
   );
 }

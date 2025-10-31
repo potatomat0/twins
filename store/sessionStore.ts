@@ -51,6 +51,7 @@ type SessionState = {
   questionnaireDraft: QuestionnaireDraft | null;
   characterDraft: CharacterDraft | null;
   createAccountDraft: CreateAccountDraft | null;
+  hydrated: boolean;
   setResumeTarget: (flow: FlowTarget | null) => void;
   setRegistrationDraft: (draft: Partial<RegistrationDraft>) => void;
   setQuestionnaireDraft: (draft: QuestionnaireDraft) => void;
@@ -113,8 +114,24 @@ const buildResumeDestination = (state: {
   for (const flow of ordered) {
     switch (flow) {
       case 'createAccount':
-        if (state.createAccountDraft?.params) {
-          return { screen: 'CreateAccount', params: state.createAccountDraft.params };
+        if (state.createAccountDraft) {
+          const rawParams = state.createAccountDraft.params;
+          const form = state.createAccountDraft.form;
+          const fallbackScores = rawParams?.scores ?? state.characterDraft?.params?.scores ?? {};
+          const params =
+            rawParams ??
+            (form
+              ? {
+                  username: form.username,
+                  email: form.email,
+                  ageGroup: form.ageGroup,
+                  gender: form.gender,
+                  scores: fallbackScores,
+                }
+              : undefined);
+          if (params) {
+            return { screen: 'CreateAccount', params };
+          }
         }
         break;
       case 'character':
@@ -123,8 +140,20 @@ const buildResumeDestination = (state: {
         }
         break;
       case 'questionnaire':
-        if (state.questionnaireDraft?.params) {
-          return { screen: 'Questionnaire', params: state.questionnaireDraft.params };
+        if (state.questionnaireDraft) {
+          const params =
+            state.questionnaireDraft.params ??
+            (state.registrationDraft
+              ? {
+                  username: state.registrationDraft.username ?? '',
+                  email: state.registrationDraft.email ?? '',
+                  ageGroup: state.registrationDraft.ageGroup ?? '',
+                  gender: state.registrationDraft.gender ?? '',
+                }
+              : undefined);
+          if (params) {
+            return { screen: 'Questionnaire', params };
+          }
         }
         break;
       case 'registration':
@@ -144,6 +173,7 @@ export const useSessionStore = createWithEqualityFn<SessionState>()(
     (set, get) => ({
       resumeTarget: null,
       resumeDestination: null,
+      hydrated: false,
       registrationDraft: null,
       questionnaireDraft: null,
       characterDraft: null,
@@ -204,13 +234,19 @@ export const useSessionStore = createWithEqualityFn<SessionState>()(
           const answersEqual = current && JSON.stringify(current.answers) === JSON.stringify(draft.answers);
           const indexEqual = current?.index === draft.index;
           const paramsEqual = JSON.stringify(current?.params ?? {}) === JSON.stringify(draft.params ?? {});
-          if (answersEqual && indexEqual && paramsEqual) {
+          const idsEqual =
+            current?.questionIds &&
+            draft.questionIds &&
+            current.questionIds.length === draft.questionIds.length &&
+            current.questionIds.every((id, idx) => id === draft.questionIds?.[idx]);
+          if (answersEqual && indexEqual && paramsEqual && idsEqual) {
             return {};
           }
           const nextDraft: QuestionnaireDraft = {
             answers: draft.answers,
             index: draft.index,
             params: draft.params,
+            questionIds: draft.questionIds ?? current?.questionIds ?? [],
             lastUpdated: now(),
           };
           const resumeTarget =
@@ -391,17 +427,23 @@ export const useSessionStore = createWithEqualityFn<SessionState>()(
         createAccountDraft: state.createAccountDraft,
       }),
       onRehydrateStorage: () => (state, error) => {
-        if (error || !state) return;
-        const nextTarget = state.resumeTarget ?? computeResumeTarget(state);
-        const nextDestination = buildResumeDestination({
-          resumeTarget: nextTarget,
-          registrationDraft: state.registrationDraft,
-          questionnaireDraft: state.questionnaireDraft,
-          characterDraft: state.characterDraft,
-          createAccountDraft: state.createAccountDraft,
-        });
-        state.resumeTarget = nextTarget;
-        state.resumeDestination = nextDestination;
+        if (!state) return;
+        if (!error) {
+          if (state.questionnaireDraft && !state.questionnaireDraft.questionIds) {
+            state.questionnaireDraft.questionIds = [];
+          }
+          const nextTarget = state.resumeTarget ?? computeResumeTarget(state);
+          const nextDestination = buildResumeDestination({
+            resumeTarget: nextTarget,
+            registrationDraft: state.registrationDraft,
+            questionnaireDraft: state.questionnaireDraft,
+            characterDraft: state.characterDraft,
+            createAccountDraft: state.createAccountDraft,
+          });
+          state.resumeTarget = nextTarget;
+          state.resumeDestination = nextDestination;
+        }
+        state.hydrated = true;
       },
     },
   ),
