@@ -7,3 +7,4 @@
 - use preset colors, if we ever need new color, define them both in dark and light theme (change accordingly for readability). colors are at ../themes/index.ts, the function `toRgb()` converts the rbg values from the theme index file to usable typescript values type. 
 - Add snappy haptics for navigation buttons 
 - Keep `Documents/file-map.md` in sync with the actual project layout; update the map whenever directories or ownership change, and follow it when adding new surface areas.
+- Supabase CLI is linked to the production project via `supabase link`; use `npx supabase` commands for remote SQL/migrations. Keep the linked project credentials secure (see `Documents/supabase-cli.md` for usage).
