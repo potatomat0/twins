@@ -62,3 +62,4 @@ gantt
 - 2025-10-30: Session persistence — simplified App boot flow (navigation renders immediately, splash now fades once assets/auth resolve), added explicit hydration state to the session store, and rewired the resume modal to reset the stack to the requested screen after state rehydrates.
 - 2025-10-30: Build fix — added a placeholder splash bitmap so Android release builds no longer fail looking for `splashscreen_logo` (native splash still hands off to the in-app animated splash text).
 - 2025-11-01: Linked Supabase CLI to production project (`gkbcdqpkjxdjjgolvgeg`) via `supabase login` + `supabase link`; documented commands in `Documents/supabase-cli.md` for remote SQL/migration workflows.
+- 2025-11-01: Began PCA TFLite integration — added `expo-tflite` dependency and scaffolded `services/pcaEvaluator.ts` to load `pca_evaluator_4d.tflite`, with docs updated to note the new service.
