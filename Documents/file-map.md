@@ -24,6 +24,13 @@ High-level overview of the directories and core files you will touch most often.
 - `data/`: Static datasets (question bank, scoring helpers).
 - `hooks/`, `services/`, `store/`: Support code referenced across screens; when adding new domain logic, ensure you update relevant lookups and documents here.
 
+## Backend & Infra
+- `services/supabase.ts`: Supabase client singleton, auth helpers, and typed `public.profiles` fetch/upsert calls (includes PCA dims + encrypted score blobs).
+- `services/scoreCrypto.ts`: Wraps the `score-crypto` edge function for encrypt/decrypt calls before persisting or after fetching scores.
+- `supabase/functions/score-crypto/`: Deno edge function implementing AES-256-GCM encryption for raw Big Five payloads; deploy via `npx supabase functions deploy`.
+- `.env.local` (gitignored): Stores local CLI/database credentials for Supabase/postgres access. Never commit.
+- `Documents/supabase.md` & `Documents/supabase_connection_and_schema_guide.md`: Schema definitions, CLI reference, and migration/back-end change log.
+
 ## Tooling
 - `babel.config.js`: Module resolver aliases; keep in sync with TypeScript paths.
 - `tsconfig.json`: TypeScript compiler options and path aliases.

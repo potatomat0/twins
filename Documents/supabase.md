@@ -83,6 +83,7 @@ create policy "profiles_is_owner" on public.profiles
 4) Client config
 
 - In this repo, the Supabase URL and anon key are read via Expo Constants (see `app.json` extra) or `EXPO_PUBLIC_` env vars and passed to `@supabase/supabase-js`.
+- To disable the OTP/Verify Email screen when Supabase email confirmations are turned off, set `supabaseRequireEmailVerification` to `false` inside `app.json` (`expo.extra`) or via `EXPO_PUBLIC_SUPABASE_REQUIRE_EMAIL_VERIFICATION=false`. When false, signup/login flows will no longer route to the Verify Email screen and will rely on Supabase returning an immediate session.
 
 5) Dev UX: disable email confirmation for auto‑login
 
