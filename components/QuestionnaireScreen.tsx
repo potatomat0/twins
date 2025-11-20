@@ -11,6 +11,7 @@ import { QUESTIONS, type Question } from '@data/questions';
 import { getQuestionText } from '@data/questionTexts';
 import Button from '@components/common/Button';
 import { AnswerMap, computeBigFiveScores, normalizeScoresToUnitRange, FACTORS, type Factor } from '@services/profileAnalyzer';
+import { projectScoresToPca } from '@services/pcaEvaluator';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import SwipeHeader from '@components/common/SwipeHeader';
 import NotificationModal from '@components/common/NotificationModal';
@@ -222,16 +223,22 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
     await haptics.medium();
     setTimeout(() => haptics.light(), 60);
     if (index < total - 1) setIndex((i) => i + 1);
-    else onFinish();
+    else await onFinish();
   };
 
   const onPrev = () => {
     if (index > 0) setIndex((i) => i - 1);
   };
 
-  const onFinish = () => {
+  const onFinish = useCallback(async () => {
     const { sums, counts } = computeBigFiveScores(answers, questionSet);
     const normalized = normalizeScoresToUnitRange(sums, counts);
+    let pcaFingerprint: Awaited<ReturnType<typeof projectScoresToPca>> | undefined;
+    try {
+      pcaFingerprint = await projectScoresToPca(normalized);
+    } catch (error) {
+      if (__DEV__) console.warn('[Questionnaire] Failed to compute PCA fingerprint', error);
+    }
     clearQuestionnaireDraft();
     navigation.navigate('Results', {
       username: route.params?.username ?? '',
@@ -239,8 +246,9 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
       ageGroup: route.params?.ageGroup ?? '',
       gender: route.params?.gender ?? '',
       scores: normalized,
+      pcaFingerprint: pcaFingerprint ?? undefined,
     });
-  };
+  }, [answers, questionSet, clearQuestionnaireDraft, navigation, route.params]);
 
   // No incomplete modal needed with gating
 

@@ -14,6 +14,7 @@ import SwipeHeader from '@components/common/SwipeHeader';
 import { resendEmailOtp, verifyEmailOtp, upsertProfile, signInWithPassword } from '@services/supabase';
 import { useSessionStore } from '@store/sessionStore';
 import { shallow } from 'zustand/shallow';
+import { projectScoresToPca } from '@services/pcaEvaluator';
 
 type Nav = StackNavigationProp<RootStackParamList, 'VerifyEmail'>;
 type Route = RouteProp<RootStackParamList, 'VerifyEmail'>;
@@ -59,7 +60,33 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
   const ageGroup = route.params?.ageGroup ?? '';
   const gender = route.params?.gender ?? '';
   const scores = route.params?.scores ?? {};
+  const [pcaFingerprint, setPcaFingerprint] = useState(route.params?.pcaFingerprint);
+  useEffect(() => {
+    let mounted = true;
+    if (pcaFingerprint || Object.keys(scores).length === 0) return;
+    (async () => {
+      try {
+        const projected = await projectScoresToPca(scores);
+        if (mounted) setPcaFingerprint(projected ?? undefined);
+      } catch (error) {
+        if (__DEV__) console.warn('[VerifyEmail] Failed to compute PCA fingerprint', error);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [pcaFingerprint, scores]);
   const origin = route.params?.origin ?? 'login';
+
+  const pcaDims = useMemo(
+    () => ({
+      pca_dim1: pcaFingerprint?.[0] ?? null,
+      pca_dim2: pcaFingerprint?.[1] ?? null,
+      pca_dim3: pcaFingerprint?.[2] ?? null,
+      pca_dim4: pcaFingerprint?.[3] ?? null,
+    }),
+    [pcaFingerprint],
+  );
 
   const [code, setCode] = useState('');
   const [working, setWorking] = useState(false);
@@ -119,7 +146,14 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         user = sdata.user;
       }
       // Upsert profile under authenticated session
-      const { data: prof, error: upErr } = await upsertProfile({ id: user.id, username, age_group: ageGroup, gender, character_group });
+      const { data: prof, error: upErr } = await upsertProfile({
+        id: user.id,
+        username,
+        age_group: ageGroup,
+        gender,
+        character_group,
+        ...pcaDims,
+      });
       console.log('[VerifyEmail] upsert profile:', { prof, upErr });
       if (upErr) {
         const details = `${upErr.details ?? upErr.message ?? ''}`.toLowerCase();

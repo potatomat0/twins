@@ -33,6 +33,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
     'Emotional Stability': 0.5,
     'Intellect/Imagination': 0.5,
   };
+  const pcaFingerprint = route.params?.pcaFingerprint;
 
   const chartData = useMemo(
     () => [
@@ -114,6 +115,7 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
                     ageGroup,
                     gender,
                     scores,
+                    pcaFingerprint,
                   })
                 }
               />

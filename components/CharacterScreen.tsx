@@ -58,6 +58,7 @@ const CharacterScreen: React.FC<Props> = ({ navigation, route }) => {
   const { setCharacterDraft, setResumeTarget } = useSessionStore();
   const { width } = useWindowDimensions();
   const scores = route.params?.scores ?? {};
+  const pcaFingerprint = route.params?.pcaFingerprint;
   const group = useMemo(() => determineGroup(scores), [scores]);
   const icon = icons[group];
   const descriptionKey = `character.descriptions.${group}`;
@@ -122,6 +123,7 @@ const CharacterScreen: React.FC<Props> = ({ navigation, route }) => {
               ageGroup: route.params?.ageGroup ?? '',
               gender: route.params?.gender ?? '',
               scores: scores,
+              pcaFingerprint,
               // character group will be read by CreateAccount via route and saved
             } as any)
           }

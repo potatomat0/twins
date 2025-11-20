@@ -20,6 +20,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import supabase, { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
 import { useSessionStore } from '@store/sessionStore';
 import { useAutoDismissKeyboard } from '@hooks/useAutoDismissKeyboard';
+import { projectScoresToPca } from '@services/pcaEvaluator';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
 type Route = RouteProp<RootStackParamList, 'CreateAccount'>;
@@ -152,8 +153,35 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     [t],
   );
 
-  const fp = mockFingerprint(route.params?.scores);
-  const characterGroup = useMemo(() => determineCharacterGroup(route.params?.scores) ?? undefined, [route.params?.scores]);
+const fp = mockFingerprint(route.params?.scores);
+const characterGroup = useMemo(() => determineCharacterGroup(route.params?.scores) ?? undefined, [route.params?.scores]);
+const [pcaFingerprint, setPcaFingerprint] = useState(route.params?.pcaFingerprint);
+useEffect(() => {
+  let mounted = true;
+  if (pcaFingerprint || !route.params?.scores) return;
+  (async () => {
+    try {
+      const projected = await projectScoresToPca(route.params?.scores ?? {});
+      if (mounted) {
+        setPcaFingerprint(projected ?? undefined);
+      }
+    } catch (error) {
+      if (__DEV__) console.warn('[CreateAccount] Failed to compute PCA fingerprint', error);
+    }
+  })();
+  return () => {
+    mounted = false;
+  };
+}, [pcaFingerprint, route.params?.scores]);
+  const pcaDims = useMemo(
+    () => ({
+      pca_dim1: pcaFingerprint?.[0] ?? null,
+      pca_dim2: pcaFingerprint?.[1] ?? null,
+      pca_dim3: pcaFingerprint?.[2] ?? null,
+      pca_dim4: pcaFingerprint?.[3] ?? null,
+    }),
+    [pcaFingerprint],
+  );
 
   const openNotice = (config: NoticeState) => {
     setNotice(config);
@@ -257,6 +285,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     }
     const base = paramsRef.current ?? {};
     const fallbackScores = (base as any)?.scores ?? draftRef.current?.params?.scores ?? {};
+    const fallbackPca =
+      (base as any)?.pcaFingerprint ?? draftRef.current?.params?.pcaFingerprint ?? pcaFingerprint;
     const resumeParams: RootStackParamList['CreateAccount'] = {
       ...(base as object),
       username,
@@ -264,13 +294,14 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
       ageGroup,
       gender,
       scores: fallbackScores,
+      pcaFingerprint: fallbackPca,
     } as RootStackParamList['CreateAccount'];
     setCreateAccountDraft({
       params: resumeParams,
       form: { username, email, ageGroup, gender, agreed },
       lastUpdated: Date.now(),
     });
-  }, [username, email, ageGroup, gender, agreed, setCreateAccountDraft, clearCreateAccountDraft, createAccountDraft]);
+  }, [username, email, ageGroup, gender, agreed, pcaFingerprint, setCreateAccountDraft, clearCreateAccountDraft, createAccountDraft]);
 
   const handleCreateAccount = async () => {
     if (!canSubmit || creating) {
@@ -396,6 +427,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           age_group: ageGroup,
           gender,
           character_group: characterGroup,
+          ...pcaDims,
         });
         if (profileError) {
           const details = `${profileError.details ?? profileError.message ?? ''}`.toLowerCase();
@@ -428,6 +460,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           age_group: ageGroup,
           gender,
           character_group: characterGroup,
+          ...pcaDims,
         });
         if (profileError) {
           const details = `${profileError.details ?? profileError.message ?? ''}`.toLowerCase();
@@ -458,6 +491,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
         ageGroup,
         gender,
         scores: route.params?.scores ?? {},
+        pcaFingerprint,
         origin: 'signup',
       });
     } catch (err: any) {
