@@ -18,28 +18,27 @@ The Supabase CLI is configured to talk to the production project (`gkbcdqpkjxdjj
 These steps have already been completed on this machine. Re-run only if switching accounts/projects.
 
 ## Common commands
-- Run ad-hoc SQL from a file (against production):
+- Open a psql-like shell against production (requires `psql` installed):
   ```bash
-  npx supabase sql --file path/to/query.sql
+  PGPASSWORD=\"<db-password>\" \\
+  psql \"host=db.gkbcdqpkjxdjjgolvgeg.supabase.co port=5432 dbname=postgres user=postgres sslmode=require\"
   ```
-- Open a psql-like session via the dashboard shell:
+- List projects / check linking status:
   ```bash
-  npx supabase db remote commit -o shell
+  npx supabase projects list
   ```
-- Apply a SQL migration to the remote database:
+- Manage secrets (non `SUPABASE_` env names):
   ```bash
-  npx supabase db remote commit --file supabase/migrations/YYYYMMDD_name.sql
+  npx supabase secrets set DB_PASSWORD=...
   ```
-  Use with caution; review migration files before running.
-- Diff local schema against remote (useful when preparing migrations):
+- Diff the remote schema (for migrations):
   ```bash
   npx supabase db diff --use-provisioned-db > supabase/migrations/YYYYMMDD_name.sql
   ```
-  (Requires a local Postgres if you want diff generation; otherwise generate directly from a dev environment.)
 
 ## Safety checklist
-- Never run `npx supabase db remote reset` unless explicitly intended to wipe production data.
-- Prefer read-only `sql` queries when investigating issues; double-check commands before executing.
-- Store credentials in environment variables or a secure secrets manager; avoid hard-coding passwords in scripts.
+- Never run destructive commands (`db remote reset`, truncate tables, etc.) unless explicitly approved.
+- Prefer read-only queries when investigating issues; double-check SQL before executing.
+- Store credentials in `.env.local` (gitignored) or a secure secret manager.
 
 Update this file whenever the CLI workflow evolves or new best practices are adopted.

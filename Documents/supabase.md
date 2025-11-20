@@ -29,6 +29,10 @@ public.profiles (
   age_group text,
   gender text,
   personality_fingerprint float4,
+  pca_dim1 double precision,
+  pca_dim2 double precision,
+  pca_dim3 double precision,
+  pca_dim4 double precision,
   created_at timestamptz default now()
   email varchar unique 
   character_group varchar 
@@ -50,6 +54,10 @@ create table if not exists public.profiles (
   age_group text,
   gender text,
   personality_fingerprint float4,
+  pca_dim1 double precision,
+  pca_dim2 double precision,
+  pca_dim3 double precision,
+  pca_dim4 double precision,
   created_at timestamp with time zone default now()
 );
 
