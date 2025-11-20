@@ -21,8 +21,12 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme, name, setTheme } = useTheme();
   const { t } = useTranslation();
   const { signOut, user, profile } = useAuth();
-  const [scores, setScores] = useState<ScoresPayload | null>(null);
-  const [scoreState, setScoreState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const hasRouteScores = useMemo(
+    () => Boolean(route.params?.scores && Object.keys(route.params.scores ?? {}).length > 0),
+    [route.params?.scores],
+  );
+  const [scores, setScores] = useState<ScoresPayload | null>(hasRouteScores ? route.params?.scores ?? null : null);
+  const [scoreState, setScoreState] = useState<'idle' | 'loading' | 'ready' | 'error'>(hasRouteScores ? 'ready' : 'idle');
   const [scoreError, setScoreError] = useState<string | null>(null);
   const email = user?.email ?? '';
   const username =
@@ -32,16 +36,27 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
     (email ? email.split('@')[0] : 'Friend');
 
   useEffect(() => {
+    if (!route.params?.scores) return;
+    setScores(route.params.scores ?? null);
+    setScoreState('ready');
+    setScoreError(null);
+  }, [route.params?.scores]);
+
+  useEffect(() => {
     let active = true;
     if (!profile?.b5_cipher || !profile?.b5_iv) {
-      setScores(null);
-      setScoreState('idle');
-      setScoreError(null);
+      if (!hasRouteScores) {
+        setScores(null);
+        setScoreState('idle');
+        setScoreError(null);
+      }
       return () => {
         active = false;
       };
     }
-    setScoreState('loading');
+    if (!hasRouteScores) {
+      setScoreState('loading');
+    }
     setScoreError(null);
     (async () => {
       try {
@@ -50,22 +65,24 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
         if (decrypted) {
           setScores(decrypted);
           setScoreState('ready');
-        } else {
+        } else if (!hasRouteScores) {
           setScores(null);
           setScoreState('error');
           setScoreError(t('dashboard.decryptError'));
         }
       } catch (error: any) {
         if (!active) return;
-        setScores(null);
-        setScoreState('error');
-        setScoreError(error?.message ?? t('dashboard.decryptError'));
+        if (!hasRouteScores) {
+          setScores(null);
+          setScoreState('error');
+          setScoreError(error?.message ?? t('dashboard.decryptError'));
+        }
       }
     })();
     return () => {
       active = false;
     };
-  }, [profile?.b5_cipher, profile?.b5_iv, t]);
+  }, [profile?.b5_cipher, profile?.b5_iv, hasRouteScores, t]);
 
   const chartData = useMemo(() => {
     if (!scores) return null;

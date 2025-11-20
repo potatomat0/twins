@@ -54,7 +54,7 @@ export type RootStackParamList = {
     pcaFingerprint?: PcaFingerprint;
     origin?: 'signup' | 'login';
   } | undefined;
-  Dashboard: { username: string; email: string } | undefined;
+  Dashboard: { username: string; email: string; scores?: Record<string, number> } | undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();

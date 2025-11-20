@@ -298,7 +298,19 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         onPrimary={() => {
           allowExitRef.current = true;
           setVerifiedPrompt(false);
-          navigation.reset({ index: 0, routes: [{ name: 'Dashboard' as any, params: { username, email } }] });
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'Dashboard' as any,
+                params: {
+                  username,
+                  email,
+                  scores,
+                },
+              },
+            ],
+          });
         }}
         onSecondary={() => {
           allowExitRef.current = true;
