@@ -11,6 +11,7 @@ import PreQuizIntroScreen from '@components/PreQuizIntroScreen';
 import QuizPrimerScreen from '@components/QuizPrimerScreen';
 import ResumePromptScreen from '@components/ResumePromptScreen';
 import type { ResumeDestination } from '@store/sessionStore';
+import type { PcaFingerprint } from '@services/pcaEvaluator';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -18,9 +19,30 @@ export type RootStackParamList = {
   Registration: { email?: string } | undefined;
   QuizPrimer: { username: string; email: string; ageGroup: string; gender: string };
   Questionnaire: { username: string; email: string; ageGroup: string; gender: string } | undefined;
-  Results: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
-  Character: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
-  CreateAccount: { username: string; email: string; ageGroup: string; gender: string; scores: Record<string, number> } | undefined;
+  Results: {
+    username: string;
+    email: string;
+    ageGroup: string;
+    gender: string;
+    scores: Record<string, number>;
+    pcaFingerprint?: PcaFingerprint;
+  } | undefined;
+  Character: {
+    username: string;
+    email: string;
+    ageGroup: string;
+    gender: string;
+    scores: Record<string, number>;
+    pcaFingerprint?: PcaFingerprint;
+  } | undefined;
+  CreateAccount: {
+    username: string;
+    email: string;
+    ageGroup: string;
+    gender: string;
+    scores: Record<string, number>;
+    pcaFingerprint?: PcaFingerprint;
+  } | undefined;
   ResumePrompt: { destination: ResumeDestination | null } | undefined;
   VerifyEmail: {
     email: string;
@@ -29,6 +51,7 @@ export type RootStackParamList = {
     ageGroup: string;
     gender: string;
     scores: Record<string, number>;
+    pcaFingerprint?: PcaFingerprint;
     origin?: 'signup' | 'login';
   } | undefined;
   Dashboard: { username: string; email: string } | undefined;

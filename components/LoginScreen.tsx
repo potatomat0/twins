@@ -176,6 +176,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             ageGroup: draftParams?.ageGroup ?? draftForm?.ageGroup ?? '',
             gender: draftParams?.gender ?? draftForm?.gender ?? '',
             scores: draftParams?.scores ?? {},
+            pcaFingerprint: draftParams?.pcaFingerprint ?? undefined,
             origin: 'login' as const,
           };
           openModal({

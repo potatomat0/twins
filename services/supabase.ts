@@ -47,12 +47,16 @@ export type Profile = {
   gender?: string | null;
   personality_fingerprint?: number | null;
   character_group?: string | null;
+  pca_dim1?: number | null;
+  pca_dim2?: number | null;
+  pca_dim3?: number | null;
+  pca_dim4?: number | null;
 };
 
 export async function fetchProfile(id: string) {
   return supabase
     .from('profiles')
-    .select('id, username, age_group, gender, personality_fingerprint, character_group')
+    .select('id, username, age_group, gender, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4')
     .eq('id', id)
     .maybeSingle();
 }
@@ -62,7 +66,7 @@ export async function upsertProfile(profile: Profile) {
   return supabase
     .from('profiles')
     .upsert(profile, { onConflict: 'id' })
-    .select('id, username, age_group, gender, personality_fingerprint, character_group')
+    .select('id, username, age_group, gender, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4')
     .single();
 }
 

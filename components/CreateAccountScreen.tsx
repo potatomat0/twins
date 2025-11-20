@@ -153,6 +153,16 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   );
 
   const fp = mockFingerprint(route.params?.scores);
+  const pcaFingerprint = route.params?.pcaFingerprint;
+  const pcaDims = useMemo(
+    () => ({
+      pca_dim1: pcaFingerprint?.[0] ?? null,
+      pca_dim2: pcaFingerprint?.[1] ?? null,
+      pca_dim3: pcaFingerprint?.[2] ?? null,
+      pca_dim4: pcaFingerprint?.[3] ?? null,
+    }),
+    [pcaFingerprint],
+  );
   const characterGroup = useMemo(() => determineCharacterGroup(route.params?.scores) ?? undefined, [route.params?.scores]);
 
   const openNotice = (config: NoticeState) => {
@@ -257,6 +267,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     }
     const base = paramsRef.current ?? {};
     const fallbackScores = (base as any)?.scores ?? draftRef.current?.params?.scores ?? {};
+    const fallbackFingerprint =
+      (base as any)?.pcaFingerprint ?? draftRef.current?.params?.pcaFingerprint ?? route.params?.pcaFingerprint;
     const resumeParams: RootStackParamList['CreateAccount'] = {
       ...(base as object),
       username,
@@ -264,6 +276,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
       ageGroup,
       gender,
       scores: fallbackScores,
+      pcaFingerprint: fallbackFingerprint,
     } as RootStackParamList['CreateAccount'];
     setCreateAccountDraft({
       params: resumeParams,
@@ -396,6 +409,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           age_group: ageGroup,
           gender,
           character_group: characterGroup,
+          ...pcaDims,
         });
         if (profileError) {
           const details = `${profileError.details ?? profileError.message ?? ''}`.toLowerCase();
@@ -428,6 +442,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           age_group: ageGroup,
           gender,
           character_group: characterGroup,
+          ...pcaDims,
         });
         if (profileError) {
           const details = `${profileError.details ?? profileError.message ?? ''}`.toLowerCase();
@@ -458,6 +473,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
         ageGroup,
         gender,
         scores: route.params?.scores ?? {},
+        pcaFingerprint,
         origin: 'signup',
       });
     } catch (err: any) {

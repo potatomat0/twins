@@ -59,6 +59,16 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
   const ageGroup = route.params?.ageGroup ?? '';
   const gender = route.params?.gender ?? '';
   const scores = route.params?.scores ?? {};
+  const pcaFingerprint = route.params?.pcaFingerprint;
+  const pcaDims = useMemo(
+    () => ({
+      pca_dim1: pcaFingerprint?.[0] ?? null,
+      pca_dim2: pcaFingerprint?.[1] ?? null,
+      pca_dim3: pcaFingerprint?.[2] ?? null,
+      pca_dim4: pcaFingerprint?.[3] ?? null,
+    }),
+    [pcaFingerprint],
+  );
   const origin = route.params?.origin ?? 'login';
 
   const [code, setCode] = useState('');
@@ -119,7 +129,14 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         user = sdata.user;
       }
       // Upsert profile under authenticated session
-      const { data: prof, error: upErr } = await upsertProfile({ id: user.id, username, age_group: ageGroup, gender, character_group });
+      const { data: prof, error: upErr } = await upsertProfile({
+        id: user.id,
+        username,
+        age_group: ageGroup,
+        gender,
+        character_group,
+        ...pcaDims,
+      });
       console.log('[VerifyEmail] upsert profile:', { prof, upErr });
       if (upErr) {
         const details = `${upErr.details ?? upErr.message ?? ''}`.toLowerCase();

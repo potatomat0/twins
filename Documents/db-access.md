@@ -45,6 +45,9 @@ $$;
 
 This seeds `mock@test.com` with a confirmed password (`MockPassword1!`).
 
+## PCA columns
+`public.profiles` now includes four PCA dimensions (`pca_dim1` … `pca_dim4`, all double precision) that store the 4‑D fingerprint derived from the Big Five quiz. When inserting/updating profiles, set these columns alongside other metadata so matching queries can operate directly in SQL.
+
 ## Notes
 - These credentials are stored locally in `.env.local` (gitignored). Do not commit them.
 - Commands above were validated via `psql` as of 2025‑11‑20.
