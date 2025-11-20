@@ -16,6 +16,7 @@ High-level overview of the directories and core files you will touch most often.
 - `i18n/`: Translation dictionaries and helpers.
 - `themes/`: Theme definitions (`index.ts` exposes `themes`, `toRgb`, `toRgba`).
 - `services/`: External integrations (Supabase client, haptics, audio).
+- `services/pcaEvaluator.ts`: Lazy loader for the TensorFlow Lite PCA converter (`assets/ml/pca_evaluator_4d.tflite`).
 - `store/`: Zustand-powered persistent state (draft flows, resume handling).
 - `assets/`: Static assets organised by type (`images`, `sound`, `svg`). SVG imports currently rely on inline XML; clean raw files live under `assets/svg/`.
 - `assets/ml/`: TensorFlow Lite artifacts (`pca_evaluator_4d.tflite`).
