@@ -162,6 +162,15 @@ export const translations: Record<Locale, TranslationDictionary> = {
         },
       },
     },
+    dashboard: {
+      title: 'Welcome back, {username}!',
+      subtitle: 'Here is your encrypted snapshot.',
+      loadingScores: 'Decrypting your saved scores...',
+      missingScores: 'Complete the personality quiz to unlock this chart.',
+      decryptError: 'We could not load your saved scores. Try again later.',
+      topTraits: 'Standout traits',
+      logout: 'Logout',
+    },
     results: {
       tooltip: {
         dismissHint: 'Tap outside or × to dismiss',
@@ -493,6 +502,15 @@ export const translations: Record<Locale, TranslationDictionary> = {
         },
       },
     },
+    dashboard: {
+      title: 'Welcome back, {username}!',
+      subtitle: 'Here is your encrypted snapshot.',
+      loadingScores: 'Decrypting your saved scores...',
+      missingScores: 'Complete the personality quiz to unlock this chart.',
+      decryptError: 'We could not load your saved scores. Try again later.',
+      topTraits: 'Standout traits',
+      logout: 'Logout',
+    },
     results: {
       tooltip: {
         dismissHint: '外側または×をタップして閉じる',
@@ -823,6 +841,15 @@ export const translations: Record<Locale, TranslationDictionary> = {
           preferNot: 'Không muốn tiết lộ',
         },
       },
+    },
+    dashboard: {
+      title: 'Welcome back, {username}!',
+      subtitle: 'Here is your encrypted snapshot.',
+      loadingScores: 'Decrypting your saved scores...',
+      missingScores: 'Complete the personality quiz to unlock this chart.',
+      decryptError: 'We could not load your saved scores. Try again later.',
+      topTraits: 'Standout traits',
+      logout: 'Logout',
     },
     results: {
       tooltip: {

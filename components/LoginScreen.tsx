@@ -15,7 +15,7 @@ import Button from '@components/common/Button';
 import NotificationModal from '@components/common/NotificationModal';
 import KeyboardDismissable from '@components/common/KeyboardDismissable';
 import Dropdown from '@components/common/Dropdown';
-import supabase, { signInWithPassword, fetchProfile, upsertProfile } from '@services/supabase';
+import supabase, { signInWithPassword, fetchProfile, upsertProfile, requiresEmailVerification } from '@services/supabase';
 import { Locale } from '@i18n/translations';
 import { useSessionStore } from '@store/sessionStore';
 import { shallow } from 'zustand/shallow';
@@ -166,7 +166,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       console.log('[Login] signIn response:', { data, error });
       if (error) {
         const normalized = (error.message ?? '').toLowerCase();
-        if (normalized.includes('email not confirmed') || normalized.includes('email_not_confirmed')) {
+        if (
+          requiresEmailVerification &&
+          (normalized.includes('email not confirmed') || normalized.includes('email_not_confirmed'))
+        ) {
           const draftParams = createAccountDraft?.params;
           const draftForm = createAccountDraft?.form;
           const payload = {

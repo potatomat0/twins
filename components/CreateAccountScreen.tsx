@@ -17,10 +17,11 @@ import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import supabase, { signUpWithPassword, signInWithPassword, upsertProfile } from '@services/supabase';
+import supabase, { signUpWithPassword, signInWithPassword, upsertProfile, requiresEmailVerification } from '@services/supabase';
 import { useSessionStore } from '@store/sessionStore';
 import { useAutoDismissKeyboard } from '@hooks/useAutoDismissKeyboard';
 import { projectScoresToPca } from '@services/pcaEvaluator';
+import { encryptScoresRemote } from '@services/scoreCrypto';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CreateAccount'>;
 type Route = RouteProp<RootStackParamList, 'CreateAccount'>;
@@ -153,26 +154,24 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     [t],
   );
 
-const fp = mockFingerprint(route.params?.scores);
-const characterGroup = useMemo(() => determineCharacterGroup(route.params?.scores) ?? undefined, [route.params?.scores]);
-const [pcaFingerprint, setPcaFingerprint] = useState(route.params?.pcaFingerprint);
-useEffect(() => {
-  let mounted = true;
-  if (pcaFingerprint || !route.params?.scores) return;
-  (async () => {
-    try {
-      const projected = await projectScoresToPca(route.params?.scores ?? {});
-      if (mounted) {
-        setPcaFingerprint(projected ?? undefined);
+  const fp = mockFingerprint(route.params?.scores);
+  const characterGroup = useMemo(() => determineCharacterGroup(route.params?.scores) ?? undefined, [route.params?.scores]);
+  const [pcaFingerprint, setPcaFingerprint] = useState(route.params?.pcaFingerprint);
+  useEffect(() => {
+    let mounted = true;
+    if (pcaFingerprint || !route.params?.scores) return;
+    (async () => {
+      try {
+        const projected = await projectScoresToPca(route.params?.scores ?? {});
+        if (mounted) setPcaFingerprint(projected ?? undefined);
+      } catch (error) {
+        if (__DEV__) console.warn('[CreateAccount] Failed to compute PCA fingerprint', error);
       }
-    } catch (error) {
-      if (__DEV__) console.warn('[CreateAccount] Failed to compute PCA fingerprint', error);
-    }
-  })();
-  return () => {
-    mounted = false;
-  };
-}, [pcaFingerprint, route.params?.scores]);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [pcaFingerprint, route.params?.scores]);
   const pcaDims = useMemo(
     () => ({
       pca_dim1: pcaFingerprint?.[0] ?? null,
@@ -182,6 +181,7 @@ useEffect(() => {
     }),
     [pcaFingerprint],
   );
+  const hasScores = Boolean(route.params?.scores && Object.keys(route.params.scores ?? {}).length > 0);
 
   const openNotice = (config: NoticeState) => {
     setNotice(config);
@@ -243,6 +243,19 @@ useEffect(() => {
     dismissKeyboardIfComplete();
     Keyboard.dismiss();
   };
+
+  const encryptScoresForProfile = useCallback(async () => {
+    if (!hasScores) {
+      return { cipher: null as string | null, iv: null as string | null };
+    }
+    try {
+      const result = await encryptScoresRemote(route.params?.scores ?? {});
+      return { cipher: result?.cipher ?? null, iv: result?.iv ?? null };
+    } catch (error) {
+      if (__DEV__) console.warn('[CreateAccount] encrypt scores failed', error);
+      return { cipher: null as string | null, iv: null as string | null };
+    }
+  }, [hasScores, route.params?.scores]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -421,6 +434,7 @@ useEffect(() => {
         return;
       }
       if (data.session && user?.id) {
+        const encryptedScores = await encryptScoresForProfile();
         const { error: profileError } = await upsertProfile({
           id: user.id,
           username: uname,
@@ -428,6 +442,8 @@ useEffect(() => {
           gender,
           character_group: characterGroup,
           ...pcaDims,
+          b5_cipher: encryptedScores.cipher,
+          b5_iv: encryptedScores.iv,
         });
         if (profileError) {
           const details = `${profileError.details ?? profileError.message ?? ''}`.toLowerCase();
@@ -454,6 +470,7 @@ useEffect(() => {
       const { data: sdata, error: signInErr } = await signInWithPassword(mail, password);
       console.log('[CreateAccount] signIn fallback response:', { data: sdata, error: signInErr });
       if (!signInErr && sdata.user?.id) {
+        const encryptedScores = await encryptScoresForProfile();
         const { error: profileError } = await upsertProfile({
           id: sdata.user.id,
           username: uname,
@@ -461,6 +478,8 @@ useEffect(() => {
           gender,
           character_group: characterGroup,
           ...pcaDims,
+          b5_cipher: encryptedScores.cipher,
+          b5_iv: encryptedScores.iv,
         });
         if (profileError) {
           const details = `${profileError.details ?? profileError.message ?? ''}`.toLowerCase();
@@ -484,16 +503,21 @@ useEffect(() => {
         return;
       }
 
-      navigation.navigate('VerifyEmail' as any, {
-        email: mail,
-        password,
-        username: uname,
-        ageGroup,
-        gender,
-        scores: route.params?.scores ?? {},
-        pcaFingerprint,
-        origin: 'signup',
-      });
+      if (requiresEmailVerification) {
+        navigation.navigate('VerifyEmail' as any, {
+          email: mail,
+          password,
+          username: uname,
+          ageGroup,
+          gender,
+          scores: route.params?.scores ?? {},
+          pcaFingerprint,
+          origin: 'signup',
+        });
+      } else {
+        clearAllDrafts();
+        setCreated(true);
+      }
     } catch (err: any) {
       console.log('[CreateAccount] signUp exception', err);
       openNotice({

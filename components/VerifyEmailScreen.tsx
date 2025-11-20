@@ -15,6 +15,7 @@ import { resendEmailOtp, verifyEmailOtp, upsertProfile, signInWithPassword } fro
 import { useSessionStore } from '@store/sessionStore';
 import { shallow } from 'zustand/shallow';
 import { projectScoresToPca } from '@services/pcaEvaluator';
+import { encryptScoresRemote } from '@services/scoreCrypto';
 
 type Nav = StackNavigationProp<RootStackParamList, 'VerifyEmail'>;
 type Route = RouteProp<RootStackParamList, 'VerifyEmail'>;
@@ -87,6 +88,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
     }),
     [pcaFingerprint],
   );
+  const hasScores = Object.keys(scores).length > 0;
 
   const [code, setCode] = useState('');
   const [working, setWorking] = useState(false);
@@ -96,6 +98,18 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
   const allowExitRef = useRef(false);
   const exitGuardEnabledRef = useRef(true);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const encryptScoresForProfile = useCallback(async () => {
+    if (!hasScores) {
+      return { cipher: null as string | null, iv: null as string | null };
+    }
+    try {
+      const result = await encryptScoresRemote(scores);
+      return { cipher: result?.cipher ?? null, iv: result?.iv ?? null };
+    } catch (error) {
+      if (__DEV__) console.warn('[VerifyEmail] encrypt scores failed', error);
+      return { cipher: null as string | null, iv: null as string | null };
+    }
+  }, [hasScores, scores]);
 
   useFocusEffect(
     useCallback(() => {
@@ -146,6 +160,7 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         user = sdata.user;
       }
       // Upsert profile under authenticated session
+      const encryptedScores = await encryptScoresForProfile();
       const { data: prof, error: upErr } = await upsertProfile({
         id: user.id,
         username,
@@ -153,6 +168,8 @@ const VerifyEmailScreen: React.FC<Props> = ({ navigation, route }) => {
         gender,
         character_group,
         ...pcaDims,
+        b5_cipher: encryptedScores.cipher,
+        b5_iv: encryptedScores.iv,
       });
       console.log('[VerifyEmail] upsert profile:', { prof, upErr });
       if (upErr) {

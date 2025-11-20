@@ -15,5 +15,6 @@
       "@i18n/*": ["i18n/*"],
       "@store/*": ["store/*"]
     }
-  }
+  },
+  "exclude": ["node_modules", "supabase"]
 }

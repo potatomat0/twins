@@ -32,7 +32,8 @@
         "projectId": "c7de163b-1e0b-402d-8797-03097e2a74c2"
       },
       "supabaseUrl": "https://gkbcdqpkjxdjjgolvgeg.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrYmNkcXBranhkampnb2x2Z2VnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNTY1OTQsImV4cCI6MjA3MjkzMjU5NH0.1vN3V6uGpmtVdo1GvMPUYOXtT_e96gnOrxJNaebbf98"
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrYmNkcXBranhkampnb2x2Z2VnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNTY1OTQsImV4cCI6MjA3MjkzMjU5NH0.1vN3V6uGpmtVdo1GvMPUYOXtT_e96gnOrxJNaebbf98",
+      "supabaseRequireEmailVerification": true
     },
     "plugins": [
       "expo-audio"

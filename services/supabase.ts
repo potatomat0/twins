@@ -6,6 +6,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const extra = (Constants?.expoConfig?.extra ?? {}) as any;
 const SUPABASE_URL = extra.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = extra.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const rawEmailVerificationRequired =
+  extra.supabaseRequireEmailVerification ??
+  process.env.EXPO_PUBLIC_SUPABASE_REQUIRE_EMAIL_VERIFICATION;
+export const requiresEmailVerification =
+  typeof rawEmailVerificationRequired === 'boolean'
+    ? rawEmailVerificationRequired
+    : `${rawEmailVerificationRequired ?? 'true'}`.toLowerCase() !== 'false';
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.warn('[supabase] Missing config. Ensure app.json extra or EXPO_PUBLIC_ env vars are set.');
@@ -51,12 +58,14 @@ export type Profile = {
   pca_dim2?: number | null;
   pca_dim3?: number | null;
   pca_dim4?: number | null;
+  b5_cipher?: string | null;
+  b5_iv?: string | null;
 };
 
 export async function fetchProfile(id: string) {
   return supabase
     .from('profiles')
-    .select('id, username, age_group, gender, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4')
+    .select('id, username, age_group, gender, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv')
     .eq('id', id)
     .maybeSingle();
 }
@@ -66,7 +75,7 @@ export async function upsertProfile(profile: Profile) {
   return supabase
     .from('profiles')
     .upsert(profile, { onConflict: 'id' })
-    .select('id, username, age_group, gender, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4')
+    .select('id, username, age_group, gender, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv')
     .single();
 }
 
