@@ -63,3 +63,4 @@ gantt
 - 2025-10-30: Build fix — added a placeholder splash bitmap so Android release builds no longer fail looking for `splashscreen_logo` (native splash still hands off to the in-app animated splash text).
 - 2025-11-01: Linked Supabase CLI to production project (`gkbcdqpkjxdjjgolvgeg`) via `supabase login` + `supabase link`; documented commands in `Documents/supabase-cli.md` for remote SQL/migration workflows.
 - 2025-11-01: Began PCA TFLite integration — added `expo-tflite` dependency and scaffolded `services/pcaEvaluator.ts` to load `pca_evaluator_4d.tflite`, with docs updated to note the new service.
+- 2025-11-20: Added `score-crypto` Supabase Edge Function for AES-256-GCM encryption, introduced `b5_cipher`/`b5_iv` columns on `public.profiles`, and documented the secret setup + API usage.

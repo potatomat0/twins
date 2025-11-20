@@ -33,6 +33,8 @@ public.profiles (
   pca_dim2 double precision,
   pca_dim3 double precision,
   pca_dim4 double precision,
+  b5_cipher text,
+  b5_iv text,
   created_at timestamptz default now()
   email varchar unique 
   character_group varchar 
@@ -58,6 +60,8 @@ create table if not exists public.profiles (
   pca_dim2 double precision,
   pca_dim3 double precision,
   pca_dim4 double precision,
+  b5_cipher text,
+  b5_iv text,
   created_at timestamp with time zone default now()
 );
 
@@ -83,3 +87,13 @@ create policy "profiles_is_owner" on public.profiles
 5) Dev UX: disable email confirmation for auto‑login
 
 - In Supabase → Auth → Providers → Email, turn OFF "Confirm email". With confirmations disabled, `auth.signUp` returns a session and the app navigates straight to the Dashboard. If you keep confirmations ON, the app attempts a fallback `signIn` but will show a notice when the user is still unconfirmed and cannot sign in yet.
+
+## Edge Function: score-crypto
+- Located at `supabase/functions/score-crypto`. Provides AES-256-GCM encrypt/decrypt services for the raw Big Five scores.
+- Requires secret `B5_ENCRYPTION_KEY` (Base64-encoded 32-byte key). Set via:
+  ```bash
+  npx supabase secrets set B5_ENCRYPTION_KEY=$(openssl rand -base64 32)
+  ```
+- API contract (POST JSON):
+  - `{ \"mode\": \"encrypt\", \"scores\": { ... } }` → `{ \"cipher\": \"...\", \"iv\": \"...\" }`
+  - `{ \"mode\": \"decrypt\", \"payload\": \"...\", \"iv\": \"...\" }` → `{ \"scores\": { ... } }`

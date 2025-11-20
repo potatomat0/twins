@@ -138,7 +138,8 @@ The following outlines are the utmost important note for this web app developmen
 # tensorflow model for calculation 
 
 - the model(s) will be completed in future prototypes, however, its main functionality will be the following outlines: 
-	- converting the aggregated 5-dimension likert scales into a 2 dimension 'personality fingerprint' for future uses. this will be saved to the user data 
+- converting the aggregated 5-dimension likert scales into a 2 dimension 'personality fingerprint' for future uses. this will be saved to the user data 
+- The raw Big Five vector is encrypted (AES-256-GCM via a Supabase Edge Function) before storage. Only the irreversible PCA-4 values plus ciphertext/IV live in `public.profiles`, satisfying the DBA visibility requirement while letting the user recover their scores later.
 	- comparing the matching score from 1 to 100 (with decimals and rounding options) 
 	- traversing a graph of users and find potential matching partners for the current user. 
 

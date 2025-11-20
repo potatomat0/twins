@@ -75,6 +75,8 @@ create table if not exists public.profiles (
   pca_dim2 double precision,
   pca_dim3 double precision,
   pca_dim4 double precision,
+  b5_cipher text,
+  b5_iv text,
   created_at timestamptz default now(),
   character_group varchar
 );
@@ -159,7 +161,19 @@ Relevant code files:
 
 ---
 
-## 6) Testing checklist
+## 6) Encryption Edge Function
+
+- Function: `supabase/functions/score-crypto` (deployed via Supabase Edge Functions).
+- Purpose: wrap AES-256-GCM encryption/decryption of raw Big Five scores so only PCA values plus ciphertext reach the DBA.
+- Secrets: set `B5_ENCRYPTION_KEY` (Base64 32-byte key) in project secrets:
+  ```bash
+  npx supabase secrets set B5_ENCRYPTION_KEY=$(openssl rand -base64 32)
+  ```
+- Usage:
+  - `POST /functions/v1/score-crypto` with `{ "mode": "encrypt", "scores": { ... } }` returns `{ cipher, iv }`.
+  - `POST ...` with `{ "mode": "decrypt", "payload": "...", "iv": "..." }` returns the original scores.
+
+## 7) Testing checklist
 
 - Environment
   - Project URL and anon key configured in `app.json` or env.
@@ -175,7 +189,7 @@ Relevant code files:
 
 ---
 
-## 7) Troubleshooting
+## 8) Troubleshooting
 
 - “Invalid login credentials”: Confirm the user is verified (if confirmation ON) and password is correct.
 - No confirmation email received:
@@ -190,7 +204,7 @@ Relevant code files:
 
 ---
 
-## 8) Security reminders
+## 9) Security reminders
 
 - Never embed the `service_role` key in the mobile app. Only use it in secured backend contexts.
 - Keep PII duplication to a minimum. Read email via `my_profile` rather than storing it in `public.profiles`.

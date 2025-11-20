@@ -31,6 +31,10 @@ These steps have already been completed on this machine. Re-run only if switchin
   ```bash
   npx supabase secrets set DB_PASSWORD=...
   ```
+- Set encryption key for Edge function:
+  ```bash
+  npx supabase secrets set B5_ENCRYPTION_KEY=$(openssl rand -base64 32)
+  ```
 - Diff the remote schema (for migrations):
   ```bash
   npx supabase db diff --use-provisioned-db > supabase/migrations/YYYYMMDD_name.sql
