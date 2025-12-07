@@ -52,6 +52,7 @@ export type Profile = {
   username?: string | null;
   age_group?: string | null;
   gender?: string | null;
+  avatar_url?: string | null;
   personality_fingerprint?: number | null;
   character_group?: string | null;
   pca_dim1?: number | null;
@@ -65,7 +66,9 @@ export type Profile = {
 export async function fetchProfile(id: string) {
   return supabase
     .from('profiles')
-    .select('id, username, age_group, gender, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv')
+    .select(
+      'id, username, age_group, gender, avatar_url, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv',
+    )
     .eq('id', id)
     .maybeSingle();
 }
@@ -75,7 +78,9 @@ export async function upsertProfile(profile: Profile) {
   return supabase
     .from('profiles')
     .upsert(profile, { onConflict: 'id' })
-    .select('id, username, age_group, gender, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv')
+    .select(
+      'id, username, age_group, gender, avatar_url, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv',
+    )
     .single();
 }
 
@@ -96,6 +101,7 @@ export type MyProfile = {
   username: string | null;
   age_group: string | null;
   gender: string | null;
+  avatar_url: string | null;
   personality_fingerprint: number | null;
   character_group: string | null;
   email: string | null;

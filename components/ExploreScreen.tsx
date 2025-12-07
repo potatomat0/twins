@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, ScrollView, Switch, Pressable, ActivityIndicator, Image } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
@@ -7,6 +7,8 @@ import { useTranslation } from '@context/LocaleContext';
 import Button from '@components/common/Button';
 import { useAuth } from '@context/AuthContext';
 import supabase from '@services/supabase';
+import { placeholderAvatarUrl } from '@services/storage';
+import { getCache, setCache } from '@services/cache';
 
 type SimilarUser = {
   id: string;
@@ -14,6 +16,7 @@ type SimilarUser = {
   age_group: string | null;
   gender: string | null;
   character_group: string | null;
+  avatar_url?: string | null;
   similarity: number;
 };
 
@@ -23,16 +26,15 @@ type Pool = {
   available: boolean;
 };
 
-const placeholderAvatar = 'https://placekitten.com/160/160';
-
 const ExploreScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [filters, setFilters] = useState({ ageGroup: true, gender: true, characterGroup: true });
+  const [filters, setFilters] = useState({ ageGroup: false, gender: false, characterGroup: false });
   const [pools, setPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
   const toggle = useCallback(
     (key: 'ageGroup' | 'gender' | 'characterGroup') => {
@@ -63,12 +65,29 @@ const ExploreScreen: React.FC = () => {
         setError(payload.error);
         return;
       }
-      setPools(payload?.pools ?? []);
+      const filtered = (payload?.pools ?? []).map((p) => ({
+        ...p,
+        users: (p.users ?? []).filter((u) => u.id !== user.id),
+      }));
+      setPools(filtered);
+      await setCache(`pool:list:${user.id}:${JSON.stringify(filters)}`, filtered);
     } catch (e: any) {
       setError(e?.message ?? 'Unexpected error');
     } finally {
       setLoading(false);
     }
+  }, [filters, user?.id]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!user?.id) return;
+      const cached = await getCache<Pool[]>(`pool:list:${user.id}:${JSON.stringify(filters)}`, CACHE_TTL_MS);
+      if (cached && active) setPools(cached);
+    })();
+    return () => {
+      active = false;
+    };
   }, [filters, user?.id]);
 
   const topPool = useMemo(() => pools.find((p) => p.users?.length), [pools]);
@@ -79,21 +98,23 @@ const ExploreScreen: React.FC = () => {
         <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>
           {t('dashboard.title', { username: user?.user_metadata?.username ?? 'Friend' })}
         </Text>
-        <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>
-          Swipe-ready recommendations based on your PCA fingerprint.
-        </Text>
+        <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>{t('explore.listSubtitle')}</Text>
 
         <View style={[styles.card, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.12) }]}>
-          <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']) }]}>Filters</Text>
+          <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']) }]}>{t('explore.filters')}</Text>
           {(['ageGroup', 'gender', 'characterGroup'] as const).map((key) => (
             <View key={key} style={styles.filterRow}>
               <Text style={{ color: toRgb(theme.colors['--text-secondary']), flex: 1 }}>
-                {key === 'ageGroup' ? 'Age group' : key === 'gender' ? 'Gender' : 'Archetype'}
+                {key === 'ageGroup'
+                  ? t('explore.filterAge')
+                  : key === 'gender'
+                  ? t('explore.filterGender')
+                  : t('explore.filterArchetype')}
               </Text>
               <Switch value={filters[key]} onValueChange={() => toggle(key)} />
             </View>
           ))}
-          <Button title={loading ? 'Loading...' : 'Fetch matches'} onPress={fetchRecommendations} disabled={loading || !user?.id} />
+          <Button title={loading ? t('common.loading') : t('explore.fetchMatches')} onPress={fetchRecommendations} disabled={loading || !user?.id} />
           {error ? <Text style={{ color: toRgb(theme.colors['--danger']), marginTop: 8 }}>{error}</Text> : null}
         </View>
 
@@ -102,14 +123,14 @@ const ExploreScreen: React.FC = () => {
         {loading && (
           <View style={{ alignItems: 'center', padding: 16 }}>
             <ActivityIndicator color={toRgb(theme.colors['--brand-primary'])} />
-            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 8 }}>Building your pool...</Text>
+            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 8 }}>{t('explore.loadingList')}</Text>
           </View>
         )}
 
         {!loading && topPool && topPool.users.length > 0 ? (
           <View style={{ gap: 12 }}>
             <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']) }]}>
-              Top {topPool.users.length} matches
+              {t('explore.topMatches', { count: topPool.users.length })}
             </Text>
             {topPool.users.map((u) => (
               <View
@@ -119,7 +140,7 @@ const ExploreScreen: React.FC = () => {
                   { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.12) },
                 ]}
               >
-                <Image source={{ uri: placeholderAvatar }} style={styles.avatar} />
+                <Image source={{ uri: u.avatar_url || placeholderAvatarUrl }} style={styles.avatar} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>
                     {u.username ?? 'Unknown'}
@@ -128,14 +149,14 @@ const ExploreScreen: React.FC = () => {
                     {u.age_group ?? '—'} · {u.gender ?? '—'} · {u.character_group ?? '—'}
                   </Text>
                   <Text style={{ color: toRgb(theme.colors['--brand-primary']), marginTop: 4 }}>
-                    {(u.similarity * 100).toFixed(1)}% match
+                    {t('explore.matchLabel', { percent: (u.similarity * 100).toFixed(1) })}
                   </Text>
                 </View>
                 <Pressable
                   style={[styles.actionBtn, { borderColor: toRgba(theme.colors['--border'], 0.2) }]}
                   onPress={() => {}}
                 >
-                  <Text style={{ color: toRgb(theme.colors['--text-primary']) }}>Details</Text>
+                  <Text style={{ color: toRgb(theme.colors['--text-primary']) }}>{t('common.notice')}</Text>
                 </Pressable>
               </View>
             ))}
@@ -143,7 +164,7 @@ const ExploreScreen: React.FC = () => {
         ) : null}
 
         {!loading && (!topPool || topPool.users.length === 0) && !error ? (
-          <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>No matches yet. Adjust filters and try again.</Text>
+          <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('explore.noListMatches')}</Text>
         ) : null}
       </ScrollView>
     </SafeAreaView>

@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-navigation/bottom-tabs": "^7.8.11",
+    "@react-navigation/bottom-tabs": "^6.5.20",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/stack": "^6.3.29",
     "@supabase/supabase-js": "^2.45.4",
@@ -33,6 +33,7 @@
     "expo-constants": "~18.0.10",
     "expo-font": "~14.0.8",
     "expo-haptics": "~15.0.7",
+    "expo-image-picker": "^17.0.9",
     "expo-splash-screen": "^31.0.10",
     "expo-status-bar": "~3.0.8",
     "react": "19.1.0",

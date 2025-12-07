@@ -2,9 +2,9 @@ export type ThemeSpec = {
   colors: Record<string, string>; // values are "r g b" triplets
 };
 
-export type ThemeName = 'dark' | 'light';
+export type ThemeName = 'dark' | 'light' | 'system';
 
-export const themes: Record<ThemeName, ThemeSpec> = {
+export const themes: Record<Exclude<ThemeName, 'system'>, ThemeSpec> = {
   dark: {
     colors: {
       '--bg': '16 17 24',

@@ -6,7 +6,6 @@ import ResultsScreen from '@components/ResultsScreen';
 import CreateAccountScreen from '@components/CreateAccountScreen';
 import LoginScreen from '@components/LoginScreen';
 import SwipeHeader from '@components/common/SwipeHeader';
-import DashboardScreen from '@components/DashboardScreen';
 import ExploreScreen from '@components/ExploreScreen';
 import ExploreSwipeScreen from '@components/ExploreSwipeScreen';
 import UserSettingsScreen from '@components/UserSettingsScreen';
@@ -65,7 +64,6 @@ export type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 type TabParamList = {
   Explore: undefined;
-  Graph: undefined;
   Settings: undefined;
   Test: undefined;
 };
@@ -82,17 +80,16 @@ const MainTabs: React.FC = () => {
           const icon =
             route.name === 'Explore'
               ? 'compass'
-              : route.name === 'Dashboard'
-              ? 'stats-chart'
-              : 'settings';
+              : route.name === 'Settings'
+              ? 'settings'
+              : 'construct';
           return <Ionicons name={icon as any} color={color} size={size} />;
         },
       })}
     >
-      <Tab.Screen name="Explore" component={ExploreScreen} />
-      <Tab.Screen name="Graph" component={DashboardScreen} />
-      <Tab.Screen name="Settings" component={UserSettingsScreen} />
-      <Tab.Screen name="Test" component={ExploreScreen} />
+      <Tab.Screen name="Explore" component={ExploreSwipeScreen as any} />
+      <Tab.Screen name="Settings" component={UserSettingsScreen as any} />
+      <Tab.Screen name="Test" component={ExploreScreen as any} />
     </Tab.Navigator>
   );
 };
