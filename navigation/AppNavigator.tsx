@@ -7,11 +7,15 @@ import CreateAccountScreen from '@components/CreateAccountScreen';
 import LoginScreen from '@components/LoginScreen';
 import SwipeHeader from '@components/common/SwipeHeader';
 import DashboardScreen from '@components/DashboardScreen';
+import ExploreScreen from '@components/ExploreScreen';
+import UserSettingsScreen from '@components/UserSettingsScreen';
 import PreQuizIntroScreen from '@components/PreQuizIntroScreen';
 import QuizPrimerScreen from '@components/QuizPrimerScreen';
 import ResumePromptScreen from '@components/ResumePromptScreen';
 import type { ResumeDestination } from '@store/sessionStore';
 import type { PcaFingerprint } from '@services/pcaEvaluator';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -55,10 +59,40 @@ export type RootStackParamList = {
     origin?: 'signup' | 'login';
   } | undefined;
   Dashboard: { username: string; email: string; scores?: Record<string, number> } | undefined;
-  Explore: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
+type TabParamList = {
+  Explore: undefined;
+  Graph: undefined;
+  Settings: undefined;
+};
+
+const Tab = createBottomTabNavigator<TabParamList>();
+
+const MainTabs: React.FC = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }: any) => ({
+        headerShown: false,
+        tabBarStyle: { paddingBottom: 6, paddingTop: 6, height: 60 },
+        tabBarIcon: ({ color, size }: { color: string; size: number }) => {
+          const icon =
+            route.name === 'Explore'
+              ? 'compass'
+              : route.name === 'Dashboard'
+              ? 'stats-chart'
+              : 'settings';
+          return <Ionicons name={icon as any} color={color} size={size} />;
+        },
+      })}
+    >
+      <Tab.Screen name="Explore" component={ExploreScreen} />
+      <Tab.Screen name="Graph" component={DashboardScreen} />
+      <Tab.Screen name="Settings" component={UserSettingsScreen} />
+    </Tab.Navigator>
+  );
+};
 
 const AppNavigator = () => {
   return (
@@ -137,7 +171,7 @@ const AppNavigator = () => {
           header: () => <SwipeHeader title="Create Account" onBack={() => navigation.goBack()} />,
         })}
       />
-      <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      <Stack.Screen name="Dashboard" component={MainTabs} />
       <Stack.Screen
         name="VerifyEmail"
         component={require('@components/VerifyEmailScreen').default}
@@ -146,14 +180,6 @@ const AppNavigator = () => {
           gestureEnabled: false,
           header: () => <SwipeHeader title="Verify Email" onBack={() => navigation.goBack()} />,
         })}
-      />
-      <Stack.Screen
-        name="Explore"
-        component={require('@components/ExploreScreen').default}
-        options={{
-          headerShown: false,
-          gestureEnabled: true,
-        }}
       />
     </Stack.Navigator>
   );

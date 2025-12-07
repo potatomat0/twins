@@ -154,11 +154,6 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
         <View style={{ height: 24 }} />
         <Button
-          title="Explore matches"
-          onPress={() => navigation.navigate('Explore')}
-        />
-        <View style={{ height: 16 }} />
-        <Button
           title={name === 'dark' ? t('common.themeToggle.toLight') : t('common.themeToggle.toDark')}
           onPress={() => setTheme(name === 'dark' ? 'light' : 'dark')}
         />
