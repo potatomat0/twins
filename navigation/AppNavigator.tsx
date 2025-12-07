@@ -8,6 +8,7 @@ import LoginScreen from '@components/LoginScreen';
 import SwipeHeader from '@components/common/SwipeHeader';
 import DashboardScreen from '@components/DashboardScreen';
 import ExploreScreen from '@components/ExploreScreen';
+import ExploreSwipeScreen from '@components/ExploreSwipeScreen';
 import UserSettingsScreen from '@components/UserSettingsScreen';
 import PreQuizIntroScreen from '@components/PreQuizIntroScreen';
 import QuizPrimerScreen from '@components/QuizPrimerScreen';
@@ -66,6 +67,7 @@ type TabParamList = {
   Explore: undefined;
   Graph: undefined;
   Settings: undefined;
+  Test: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -90,6 +92,7 @@ const MainTabs: React.FC = () => {
       <Tab.Screen name="Explore" component={ExploreScreen} />
       <Tab.Screen name="Graph" component={DashboardScreen} />
       <Tab.Screen name="Settings" component={UserSettingsScreen} />
+      <Tab.Screen name="Test" component={ExploreScreen} />
     </Tab.Navigator>
   );
 };
