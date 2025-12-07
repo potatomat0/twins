@@ -55,6 +55,7 @@ export type RootStackParamList = {
     origin?: 'signup' | 'login';
   } | undefined;
   Dashboard: { username: string; email: string; scores?: Record<string, number> } | undefined;
+  Explore: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -145,6 +146,14 @@ const AppNavigator = () => {
           gestureEnabled: false,
           header: () => <SwipeHeader title="Verify Email" onBack={() => navigation.goBack()} />,
         })}
+      />
+      <Stack.Screen
+        name="Explore"
+        component={require('@components/ExploreScreen').default}
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+        }}
       />
     </Stack.Navigator>
   );

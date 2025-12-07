@@ -65,3 +65,4 @@ gantt
 - 2025-11-01: Began PCA TFLite integration — added `expo-tflite` dependency and scaffolded `services/pcaEvaluator.ts` to load `pca_evaluator_4d.tflite`, with docs updated to note the new service.
 - 2025-11-20: Added `score-crypto` Supabase Edge Function for AES-256-GCM encryption, introduced `b5_cipher`/`b5_iv` columns on `public.profiles`, and documented the secret setup + API usage.
 - 2025-11-26: Finished wiring encrypted score storage through Create Account + Verify Email, extended Supabase profile typings, and updated Dashboard to decrypt via the edge function and render the RadarChart with saved Big Five scores. File map/docs note the new backend surface.
+- 2025-12-07: Seeded 41 mock users (Big Five → PCA-4 → AES blobs) via `seedMockProfiles`; added reporting view `public.mock_profiles_report` and a new `recommend-users` edge function skeleton for similarity-based matching.
