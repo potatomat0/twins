@@ -1,6 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, ActivityIndicator, Image, Pressable, Animated, Easing, Modal, Switch } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  Pressable,
+  Animated,
+  Easing,
+  Modal,
+  Switch,
+  PanResponder,
+  Dimensions,
+} from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
 import { useTranslation } from '@context/LocaleContext';
@@ -10,6 +23,7 @@ import Button from '@components/common/Button';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { placeholderAvatarUrl } from '@services/storage';
 import { getCache, setCache } from '@services/cache';
+import haptics from '@services/haptics';
 
 type SimilarUser = {
   id: string;
@@ -32,17 +46,18 @@ const ExploreSwipeScreen: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [pool, setPool] = useState<SimilarUser[]>([]);
-  const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState({ ageGroup: false, gender: false, characterGroup: false });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-  const current = pool[index];
-  const remaining = pool.length - index - 1;
-  const anim = useRef(new Animated.Value(0)).current; // 0 center, 1 right, -1 left
+  const current = pool[0];
+  const remaining = pool.length - 1;
+  const anim = useRef(new Animated.Value(0)).current;
   const fading = useRef(new Animated.Value(1)).current;
+  const screenWidth = useRef(Dimensions.get('window').width).current;
+  const swipeThreshold = screenWidth * 0.25;
 
   const fetchPool = useCallback(async () => {
     if (!user?.id) return;
@@ -69,7 +84,6 @@ const ExploreSwipeScreen: React.FC = () => {
       const users = (payload?.pools?.[0]?.users ?? []).filter((u) => u.id !== user.id);
       setPool(users);
       await setCache(`pool:${user.id}:${JSON.stringify(filters)}`, users);
-      setIndex(0);
     } catch (e: any) {
       setError(e?.message ?? 'Unexpected error');
     } finally {
@@ -84,7 +98,6 @@ const ExploreSwipeScreen: React.FC = () => {
       const cached = await getCache<SimilarUser[]>(`pool:${user.id}:${JSON.stringify(filters)}`, CACHE_TTL_MS);
       if (cached && mounted) {
         setPool(cached);
-        setIndex(0);
       }
       await fetchPool();
     })();
@@ -93,29 +106,89 @@ const ExploreSwipeScreen: React.FC = () => {
     };
   }, [fetchPool, filters, user?.id]);
 
+  const advance = useCallback(() => {
+    setPool((prev) => {
+      if (prev.length <= 1) {
+        void fetchPool();
+        return prev;
+      }
+      return prev.slice(1);
+    });
+  }, [fetchPool]);
+
   const onSwipe = useCallback(
-    (action: 'like' | 'skip') => {
+    async (action: 'like' | 'skip', dxOverride?: number) => {
       const direction = action === 'like' ? 1 : -1;
+      if (action === 'like') {
+        void haptics.light();
+      } else {
+        void haptics.selection();
+      }
       Animated.parallel([
-        Animated.timing(anim, { toValue: direction, duration: 220, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+        Animated.timing(anim, {
+          toValue: dxOverride ? dxOverride / swipeThreshold : direction,
+          duration: 220,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.cubic),
+        }),
         Animated.timing(fading, { toValue: 0, duration: 220, useNativeDriver: true }),
       ]).start(() => {
-        anim.setValue(0);
-        fading.setValue(1);
-        if (index < pool.length - 1) {
-          setIndex((i) => i + 1);
-        } else {
-          fetchPool();
-        }
+        void advance();
+        requestAnimationFrame(() => {
+          anim.setValue(0);
+          fading.setValue(1);
+        });
       });
     },
-    [anim, fading, fetchPool, index, pool.length],
+    [advance, anim, fading, swipeThreshold],
   );
 
-  const similarityText = useMemo(() => {
-    if (!current) return '';
-    return `${(current.similarity * 100).toFixed(1)}% match`;
-  }, [current]);
+  const likeOpacity = anim.interpolate({
+    inputRange: [0, 1, 1.5],
+    outputRange: [0, 0.6, 0.6],
+    extrapolate: 'clamp',
+  });
+  const likeScale = anim.interpolate({
+    inputRange: [0, 1, 1.5],
+    outputRange: [1, 1.5, 2],
+    extrapolate: 'clamp',
+  });
+  const skipOpacity = anim.interpolate({
+    inputRange: [-1.5, -1, 0],
+    outputRange: [0.6, 0.6, 0],
+    extrapolate: 'clamp',
+  });
+  const skipScale = anim.interpolate({
+    inputRange: [-1.5, -1, 0],
+    outputRange: [2, 1.5, 1],
+    extrapolate: 'clamp',
+  });
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderMove: (_evt, gesture) => {
+          const dx = gesture.dx;
+          const normalized = dx / swipeThreshold;
+          anim.setValue(Math.max(-1.5, Math.min(1.5, normalized * 0.8)));
+          const clampedOpacity = Math.min(1, Math.abs(normalized) / 1.2);
+          fading.setValue(1 - clampedOpacity * 0.2);
+        },
+        onPanResponderRelease: (_evt, gesture) => {
+          const dx = gesture.dx;
+          if (dx > swipeThreshold) {
+            onSwipe('like', dx);
+          } else if (dx < -swipeThreshold) {
+            onSwipe('skip', dx);
+          } else {
+            Animated.spring(anim, { toValue: 0, useNativeDriver: true, friction: 6 }).start();
+            Animated.spring(fading, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
+          }
+        },
+      }),
+    [onSwipe, swipeThreshold, anim, fading],
+  );
 
   const animatedStyle = {
     transform: [
@@ -173,7 +246,26 @@ const ExploreSwipeScreen: React.FC = () => {
               { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.12) },
               animatedStyle,
             ]}
+            {...panResponder.panHandlers}
           >
+            <Animated.View
+              style={[
+                styles.badge,
+                { left: 16, backgroundColor: toRgba(theme.colors['--danger'], 0.15) },
+                { opacity: skipOpacity, transform: [{ scale: skipScale }] },
+              ]}
+            >
+              <Ionicons name="close" size={36} color={toRgb(theme.colors['--danger'])} />
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.badge,
+                { right: 16, backgroundColor: toRgba(theme.colors['--brand-primary'], 0.15) },
+                { opacity: likeOpacity, transform: [{ scale: likeScale }] },
+              ]}
+            >
+              <Ionicons name="checkmark" size={36} color={toRgb(theme.colors['--brand-primary'])} />
+            </Animated.View>
             <Image source={{ uri: current.avatar_url || placeholderAvatarUrl }} style={styles.avatar} />
             <Text style={[styles.name, { color: toRgb(theme.colors['--text-primary']) }]}>{current.username ?? 'Unknown'}</Text>
             <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>
@@ -185,21 +277,54 @@ const ExploreSwipeScreen: React.FC = () => {
             <Text style={{ color: toRgb(theme.colors['--text-muted']), marginTop: 6 }}>
               {remaining > 0 ? t('explore.remaining', { count: remaining }) : t('explore.endOfPool')}
             </Text>
-            <View style={styles.actions}>
-              <Pressable
-                style={[styles.actionBtn, { backgroundColor: toRgba(theme.colors['--danger'], 0.12) }]}
-                onPress={() => onSwipe('skip')}
-              >
-                <Text style={{ color: toRgb(theme.colors['--danger']), fontWeight: '700' }}>{t('explore.skip')}</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.actionBtn, { backgroundColor: toRgba(theme.colors['--brand-primary'], 0.15) }]}
-                onPress={() => onSwipe('like')}
-              >
-                <Text style={{ color: toRgb(theme.colors['--brand-primary']), fontWeight: '700' }}>{t('explore.like')}</Text>
-              </Pressable>
-            </View>
           </Animated.View>
+        )}
+
+        {!loading && !error && current && (
+          <View style={styles.actionRow}>
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.actionBadge,
+                { left: '18%', backgroundColor: toRgba(theme.colors['--danger'], 0.15) },
+                { opacity: skipOpacity, transform: [{ scale: skipScale }] },
+              ]}
+            >
+              <Ionicons name="close" size={28} color={toRgb(theme.colors['--danger'])} />
+            </Animated.View>
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.actionBadge,
+                { right: '18%', backgroundColor: toRgba(theme.colors['--brand-primary'], 0.15) },
+                { opacity: likeOpacity, transform: [{ scale: likeScale }] },
+              ]}
+            >
+              <Ionicons name="checkmark" size={28} color={toRgb(theme.colors['--brand-primary'])} />
+            </Animated.View>
+            <Pressable
+              style={[
+                styles.actionBtn,
+                { backgroundColor: toRgba(theme.colors['--danger'], 0.12), borderColor: toRgba(theme.colors['--danger'], 0.5) },
+              ]}
+              onPress={() => onSwipe('skip')}
+            >
+              <Ionicons name="close" size={22} color={toRgb(theme.colors['--danger'])} />
+            </Pressable>
+            <View style={{ width: 12 }} />
+            <Pressable
+              style={[
+                styles.actionBtn,
+                {
+                  backgroundColor: toRgba(theme.colors['--brand-primary'], 0.15),
+                  borderColor: toRgba(theme.colors['--brand-primary'], 0.5),
+                },
+              ]}
+              onPress={() => onSwipe('like')}
+            >
+              <Ionicons name="checkmark" size={22} color={toRgb(theme.colors['--brand-primary'])} />
+            </Pressable>
+          </View>
         )}
 
         {!loading && !error && !current && (
@@ -256,9 +381,17 @@ const styles = StyleSheet.create({
   card: { borderRadius: 16, padding: 16, alignItems: 'center', borderWidth: 1, gap: 6 },
   avatar: { width: '100%', height: 260, borderRadius: 12, marginBottom: 12, backgroundColor: '#ddd' },
   name: { fontSize: 18, fontWeight: '700' },
-  actions: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  actionBtn: { flex: 1, alignItems: 'center', padding: 12, borderRadius: 10 },
+  actionRow: { marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  actionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
   modalCard: { position: 'absolute', left: 16, right: 16, top: '24%', borderRadius: 12, padding: 16, borderWidth: 1 },
   filterRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  badge: { position: 'absolute', top: 14, padding: 8, borderRadius: 12 },
+  actionBadge: { position: 'absolute', top: -24, padding: 10, borderRadius: 14 },
 });

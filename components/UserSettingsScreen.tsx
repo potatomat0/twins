@@ -146,6 +146,14 @@ const UserSettingsScreen: React.FC = () => {
     }
   }, [buildProfilePayload, user?.id]);
 
+  const handleLogout = useCallback(async () => {
+    await signOut();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' as any }],
+    });
+  }, [navigation, signOut]);
+
   const pickAvatar = useCallback(
     async (mode: 'camera' | 'library') => {
       if (!user?.id) return;
@@ -303,6 +311,9 @@ const UserSettingsScreen: React.FC = () => {
           />
         </Accordion>
       </ScrollView>
+      <View style={{ padding: 16 }}>
+        <Button title={t('dashboard.logout')} variant="danger" onPress={handleLogout} />
+      </View>
     </SafeAreaView>
   );
 };
