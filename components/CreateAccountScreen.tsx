@@ -768,12 +768,6 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
               <Text style={styles.warn}>{t('createAccount.errors.confirmMismatch')}</Text>
             )}
 
-            {/* Mock fingerprint — TODO: supply from TF Lite model via useTensorflowModel */}
-            <View style={[styles.fpRow, { borderColor: toRgba(theme.colors['--border'], 0.08) }]}>
-              <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('createAccount.fingerprintLabel')}</Text>
-              <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>{fp}</Text>
-            </View>
-
             {/* Terms / Privacy acknowledgment */}
             <View style={styles.termsRow}>
               <Pressable

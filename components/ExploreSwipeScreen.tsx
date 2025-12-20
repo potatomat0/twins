@@ -370,6 +370,14 @@ const ExploreSwipeScreen: React.FC = () => {
         >
           <Text style={[styles.name, { color: toRgb(theme.colors['--text-primary']), marginBottom: 8 }]}>{t('explore.filters')}</Text>
           <Text style={{ color: toRgb(theme.colors['--text-muted']), marginBottom: 8 }}>{t('explore.filterHint')}</Text>
+          <View style={styles.filterRow}>
+            <Ionicons name="pulse-outline" size={18} color={toRgb(theme.colors['--text-secondary'])} style={{ marginRight: 8 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('explore.useElo')}</Text>
+              <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 11 }}>{t('explore.useEloHint')}</Text>
+            </View>
+            <Switch value={useElo} onValueChange={setUseElo} />
+          </View>
           {(['ageGroup', 'gender', 'characterGroup'] as const).map((key) => (
             <View key={key} style={styles.filterRow}>
               <Ionicons

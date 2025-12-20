@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.192.0/http/server.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('SUPABASE_URL_REST');
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const K_FACTOR = 24;
+const K_FACTOR = 12;
 
 type ProfileRow = {
   id: string;
@@ -31,13 +31,22 @@ function expectedScore(rA: number, rB: number) {
   return 1 / (1 + Math.pow(10, (rB - rA) / 400));
 }
 
+function clampElo(r: number) {
+  return Math.max(800, Math.min(2000, r));
+}
+
 function updateRatings(rA: number, rB: number, outcome: 'like' | 'skip', k = K_FACTOR) {
-  const Sa = outcome === 'like' ? 1 : 0;
   const Ea = expectedScore(rA, rB);
   const Eb = expectedScore(rB, rA);
-  const newA = rA + k * (Sa - Ea);
-  const newB = rB + k * ((1 - Sa) - Eb);
-  return { newA, newB };
+  if (outcome === 'like') {
+    // Cooperative: both gain modestly toward an expected win
+    const newA = clampElo(rA + k * (1 - Ea));
+    const newB = clampElo(rB + k * (1 - Eb));
+    return { newA, newB };
+  }
+  // Skip: penalize actor only
+  const newA = clampElo(rA + k * (0 - Ea));
+  return { newA, newB: rB };
 }
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
@@ -82,12 +91,11 @@ serve(async (req) => {
     const updated = updateRatings(rA, rB, outcome);
     newA = updated.newA;
     newB = updated.newB;
-    const { error: upErr } = await supabase
-      .from('profiles')
-      .upsert([
-        { id: actorId, elo_rating: newA },
-        { id: targetId, elo_rating: newB },
-      ]);
+    const upsertRows = [{ id: actorId, elo_rating: newA }];
+    if (updated.newB !== rB) {
+      upsertRows.push({ id: targetId, elo_rating: newB });
+    }
+    const { error: upErr } = await supabase.from('profiles').upsert(upsertRows);
     if (upErr) {
       console.error('[match-update] upsert elo error', upErr);
     }

@@ -2,17 +2,18 @@
 
 ## What it is
 - We blend personality similarity (PCA cosine) with an ELO-like score that adjusts as users are liked/skipped.
-- Default weights: PCA 80%, ELO proximity 20% (ELO only reorders within similar PCA matches).
-- Users can opt out via the `Use skill-based matching (ELO)` toggle in Settings (`match_allow_elo`).
+- Default weights: PCA 80%, ELO proximity 20% (PCA stays primary; ELO only nudges ordering among close PCA matches).
+- Users can toggle ELO in the Explore filters modal. Both sides must allow ELO (`match_allow_elo`) for updates to apply.
 
 ## How it works
-- `recommend-users` edge function:
+- `recommend-users` edge:
   - Computes PCA cosine between the viewer and candidates.
-  - If ELO is allowed (`match_allow_elo` and `useElo` flag), adds an ELO proximity term (closer ratings rank higher).
-  - Sorts by the blended score; PCA remains primary.
-- `match-update` edge function:
-  - Called on each like/skip.
-  - Updates both users’ `elo_rating` using a classic ELO formula (K=24) and logs `match_events` (actor/target/outcome, RLS-protected).
+  - If ELO is allowed (`match_allow_elo` + `useElo` flag), adds an ELO proximity term (`exp(-|Δelo|/σ)`, σ≈400). We can cap proximity floor if needed.
+  - Final sort by score = 0.8 * PCA + 0.2 * proximity (fallback to PCA-only if ELO disabled).
+- `match-update` edge (cooperative update, K=12, clamped 800–2000):
+  - On like: both actor and target gain `K * (1 - expected)`; no one loses.
+  - On skip: only actor loses `K * expected`; target unchanged.
+  - Updates `elo_rating` on `profiles` (if both allow ELO) and logs `match_events` (actor/target/outcome, RLS-protected).
 
 ## Schema / Data
 - `public.profiles`: `elo_rating numeric default 1200`, `match_allow_elo boolean default true`.
@@ -52,6 +53,15 @@ const target = 'ef48b40e-6cb8-4a38-9f2c-8954fa080a09'; // similar_b
 NODE
 ```
 You should see ELO move away from 1200 after each call (K=24).
+
+## Ranking behavior
+- PCA remains dominant (80%). ELO proximity only nudges ordering when PCA is already close.
+- Large ELO gaps reduce proximity; identical PCA favors similar ELO. To avoid harsh penalties for a 200–300 gap, keep the proximity term gentle (exp decay) and consider a floor if desired.
+
+## Update behavior (cooperative)
+- Like: both gain slightly (no one loses).
+- Skip: only actor loses slightly.
+- This avoids “punishing” the liked user and discourages mass skipping for rating gain.
 
 ## Real-world behavior
 - Scenario: High PCA (e.g., 80%) vs low PCA (30%) but higher ELO.

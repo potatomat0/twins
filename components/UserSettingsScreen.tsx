@@ -10,8 +10,8 @@ import Dropdown from '@components/common/Dropdown';
 import { decryptScoresRemote } from '@services/scoreCrypto';
 import RadarChart from '@components/charts/RadarChart';
 import { FACTOR_LABEL_KEYS } from '@data/factors';
-import { Profile, upsertProfile } from '@services/supabase';
-import { useNavigation } from '@react-navigation/native';
+import { Profile, upsertProfile, supabase as supabaseClient } from '@services/supabase';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { placeholderAvatarUrl, uploadAvatar } from '@services/storage';
@@ -45,29 +45,57 @@ const UserSettingsScreen: React.FC = () => {
   const [scores, setScores] = useState<Record<string, number> | null>(null);
   const [scoreState, setScoreState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
-  useEffect(() => {
-    if (!profile?.b5_cipher || !profile?.b5_iv) {
+  const loadScores = useCallback(async () => {
+    const b5Cipher = profile?.b5_cipher;
+    const b5Iv = profile?.b5_iv;
+    let cipher = b5Cipher;
+    let iv = b5Iv;
+
+    if ((!cipher || !iv) && user?.id) {
+      const { data } = await supabaseClient
+        .from('profiles')
+        .select('b5_cipher, b5_iv')
+        .eq('id', user.id)
+        .maybeSingle();
+      cipher = data?.b5_cipher ?? null;
+      iv = data?.b5_iv ?? null;
+    }
+
+    if (!cipher || !iv) {
       setScores(null);
       setScoreState('idle');
       return;
     }
+
     setScoreState('loading');
-    (async () => {
-      try {
-        const data = await decryptScoresRemote(profile.b5_cipher as string, profile.b5_iv as string);
-        if (data) {
-          setScores(data);
-          setScoreState('ready');
-        } else {
-          setScores(null);
-          setScoreState('error');
-        }
-      } catch {
+    try {
+      const data = await decryptScoresRemote(cipher as string, iv as string);
+      if (data) {
+        setScores(data);
+        setScoreState('ready');
+      } else {
         setScores(null);
         setScoreState('error');
       }
-    })();
-  }, [profile?.b5_cipher, profile?.b5_iv]);
+    } catch {
+      setScores(null);
+      setScoreState('error');
+    }
+  }, [profile?.b5_cipher, profile?.b5_iv, user?.id]);
+
+  useEffect(() => {
+    if (scoreState === 'idle') {
+      void loadScores();
+    }
+  }, [loadScores, scoreState]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (scoreState === 'ready' && scores) return;
+      if (scoreState === 'loading') return;
+      void loadScores();
+    }, [loadScores, scoreState, scores]),
+  );
 
   const chartData = useMemo(() => {
     if (!scores) return null;
@@ -278,12 +306,18 @@ const UserSettingsScreen: React.FC = () => {
             </View>
           ) : null}
           {scoreState === 'error' && (
-            <Text style={{ color: toRgb(theme.colors['--danger']), marginTop: 8 }}>{t('settings.decryptError')}</Text>
+            <View style={{ alignItems: 'center', gap: 8 }}>
+              <Text style={{ color: toRgb(theme.colors['--danger']), marginTop: 8 }}>{t('settings.decryptError')}</Text>
+              <Button title={t('common.retry')} variant="neutral" onPress={loadScores} />
+            </View>
+          )}
+          {scoreState !== 'ready' && (
+            <View style={{ marginTop: 12 }}>
+              <Button title={t('common.retry')} variant="neutral" onPress={loadScores} />
+            </View>
           )}
           <View style={{ height: 12 }} />
           <Button title={t('settings.retryQuiz')} variant="neutral" onPress={() => navigation.navigate('QuizIntro' as any)} />
-          <View style={{ height: 8 }} />
-          <Button title={t('dashboard.logout')} variant="danger" onPress={signOut} />
         </Accordion>
 
         <Accordion
