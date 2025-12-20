@@ -11,6 +11,8 @@ type ProfileRow = {
   pca_dim2: number | null;
   pca_dim3: number | null;
   pca_dim4: number | null;
+  elo_rating: number | null;
+  match_allow_elo: boolean | null;
 };
 
 type Filters = {
@@ -24,6 +26,7 @@ type RequestBody = {
   filters?: Filters;
   chunkSize?: number;
   poolSizes?: number[];
+  useElo?: boolean;
 };
 
 type SimilarUser = {
@@ -33,6 +36,8 @@ type SimilarUser = {
   gender: string | null;
   character_group: string | null;
   similarity: number;
+  elo_rating?: number | null;
+  score?: number;
 };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('SUPABASE_URL_REST');
@@ -88,6 +93,11 @@ function buildVector(profile: ProfileRow): number[] | null {
   return [profile.pca_dim1, profile.pca_dim2, profile.pca_dim3, profile.pca_dim4];
 }
 
+function eloProximity(rA: number, rB: number, sigma = 400) {
+  const diff = Math.abs(rA - rB);
+  return Math.exp(-diff / sigma);
+}
+
 serve(async (req) => {
   const reqId = crypto.randomUUID();
   const started = Date.now();
@@ -110,13 +120,14 @@ serve(async (req) => {
   }
 
   const filters: Filters = body.filters ?? {};
+  const useElo = body.useElo ?? true;
   const chunkSize = Math.max(10, Math.min(body.chunkSize ?? 400, 2000));
   const poolSizes = body.poolSizes && body.poolSizes.length > 0 ? body.poolSizes : [25, 50, 100, 200];
 
   try {
     const { data: me, error: meErr } = await supabase
       .from('profiles')
-      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4')
+      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo')
       .eq('id', userId)
       .maybeSingle<ProfileRow>();
     if (meErr || !me) {
@@ -127,10 +138,12 @@ serve(async (req) => {
     if (!meVec) {
       return json({ error: 'User profile missing PCA data' }, { status: 400 });
     }
+    const meElo = me.elo_rating ?? 1200;
+    const allowElo = useElo && (me.match_allow_elo ?? true);
 
     let query = supabase
       .from('profiles')
-      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4')
+      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo')
       .neq('id', userId)
       .not('pca_dim1', 'is', null)
       .not('pca_dim2', 'is', null)
@@ -158,18 +171,26 @@ serve(async (req) => {
     for (const c of shuffled) {
       const vec = buildVector(c as ProfileRow);
       if (!vec) continue;
-      const sim = cosine(meVec, vec);
+      const sim = Math.max(0, Math.min(1, cosine(meVec, vec)));
+      let score = sim;
+      if (allowElo) {
+        const cElo = (c as ProfileRow).elo_rating ?? 1200;
+        const prox = eloProximity(meElo, cElo);
+        score = 0.8 * sim + 0.2 * prox;
+      }
       scored.push({
         id: c.id as string,
         username: c.username as string | null,
         age_group: c.age_group as string | null,
         gender: c.gender as string | null,
         character_group: c.character_group as string | null,
-        similarity: Math.max(0, Math.min(1, sim)),
+        similarity: sim,
+        elo_rating: (c as ProfileRow).elo_rating ?? null,
+        score,
       });
     }
 
-    const sorted = scored.sort((a, b) => b.similarity - a.similarity);
+    const sorted = scored.sort((a, b) => (b.score ?? b.similarity) - (a.score ?? a.similarity));
     const pools = poolSizes.map((size) => ({
       size,
       users: sorted.slice(0, size),
@@ -183,6 +204,7 @@ serve(async (req) => {
       appliedFilters: filters,
       pools,
       sample: sorted.slice(0, 5),
+      usedElo: allowElo,
     });
   } catch (error) {
     console.error('[recommend-users]', reqId, 'error', error);

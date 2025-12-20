@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb } from '@themes/index';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import Button from '@components/common/Button';
@@ -41,6 +41,33 @@ const DashboardScreen: React.FC<Props> = ({ navigation, route }) => {
     setScoreState('ready');
     setScoreError(null);
   }, [route.params?.scores]);
+
+  // Refetch on focus if we have encrypted scores but local state is empty
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!profile?.b5_cipher || !profile?.b5_iv) return;
+      if (scoreState === 'ready' && scores) return;
+      setScoreState('loading');
+      setScoreError(null);
+      (async () => {
+        try {
+          const decrypted = await decryptScoresRemote(profile.b5_cipher as string, profile.b5_iv as string);
+          if (decrypted) {
+            setScores(decrypted);
+            setScoreState('ready');
+          } else {
+            setScores(null);
+            setScoreState('error');
+            setScoreError(t('dashboard.decryptError'));
+          }
+        } catch (err: any) {
+          setScores(null);
+          setScoreState('error');
+          setScoreError(err?.message ?? t('dashboard.decryptError'));
+        }
+      })();
+    }, [profile?.b5_cipher, profile?.b5_iv, scoreState, scores, t]),
+  );
 
   useEffect(() => {
     let active = true;

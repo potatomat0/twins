@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Image, Switch } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
 import { useTranslation } from '@context/LocaleContext';
@@ -38,6 +38,7 @@ const UserSettingsScreen: React.FC = () => {
   const [gender, setGender] = useState(profile?.gender ?? '');
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url ?? null);
+  const [matchAllowElo, setMatchAllowElo] = useState<boolean>(profile?.match_allow_elo ?? true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -115,6 +116,7 @@ const UserSettingsScreen: React.FC = () => {
 
   useEffect(() => {
     setAvatarUrl(profile?.avatar_url ?? null);
+    setMatchAllowElo(profile?.match_allow_elo ?? true);
   }, [profile?.avatar_url]);
 
   const buildProfilePayload = useCallback(
@@ -131,20 +133,21 @@ const UserSettingsScreen: React.FC = () => {
       b5_cipher: profile?.b5_cipher ?? null,
       b5_iv: profile?.b5_iv ?? null,
       avatar_url: avatarUrl ?? profile?.avatar_url ?? null,
+      match_allow_elo: matchAllowElo,
       ...extra,
     }),
-    [ageGroup, avatarUrl, gender, profile, user?.id, username],
+    [ageGroup, avatarUrl, gender, matchAllowElo, profile, user?.id, username],
   );
 
   const saveProfile = useCallback(async () => {
     if (!user?.id) return;
     setSaving(true);
     try {
-      await upsertProfile(buildProfilePayload());
+      await upsertProfile(buildProfilePayload({ match_allow_elo: matchAllowElo }));
     } finally {
       setSaving(false);
     }
-  }, [buildProfilePayload, user?.id]);
+  }, [buildProfilePayload, matchAllowElo, user?.id]);
 
   const handleLogout = useCallback(async () => {
     await signOut();

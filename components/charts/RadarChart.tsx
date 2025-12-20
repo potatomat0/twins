@@ -23,12 +23,12 @@ const toRads = (deg: number) => (deg * Math.PI) / 180;
 const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconColor = '34 211 238', closeColor = '239 68 68', tooltipMaxHeight = 120 }) => {
   const { theme } = useTheme();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const computedSize = Math.max(200, Math.floor((size ?? windowWidth * 0.95))); // ~95% width
+  const computedSize = Math.max(200, Math.floor((size ?? windowWidth * 0.95))); // ~95% widthradar
   const [active, setActive] = useState<number | null>(null);
   const [overlay, setOverlay] = useState<{ title: string; text: string } | null>(null);
   const cx = computedSize / 2;
   const cy = computedSize / 2;
-  const radius = computedSize * 0.30; // slightly larger
+  const radius = computedSize * 0.28; // tighter to center
   const angleSlice = (Math.PI * 2) / data.length;
 
   const rScale = (v: number) => (v / 100) * radius;
@@ -82,6 +82,9 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
           const angle = i * angleSlice - Math.PI / 2;
           const x2 = cx + radius * Math.cos(angle);
           const y2 = cy + radius * Math.sin(angle);
+          const tipR = rScale(d.score);
+          const tipX = cx + tipR * Math.cos(angle);
+          const tipY = cy + tipR * Math.sin(angle);
           const lx = cx + (radius + 14) * Math.cos(angle);
           const ly = cy + (radius + 14) * Math.sin(angle);
           // Place icon further out and slightly tangential to avoid label overlap
@@ -96,6 +99,10 @@ const RadarChart: React.FC<Props> = ({ data, size, color = '99 102 241', iconCol
               <Line x1={cx} y1={cy} x2={x2} y2={y2} stroke={toRgba(theme.colors['--border'], 0.12)} />
               <SvgText x={lx} y={ly} fill={toRgb(theme.colors['--text-secondary'])} fontSize={10} textAnchor="middle">
                 {FACTOR_LABEL_KEYS[d.label] ? t(FACTOR_LABEL_KEYS[d.label]) : d.label}
+              </SvgText>
+              {/* Score label at the rendered tip (inside the chart) */}
+              <SvgText x={tipX} y={tipY - 4} fill={toRgb(theme.colors['--text-primary'])} fontSize={10} textAnchor="middle">
+                {`${Math.round(d.score)}%`}
               </SvgText>
               {/* Glowing info icon */}
               <G

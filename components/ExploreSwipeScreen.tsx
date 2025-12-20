@@ -44,11 +44,12 @@ type Pool = {
 const ExploreSwipeScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [pool, setPool] = useState<SimilarUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState({ ageGroup: false, gender: false, characterGroup: false });
+  const [useElo, setUseElo] = useState<boolean>(profile?.match_allow_elo ?? true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -70,6 +71,7 @@ const ExploreSwipeScreen: React.FC = () => {
           filters,
           chunkSize: 500,
           poolSizes: [200],
+          useElo,
         },
       });
       if (fnErr) {
@@ -83,19 +85,19 @@ const ExploreSwipeScreen: React.FC = () => {
       }
       const users = (payload?.pools?.[0]?.users ?? []).filter((u) => u.id !== user.id);
       setPool(users);
-      await setCache(`pool:${user.id}:${JSON.stringify(filters)}`, users);
+      await setCache(`pool:${user.id}:${useElo}:${JSON.stringify(filters)}`, users);
     } catch (e: any) {
       setError(e?.message ?? 'Unexpected error');
     } finally {
       setLoading(false);
     }
-  }, [filters, user?.id]);
+  }, [filters, useElo, user?.id]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (!user?.id) return;
-      const cached = await getCache<SimilarUser[]>(`pool:${user.id}:${JSON.stringify(filters)}`, CACHE_TTL_MS);
+      const cached = await getCache<SimilarUser[]>(`pool:${user.id}:${useElo}:${JSON.stringify(filters)}`, CACHE_TTL_MS);
       if (cached && mounted) {
         setPool(cached);
       }
@@ -104,7 +106,7 @@ const ExploreSwipeScreen: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [fetchPool, filters, user?.id]);
+  }, [fetchPool, filters, useElo, user?.id]);
 
   const advance = useCallback(() => {
     setPool((prev) => {
@@ -124,6 +126,28 @@ const ExploreSwipeScreen: React.FC = () => {
       } else {
         void haptics.selection();
       }
+      if (useElo && current?.id && user?.id) {
+        supabase.functions
+          .invoke('match-update', {
+            body: {
+              actorId: user.id,
+              targetId: current.id,
+              outcome: action === 'like' ? 'like' : 'skip',
+            },
+          })
+          .then(({ data, error }) => {
+            if (__DEV__) {
+              if (error) {
+                console.warn('[match-update] error', error);
+              } else {
+                console.log('[match-update] ok', data);
+              }
+            }
+          })
+          .catch((err) => {
+            if (__DEV__) console.warn('[match-update] exception', err);
+          });
+      }
       Animated.parallel([
         Animated.timing(anim, {
           toValue: dxOverride ? dxOverride / swipeThreshold : direction,
@@ -140,7 +164,7 @@ const ExploreSwipeScreen: React.FC = () => {
         });
       });
     },
-    [advance, anim, fading, swipeThreshold],
+    [advance, anim, fading, swipeThreshold, useElo, current?.id, user?.id],
   );
 
   const likeOpacity = anim.interpolate({

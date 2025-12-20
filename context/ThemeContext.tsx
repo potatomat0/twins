@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemScheme = useColorScheme();
-  const [preference, setPreference] = useState<ThemeName>('system');
+  const [preference, setPreference] = useState<ThemeName>('dark');
   const resolvedName = preference === 'system' ? (systemScheme === 'light' ? 'light' : 'dark') : preference;
 
   const value = useMemo(

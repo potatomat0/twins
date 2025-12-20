@@ -29,12 +29,13 @@ type Pool = {
 const ExploreScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [filters, setFilters] = useState({ ageGroup: false, gender: false, characterGroup: false });
   const [pools, setPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  const useElo = profile?.match_allow_elo ?? true;
 
   const toggle = useCallback(
     (key: 'ageGroup' | 'gender' | 'characterGroup') => {
@@ -54,6 +55,7 @@ const ExploreScreen: React.FC = () => {
           filters,
           chunkSize: 400,
           poolSizes: [25, 50, 100],
+          useElo,
         },
       });
       if (fnErr) {
@@ -70,25 +72,25 @@ const ExploreScreen: React.FC = () => {
         users: (p.users ?? []).filter((u) => u.id !== user.id),
       }));
       setPools(filtered);
-      await setCache(`pool:list:${user.id}:${JSON.stringify(filters)}`, filtered);
+      await setCache(`pool:list:${user.id}:${useElo}:${JSON.stringify(filters)}`, filtered);
     } catch (e: any) {
       setError(e?.message ?? 'Unexpected error');
     } finally {
       setLoading(false);
     }
-  }, [filters, user?.id]);
+  }, [filters, useElo, user?.id]);
 
   useEffect(() => {
     let active = true;
     (async () => {
       if (!user?.id) return;
-      const cached = await getCache<Pool[]>(`pool:list:${user.id}:${JSON.stringify(filters)}`, CACHE_TTL_MS);
+      const cached = await getCache<Pool[]>(`pool:list:${user.id}:${useElo}:${JSON.stringify(filters)}`, CACHE_TTL_MS);
       if (cached && active) setPools(cached);
     })();
     return () => {
       active = false;
     };
-  }, [filters, user?.id]);
+  }, [filters, useElo, user?.id]);
 
   const topPool = useMemo(() => pools.find((p) => p.users?.length), [pools]);
 

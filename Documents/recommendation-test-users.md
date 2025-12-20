@@ -51,6 +51,15 @@ from pair a
 join pair b on a.id <> b.id;
 ```
 
+## ELO Check
+- Current ELO (after seeding): both at 1200 (match_allow_elo = true).
+- App effect: Swiping like/skip now calls `match-update` edge function, which updates ELO for both users (K=24) and logs `match_events`.
+- To inspect ELO directly:
+  ```sql
+  select username, elo_rating, match_allow_elo from public.profiles where username in ('similar_a','similar_b');
+  select * from public.match_events where actor_id in (select id from public.profiles where username in ('similar_a','similar_b'));
+  ```
+
 ## Notes
 - IDs: similar_a → b589e368-d4a2-4b31-b9b5-6ce78e682724; similar_b → ef48b40e-6cb8-4a38-9f2c-8954fa080a09.
 - Avatar is a placeholder; filters default OFF to broaden results.
