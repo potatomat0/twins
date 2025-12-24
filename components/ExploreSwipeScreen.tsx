@@ -18,12 +18,14 @@ import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
 import { useTranslation } from '@context/LocaleContext';
 import { useAuth } from '@context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 import supabase from '@services/supabase';
 import Button from '@components/common/Button';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { placeholderAvatarUrl } from '@services/storage';
 import { getCache, setCache } from '@services/cache';
 import haptics from '@services/haptics';
+import useNotifications from '@hooks/useNotifications';
 
 type SimilarUser = {
   id: string;
@@ -45,6 +47,8 @@ const ExploreSwipeScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { user, profile } = useAuth();
+  const navigation = useNavigation<any>();
+  const { notifications, unreadCount } = useNotifications(user?.id, { enabled: true, limit: 50 });
   const [pool, setPool] = useState<SimilarUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +130,7 @@ const ExploreSwipeScreen: React.FC = () => {
       } else {
         void haptics.selection();
       }
-      if (useElo && current?.id && user?.id) {
+      if (current?.id && user?.id) {
         supabase.functions
           .invoke('match-update', {
             body: {
@@ -142,6 +146,40 @@ const ExploreSwipeScreen: React.FC = () => {
               } else {
                 console.log('[match-update] ok', data);
               }
+            }
+            // Send like notification only if edge advises
+            if (action === 'like' && !error && (data as any)?.notifyLike !== false) {
+              supabase.functions
+                .invoke('notify', {
+                  body: {
+                    recipientId: current.id,
+                    actorId: user.id,
+                    type: 'like',
+                    payload: {
+                      message: 'Someone liked you',
+                      actor: {
+                        id: user.id,
+                        username: profile?.username ?? user.user_metadata?.username ?? user.email,
+                        age_group: profile?.age_group ?? null,
+                        gender: profile?.gender ?? null,
+                        character_group: profile?.character_group ?? null,
+                        avatar_url: profile?.avatar_url ?? null,
+                      },
+                    },
+                  },
+                })
+                .then(({ data, error }) => {
+                  if (__DEV__) {
+                    if (error) {
+                      console.warn('[notify] error', error);
+                    } else {
+                      console.log('[notify] ok', data);
+                    }
+                  }
+                })
+                .catch((err) => {
+                  if (__DEV__) console.warn('[notify] exception', err);
+                });
             }
           })
           .catch((err) => {

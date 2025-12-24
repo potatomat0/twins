@@ -46,12 +46,18 @@ serve(async (req) => {
 
   // Deduplicate message notifications by actor/recipient (keep latest only)
   if (type === 'message' && actorId) {
-    await supabase
+    const { error: delError, count } = await supabase
       .from('notifications')
-      .delete()
+      .delete({ count: 'exact' })
       .eq('recipient_id', recipientId)
       .eq('actor_id', actorId)
       .eq('type', 'message');
+    
+    if (delError) {
+      console.error('[notify] delete error', delError);
+    } else if (count && count > 0) {
+      console.log('[notify] deleted duplicates', count);
+    }
   }
 
   const { data, error } = await supabase

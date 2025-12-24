@@ -141,6 +141,22 @@ serve(async (req) => {
     const meElo = me.elo_rating ?? 1200;
     const allowElo = useElo && (me.match_allow_elo ?? true);
 
+    // Fetch matches to exclude already-matched users
+    const { data: matchRows, error: matchErr } = await supabase
+      .from('matches')
+      .select('user_a, user_b')
+      .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+    const matchedIds = new Set<string>();
+    if (matchRows) {
+      for (const m of matchRows) {
+        if (m.user_a === userId) matchedIds.add(m.user_b as string);
+        else if (m.user_b === userId) matchedIds.add(m.user_a as string);
+      }
+    }
+    if (matchErr) {
+      console.error('[recommend-users]', reqId, 'match fetch error', matchErr);
+    }
+
     let query = supabase
       .from('profiles')
       .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo')
@@ -171,6 +187,7 @@ serve(async (req) => {
     for (const c of shuffled) {
       const vec = buildVector(c as ProfileRow);
       if (!vec) continue;
+      if (matchedIds.has(c.id as string)) continue;
       const sim = Math.max(0, Math.min(1, cosine(meVec, vec)));
       let score = sim;
       if (allowElo) {
@@ -205,6 +222,7 @@ serve(async (req) => {
       pools,
       sample: sorted.slice(0, 5),
       usedElo: allowElo,
+      excludedMatches: matchedIds.size,
     });
   } catch (error) {
     console.error('[recommend-users]', reqId, 'error', error);

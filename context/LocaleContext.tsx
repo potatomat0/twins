@@ -1,4 +1,5 @@
-import React, { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
@@ -72,6 +73,21 @@ type LocaleProviderProps = {
 
 export const LocaleProvider: React.FC<LocaleProviderProps> = ({ children, initialLocale }) => {
   const [locale, setLocale] = useState<Locale>(initialLocale ?? DEFAULT_LOCALE);
+  const STORAGE_KEY = '@twins:locale';
+
+  useEffect(() => {
+    (async () => {
+      if (initialLocale) return;
+      const saved = await AsyncStorage.getItem(STORAGE_KEY);
+      if (saved && SUPPORTED_LOCALES.includes(saved as Locale)) {
+        setLocale(saved as Locale);
+      }
+    })();
+  }, [initialLocale]);
+
+  useEffect(() => {
+    AsyncStorage.setItem(STORAGE_KEY, locale).catch(() => {});
+  }, [locale]);
 
   const value = useMemo<LocaleContextValue>(
     () => ({

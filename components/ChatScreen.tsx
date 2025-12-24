@@ -233,13 +233,12 @@ const ChatScreen: React.FC = () => {
     return (
       <View>
         {newSession ? (
-          <View style={styles.sessionHeader}>
-            <View style={{ height: 1, backgroundColor: toRgba(theme.colors['--border'], 0.4), flex: 1, marginRight: 8 }} />
-            <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 12 }}>
+          <View style={[styles.sessionHeader, { justifyContent: 'center', alignItems: 'center', paddingVertical: 12 }]}>
+             <View style={{ position: 'absolute', left: 16, right: 16, top: '50%', height: 1, backgroundColor: toRgba(theme.colors['--border'], 0.4) }} />
+            <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 12, backgroundColor: toRgb(theme.colors['--bg']), paddingHorizontal: 12 }}>
               {created.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}{' '}
               {created.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
-            <View style={{ height: 1, backgroundColor: toRgba(theme.colors['--border'], 0.4), flex: 1, marginLeft: 8 }} />
           </View>
         ) : null}
         <TouchableOpacity
@@ -333,10 +332,10 @@ const ChatScreen: React.FC = () => {
           ListEmptyComponent={empty}
           ref={listRef}
           onContentSizeChange={() => {
-            listRef.current?.scrollToEnd({ animated: true });
+            setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
           }}
           onLayout={() => {
-            listRef.current?.scrollToEnd({ animated: false });
+            setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 100);
           }}
         />
         <View style={[styles.inputRow, { borderColor: toRgba(theme.colors['--border'], 0.18), backgroundColor: toRgb(theme.colors['--surface']) }]}>

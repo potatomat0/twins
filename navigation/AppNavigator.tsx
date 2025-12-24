@@ -6,9 +6,13 @@ import ResultsScreen from '@components/ResultsScreen';
 import CreateAccountScreen from '@components/CreateAccountScreen';
 import LoginScreen from '@components/LoginScreen';
 import SwipeHeader from '@components/common/SwipeHeader';
+import { useAuth } from '@context/AuthContext';
 import ExploreScreen from '@components/ExploreScreen';
 import ExploreSwipeScreen from '@components/ExploreSwipeScreen';
 import UserSettingsScreen from '@components/UserSettingsScreen';
+import MatchesScreen from '@components/MatchesScreen';
+import ChatScreen from '@components/ChatScreen';
+import MessagesScreen from '@components/MessagesScreen';
 import PreQuizIntroScreen from '@components/PreQuizIntroScreen';
 import QuizPrimerScreen from '@components/QuizPrimerScreen';
 import ResumePromptScreen from '@components/ResumePromptScreen';
@@ -16,6 +20,7 @@ import type { ResumeDestination } from '@store/sessionStore';
 import type { PcaFingerprint } from '@services/pcaEvaluator';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import useNotifications from '@hooks/useNotifications';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -59,6 +64,12 @@ export type RootStackParamList = {
     origin?: 'signup' | 'login';
   } | undefined;
   Dashboard: { username: string; email: string; scores?: Record<string, number> } | undefined;
+  Chat: {
+    matchId: string;
+    peerId: string;
+    peerName: string | null;
+    peerAvatar?: string | null;
+  };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -66,11 +77,16 @@ type TabParamList = {
   Explore: undefined;
   Settings: undefined;
   Test: undefined;
+  Matches: undefined;
+  Messages: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
 const MainTabs: React.FC = () => {
+  const { user } = useAuth();
+  const { unreadCount } = useNotifications(user?.id, { enabled: true, limit: 50 });
+  const showBadge = unreadCount > 0;
   return (
     <Tab.Navigator
       screenOptions={({ route }: any) => ({
@@ -82,12 +98,19 @@ const MainTabs: React.FC = () => {
               ? 'compass'
               : route.name === 'Settings'
               ? 'settings'
+              : route.name === 'Messages'
+              ? 'chatbox'
+              : route.name === 'Matches'
+              ? 'notifications'
               : 'construct';
           return <Ionicons name={icon as any} color={color} size={size} />;
         },
+        tabBarBadge: route.name === 'Matches' && showBadge ? '•' : undefined,
       })}
     >
       <Tab.Screen name="Explore" component={ExploreSwipeScreen as any} />
+      <Tab.Screen name="Matches" component={MatchesScreen as any} />
+      <Tab.Screen name="Messages" component={MessagesScreen as any} />
       <Tab.Screen name="Settings" component={UserSettingsScreen as any} />
       <Tab.Screen name="Test" component={ExploreScreen as any} />
     </Tab.Navigator>
@@ -171,6 +194,7 @@ const AppNavigator = () => {
           header: () => <SwipeHeader title="Create Account" onBack={() => navigation.goBack()} />,
         })}
       />
+      <Stack.Screen name="Chat" component={ChatScreen as any} />
       <Stack.Screen name="Dashboard" component={MainTabs} />
       <Stack.Screen
         name="VerifyEmail"
