@@ -63,13 +63,15 @@ export type Profile = {
   pca_dim4?: number | null;
   b5_cipher?: string | null;
   b5_iv?: string | null;
+  hobbies?: string[] | null;
+  hobby_embedding?: string | null;
 };
 
 export async function fetchProfile(id: string) {
   return supabase
     .from('profiles')
     .select(
-      'id, username, age_group, gender, avatar_url, elo_rating, match_allow_elo, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv',
+      'id, username, age_group, gender, avatar_url, elo_rating, match_allow_elo, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv, hobbies',
     )
     .eq('id', id)
     .maybeSingle();
@@ -81,7 +83,7 @@ export async function upsertProfile(profile: Profile) {
     .from('profiles')
     .upsert(profile, { onConflict: 'id' })
     .select(
-      'id, username, age_group, gender, avatar_url, elo_rating, match_allow_elo, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv',
+      'id, username, age_group, gender, avatar_url, elo_rating, match_allow_elo, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv, hobbies',
     )
     .single();
 }

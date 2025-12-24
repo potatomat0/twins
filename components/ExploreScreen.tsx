@@ -36,6 +36,8 @@ const ExploreScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   const useElo = profile?.match_allow_elo ?? true;
+  const [useHobbies, setUseHobbies] = useState(false);
+  const hasEnoughHobbies = (profile?.hobbies?.length ?? 0) >= 3;
 
   const toggle = useCallback(
     (key: 'ageGroup' | 'gender' | 'characterGroup') => {
@@ -56,6 +58,7 @@ const ExploreScreen: React.FC = () => {
           chunkSize: 400,
           poolSizes: [25, 50, 100],
           useElo,
+          useHobbies: useHobbies && hasEnoughHobbies,
         },
       });
       if (fnErr) {
@@ -104,6 +107,19 @@ const ExploreScreen: React.FC = () => {
 
         <View style={[styles.card, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.12) }]}>
           <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']) }]}>{t('explore.filters')}</Text>
+          
+          <View style={styles.filterRow}>
+             <View style={{ flex: 1 }}>
+                <Text style={{ color: hasEnoughHobbies ? toRgb(theme.colors['--text-secondary']) : toRgb(theme.colors['--text-muted']) }}>
+                  {t('explore.useHobbies')}
+                </Text>
+                 <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 11 }}>
+                  {t('explore.useHobbiesHint')}
+                </Text>
+             </View>
+             <Switch value={useHobbies} onValueChange={setUseHobbies} disabled={!hasEnoughHobbies} />
+          </View>
+
           {(['ageGroup', 'gender', 'characterGroup'] as const).map((key) => (
             <View key={key} style={styles.filterRow}>
               <Text style={{ color: toRgb(theme.colors['--text-secondary']), flex: 1 }}>

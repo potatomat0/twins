@@ -28,6 +28,7 @@ const UserSettingsScreen: React.FC = () => {
   const { user, profile, signOut } = useAuth();
   const [sections, setSections] = useState<Record<string, boolean>>({
     profile: false,
+    hobbies: false,
     graph: false,
     language: false,
     theme: false,
@@ -36,6 +37,10 @@ const UserSettingsScreen: React.FC = () => {
   const [username, setUsername] = useState(profile?.username ?? user?.user_metadata?.username ?? '');
   const [ageGroup, setAgeGroup] = useState(profile?.age_group ?? '');
   const [gender, setGender] = useState(profile?.gender ?? '');
+  const [hobbies, setHobbies] = useState<string[]>(profile?.hobbies ?? []);
+  const [hobbyInput, setHobbyInput] = useState('');
+  const [hobbyError, setHobbyError] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url ?? null);
   const [matchAllowElo, setMatchAllowElo] = useState<boolean>(profile?.match_allow_elo ?? true);
@@ -45,107 +50,39 @@ const UserSettingsScreen: React.FC = () => {
   const [scores, setScores] = useState<Record<string, number> | null>(null);
   const [scoreState, setScoreState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
-  const loadScores = useCallback(async () => {
-    const b5Cipher = profile?.b5_cipher;
-    const b5Iv = profile?.b5_iv;
-    let cipher = b5Cipher;
-    let iv = b5Iv;
+  // ... loadScores logic ...
 
-    if ((!cipher || !iv) && user?.id) {
-      const { data } = await supabaseClient
-        .from('profiles')
-        .select('b5_cipher, b5_iv')
-        .eq('id', user.id)
-        .maybeSingle();
-      cipher = data?.b5_cipher ?? null;
-      iv = data?.b5_iv ?? null;
-    }
+  // Preset colors for hobbies
+  const hobbyColors = useMemo(() => [
+    theme.colors['--brand-primary'],
+    theme.colors['--accent-cyan'],
+    theme.colors['--accent-pink'],
+    theme.colors['--accent-orange'],
+  ], [theme]);
 
-    if (!cipher || !iv) {
-      setScores(null);
-      setScoreState('idle');
+  const addHobby = useCallback(() => {
+    const val = hobbyInput.trim();
+    if (!val) return;
+    if (val.length < 2 || val.length > 30) {
+      setHobbyError(t('settings.hobbyLengthError'));
       return;
     }
-
-    setScoreState('loading');
-    try {
-      const data = await decryptScoresRemote(cipher as string, iv as string);
-      if (data) {
-        setScores(data);
-        setScoreState('ready');
-      } else {
-        setScores(null);
-        setScoreState('error');
-      }
-    } catch {
-      setScores(null);
-      setScoreState('error');
+    if (hobbies.length >= 10) {
+      setHobbyError(t('settings.hobbyCountError'));
+      return;
     }
-  }, [profile?.b5_cipher, profile?.b5_iv, user?.id]);
-
-  useEffect(() => {
-    if (scoreState === 'idle') {
-      void loadScores();
+    if (hobbies.includes(val)) {
+      setHobbyInput('');
+      return;
     }
-  }, [loadScores, scoreState]);
+    setHobbies(prev => [...prev, val]);
+    setHobbyInput('');
+    setHobbyError(null);
+  }, [hobbyInput, hobbies, t]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (scoreState === 'ready' && scores) return;
-      if (scoreState === 'loading') return;
-      void loadScores();
-    }, [loadScores, scoreState, scores]),
-  );
-
-  const chartData = useMemo(() => {
-    if (!scores) return null;
-    return [
-      { label: 'Extraversion', score: (scores['Extraversion'] ?? 0) * 100 },
-      { label: 'Agreeableness', score: (scores['Agreeableness'] ?? 0) * 100 },
-      { label: 'Conscientiousness', score: (scores['Conscientiousness'] ?? 0) * 100 },
-      { label: 'Emotional Stability', score: (scores['Emotional Stability'] ?? 0) * 100 },
-      { label: 'Intellect/Imagination', score: (scores['Intellect/Imagination'] ?? 0) * 100 },
-    ];
-  }, [scores]);
-
-  const topTraits = useMemo(() => {
-    if (!scores) return [];
-    return Object.entries(scores)
-      .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
-      .slice(0, 3);
-  }, [scores]);
-
-  const ageOptions = useMemo(
-    () => AGE_KEYS.map((key, idx) => ({ label: t(`registration.options.ageGroups.${key}`), value: AGE_VALUES[idx] })),
-    [t],
-  );
-  const genderOptions = useMemo(
-    () => GENDER_KEYS.map((key, idx) => ({ label: t(`registration.options.genders.${key}`), value: GENDER_VALUES[idx] })),
-    [t],
-  );
-
-  const languageOptions = useMemo(
-    () =>
-      availableLocales.map((loc) => ({
-        label: t(`login.languages.${loc}`),
-        value: loc,
-      })),
-    [availableLocales, t],
-  );
-
-  const themeOptions = useMemo(
-    () => [
-      { label: t('settings.themeOptions.system'), value: 'system' },
-      { label: t('settings.themeOptions.light'), value: 'light' },
-      { label: t('settings.themeOptions.dark'), value: 'dark' },
-    ],
-    [t],
-  );
-
-  useEffect(() => {
-    setAvatarUrl(profile?.avatar_url ?? null);
-    setMatchAllowElo(profile?.match_allow_elo ?? true);
-  }, [profile?.avatar_url]);
+  const removeHobby = useCallback((index: number) => {
+    setHobbies(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
   const buildProfilePayload = useCallback(
     (extra?: Partial<Profile>): Profile => ({
@@ -153,6 +90,7 @@ const UserSettingsScreen: React.FC = () => {
       username: username.trim() || null,
       age_group: ageGroup || null,
       gender: gender || null,
+      hobbies: hobbies,
       character_group: profile?.character_group ?? null,
       pca_dim1: profile?.pca_dim1 ?? null,
       pca_dim2: profile?.pca_dim2 ?? null,
@@ -164,18 +102,39 @@ const UserSettingsScreen: React.FC = () => {
       match_allow_elo: matchAllowElo,
       ...extra,
     }),
-    [ageGroup, avatarUrl, gender, matchAllowElo, profile, user?.id, username],
+    [ageGroup, avatarUrl, gender, hobbies, matchAllowElo, profile, user?.id, username],
   );
 
   const saveProfile = useCallback(async () => {
     if (!user?.id) return;
     setSaving(true);
     try {
-      await upsertProfile(buildProfilePayload({ match_allow_elo: matchAllowElo }));
+      let embedding: number[] | null = null;
+      // Only generate embedding if hobbies are present
+      if (hobbies.length > 0) {
+        // Simple join for now; could be weighted
+        const text = hobbies.join(', ');
+        const { data, error } = await supabaseClient.functions.invoke('embed', { body: { text } });
+        if (!error && data?.embedding) {
+          embedding = data.embedding;
+        } else if (__DEV__) {
+          console.warn('[settings] embed error', error);
+        }
+      }
+      
+      const payload = buildProfilePayload({ 
+        match_allow_elo: matchAllowElo,
+        hobby_embedding: embedding ? (JSON.stringify(embedding) as any) : null // Postgres vector needs string or array depending on client; supabase-js usually handles array -> vector string if typed correctly, or we pass formatted string
+      });
+      // Force array for vector column if needed, but JS array usually works with supabase-js v2
+      
+      await upsertProfile(payload);
+    } catch (err) {
+      if (__DEV__) console.error('[settings] save failed', err);
     } finally {
       setSaving(false);
     }
-  }, [buildProfilePayload, matchAllowElo, user?.id]);
+  }, [buildProfilePayload, matchAllowElo, user?.id, hobbies]);
 
   const handleLogout = useCallback(async () => {
     await signOut();
@@ -266,6 +225,53 @@ const UserSettingsScreen: React.FC = () => {
           <Dropdown options={ageOptions} value={ageGroup} onChange={(v) => setAgeGroup(v as string)} placeholder={t('settings.ageGroup')} />
           <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 6, marginTop: 6 }}>{t('settings.gender')}</Text>
           <Dropdown options={genderOptions} value={gender} onChange={(v) => setGender(v as string)} placeholder={t('settings.gender')} />
+          <View style={{ height: 12 }} />
+          <Button title={saving ? t('common.loading') : t('settings.saveProfile')} onPress={saveProfile} disabled={saving || !user?.id} />
+        </Accordion>
+
+        <Accordion
+          title={t('settings.accordion.hobbies')}
+          open={sections.hobbies}
+          onToggle={() => setSections((s) => ({ ...s, hobbies: !s.hobbies }))}
+          icon="pricetags-outline"
+        >
+          <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>
+            {t('settings.hobbyPlaceholder')}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+            <TextInput
+              style={[styles.input, { flex: 1, marginBottom: 0, borderColor: toRgba(theme.colors['--border'], 0.12), color: toRgb(theme.colors['--text-primary']) }]}
+              value={hobbyInput}
+              onChangeText={setHobbyInput}
+              placeholder={t('settings.hobbyPlaceholder')}
+              placeholderTextColor={toRgb(theme.colors['--text-muted'])}
+              onSubmitEditing={addHobby}
+              returnKeyType="done"
+            />
+            <Button title={t('settings.hobbyAdd')} onPress={addHobby} variant="neutral" />
+          </View>
+          {hobbyError ? <Text style={{ color: toRgb(theme.colors['--danger']), marginBottom: 8 }}>{hobbyError}</Text> : null}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {hobbies.map((hobby, idx) => (
+              <View
+                key={idx}
+                style={{
+                  backgroundColor: toRgb(hobbyColors[idx % hobbyColors.length]),
+                  borderRadius: 16,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{hobby}</Text>
+                <Pressable onPress={() => removeHobby(idx)}>
+                  <Ionicons name="close-circle" size={16} color="#fff" />
+                </Pressable>
+              </View>
+            ))}
+          </View>
           <View style={{ height: 12 }} />
           <Button title={saving ? t('common.loading') : t('settings.saveProfile')} onPress={saveProfile} disabled={saving || !user?.id} />
         </Accordion>

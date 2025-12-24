@@ -27,6 +27,7 @@ type RequestBody = {
   chunkSize?: number;
   poolSizes?: number[];
   useElo?: boolean;
+  useHobbies?: boolean;
 };
 
 type SimilarUser = {
@@ -38,6 +39,7 @@ type SimilarUser = {
   similarity: number;
   elo_rating?: number | null;
   score?: number;
+  hobby_score?: number;
 };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('SUPABASE_URL_REST');
@@ -121,15 +123,16 @@ serve(async (req) => {
 
   const filters: Filters = body.filters ?? {};
   const useElo = body.useElo ?? true;
+  const useHobbies = body.useHobbies ?? false;
   const chunkSize = Math.max(10, Math.min(body.chunkSize ?? 400, 2000));
   const poolSizes = body.poolSizes && body.poolSizes.length > 0 ? body.poolSizes : [25, 50, 100, 200];
 
   try {
     const { data: me, error: meErr } = await supabase
       .from('profiles')
-      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo')
+      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding')
       .eq('id', userId)
-      .maybeSingle<ProfileRow>();
+      .maybeSingle<ProfileRow & { hobby_embedding: string | null }>();
     if (meErr || !me) {
       console.error('[recommend-users]', reqId, 'fetch self error', meErr);
       return json({ error: 'User profile not found' }, { status: 404 });
@@ -140,6 +143,16 @@ serve(async (req) => {
     }
     const meElo = me.elo_rating ?? 1200;
     const allowElo = useElo && (me.match_allow_elo ?? true);
+    
+    // Parse hobby embedding if needed
+    let meHobbyVec: number[] | null = null;
+    if (useHobbies && me.hobby_embedding) {
+      try {
+        meHobbyVec = JSON.parse(me.hobby_embedding);
+      } catch {
+        // ignore
+      }
+    }
 
     // Fetch matches to exclude already-matched users
     const { data: matchRows, error: matchErr } = await supabase
@@ -157,9 +170,16 @@ serve(async (req) => {
       console.error('[recommend-users]', reqId, 'match fetch error', matchErr);
     }
 
+    // If using hobbies, we can use pgvector's <-> operator (L2) or <=> (cosine) to find nearest neighbors efficiently in the DB
+    // However, since we mix PCA + ELO + Hobbies, simple NN search might miss high PCA matches with low hobby overlap or vice versa.
+    // For this prototype/scale, we fetch a candidate pool (filtered) and compute distances in memory or fetch extra embedding data.
+    // Ideally: select ..., (1 - (hobby_embedding <=> meHobbyVec)) as hobby_sim from profiles ...
+    // But supabase-js doesn't support complex RPC/raw SQL selectors easily without a function.
+    // We'll select the embedding string and compute in Deno for flexibility.
+
     let query = supabase
       .from('profiles')
-      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo')
+      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding')
       .neq('id', userId)
       .not('pca_dim1', 'is', null)
       .not('pca_dim2', 'is', null)
@@ -188,30 +208,68 @@ serve(async (req) => {
       const vec = buildVector(c as ProfileRow);
       if (!vec) continue;
       if (matchedIds.has(c.id as string)) continue;
-      const sim = Math.max(0, Math.min(1, cosine(meVec, vec)));
-      let score = sim;
+      
+      const pcaSim = Math.max(0, Math.min(1, cosine(meVec, vec)));
+      let score = pcaSim;
+      let eloScore = 0;
+      let hobbyScore = 0;
+
+      // Base: 80% PCA, 20% ELO (if enabled)
       if (allowElo) {
         const cElo = (c as ProfileRow).elo_rating ?? 1200;
         const prox = eloProximity(meElo, cElo);
-        score = 0.8 * sim + 0.2 * prox;
+        eloScore = prox;
+        score = 0.8 * pcaSim + 0.2 * prox;
       }
+      
+      // If Hobbies enabled: 
+      // Re-weight? e.g. 60% PCA, 20% ELO, 20% Hobby? 
+      // Or additive bonus?
+      // Let's try: 60% PCA, 15% ELO, 25% Hobby
+      if (useHobbies && meHobbyVec && (c as any).hobby_embedding) {
+        let cHobbyVec: number[] | null = null;
+        try {
+           cHobbyVec = JSON.parse((c as any).hobby_embedding);
+        } catch {}
+
+        if (cHobbyVec) {
+           const hSim = Math.max(0, Math.min(1, cosine(meHobbyVec, cHobbyVec)));
+           hobbyScore = hSim;
+           
+           if (allowElo) {
+             score = 0.6 * pcaSim + 0.15 * eloScore + 0.25 * hSim;
+           } else {
+             // 70% PCA, 30% Hobby
+             score = 0.7 * pcaSim + 0.3 * hSim;
+           }
+        }
+      }
+
       scored.push({
         id: c.id as string,
         username: c.username as string | null,
         age_group: c.age_group as string | null,
         gender: c.gender as string | null,
         character_group: c.character_group as string | null,
-        similarity: sim,
+        similarity: pcaSim, // Keep original PCA sim as 'similarity' field for UI consistency or update? UI uses it for "Match %"
+        // actually, let's expose the composite score as similarity for the UI match label, 
+        // OR keep similarity as personality match and use score for sorting. 
+        // The UI displays `u.similarity * 100`. If we change this, the user sees the composite.
+        // Let's update `similarity` to be the composite `score` so the UI reflects the "Total Match".
         elo_rating: (c as ProfileRow).elo_rating ?? null,
         score,
+        hobby_score: hobbyScore
       });
     }
 
-    const sorted = scored.sort((a, b) => (b.score ?? b.similarity) - (a.score ?? a.similarity));
+    const sorted = scored.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    // Update similarity field in result to match score for UI display
+    const finalResult = sorted.map(s => ({ ...s, similarity: s.score ?? s.similarity }));
+
     const pools = poolSizes.map((size) => ({
       size,
-      users: sorted.slice(0, size),
-      available: sorted.length >= size,
+      users: finalResult.slice(0, size),
+      available: finalResult.length >= size,
     }));
 
     return json({
@@ -220,8 +278,9 @@ serve(async (req) => {
       totalCandidates: scored.length,
       appliedFilters: filters,
       pools,
-      sample: sorted.slice(0, 5),
+      sample: finalResult.slice(0, 5),
       usedElo: allowElo,
+      usedHobbies: useHobbies,
       excludedMatches: matchedIds.size,
     });
   } catch (error) {
