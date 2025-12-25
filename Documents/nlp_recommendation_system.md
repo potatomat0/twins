@@ -12,14 +12,16 @@ In addition to the Big Five Personality PCA (80%) and ELO (20%), Twins now suppo
 - Constraints: 2-30 chars per hobby, max 10 hobbies.
 
 ### 2. Embedding Generation (`/functions/embed`)
-- **Model**: `Supabase/gte-small` (via `@xenova/transformers`).
+- **Model**: Deterministic Hash-based Mock (Current Prototype).
+- **Future**: `Supabase/gte-small` (via `@xenova/transformers`) when edge resources allow.
 - **Process**:
   1. Client joins hobbies into a single string (e.g., "Hiking, Sci-Fi, Cooking").
   2. Calls `embed` edge function.
   3. Function returns a 384-dimensional vector.
 - **Storage**:
-  - `public.profiles.hobbies` (`text[]`): Raw keywords for UI.
-  - `public.profiles.hobby_embedding` (`vector(384)`): Generated vector for math.
+  - `public.profiles.hobbies_cipher` (`text`): Encrypted keywords (AES-256-GCM) for privacy.
+  - `public.profiles.hobby_embedding` (`vector(384)`): Generated vector for matching logic (DBA visible).
+  - Plaintext `hobbies` column is deprecated/unused.
 
 ### 3. Recommendation Logic (`/functions/recommend-users`)
 When `useHobbies` is toggled (requires 3+ hobbies):
@@ -39,6 +41,6 @@ When `useHobbies` is toggled (requires 3+ hobbies):
 
 ## Technical Details
 
-- **Database**: Uses `pgvector` extension.
-- **Index**: HNSW index on `hobby_embedding` for future scalability (though current logic brute-forces the filtered candidate pool in-memory for precise multi-factor scoring).
-- **Edge Function**: Deno runtime using `@xenova/transformers` for on-the-fly embedding generation.
+- **Database**: Uses `pgvector` extension. All data resides in `public.profiles` (Single Table Architecture).
+- **Index**: HNSW index on `hobby_embedding`.
+- **Edge Function**: Deno runtime.
