@@ -16,6 +16,8 @@ export const themes: Record<Exclude<ThemeName, 'system'>, ThemeSpec> = {
       '--focus': '176 134 255',
       '--brand-primary': '129 140 255',
       '--accent-cyan': '45 212 191',
+      '--accent-pink': '244 114 182',
+      '--accent-orange': '251 146 60',
       '--danger': '248 113 113',
       '--warning': '249 168 37',
       '--neutral': '148 163 184'
@@ -32,6 +34,8 @@ export const themes: Record<Exclude<ThemeName, 'system'>, ThemeSpec> = {
       '--focus': '112 84 212',
       '--brand-primary': '88 80 236',
       '--accent-cyan': '6 182 212',
+      '--accent-pink': '236 72 153',
+      '--accent-orange': '249 115 22',
       '--danger': '220 38 38',
       '--warning': '245 158 11',
       '--neutral': '107 114 128'
@@ -40,9 +44,11 @@ export const themes: Record<Exclude<ThemeName, 'system'>, ThemeSpec> = {
 };
 
 export function toRgb(triplet: string) {
+  if (!triplet) return 'rgb(0, 0, 0)';
   return `rgb(${triplet.split(' ').join(', ')})`;
 }
 
 export function toRgba(triplet: string, a = 1) {
+  if (!triplet) return `rgba(0, 0, 0, ${a})`;
   return `rgba(${triplet.split(' ').join(', ')}, ${a})`;
 }

@@ -1,20 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Image, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Switch } from 'react-native';
+import { Image } from 'expo-image';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
 import { useTranslation } from '@context/LocaleContext';
 import { useAuth } from '@context/AuthContext';
 import Button from '@components/common/Button';
 import Dropdown from '@components/common/Dropdown';
-import { decryptScoresRemote } from '@services/scoreCrypto';
+import { decryptScoresRemote, encryptGenericRemote, decryptGenericRemote } from '@services/scoreCrypto';
 import RadarChart from '@components/charts/RadarChart';
 import { FACTOR_LABEL_KEYS } from '@data/factors';
-import { Profile, upsertProfile, supabase as supabaseClient } from '@services/supabase';
+import { Profile, upsertProfile, supabase as supabaseClient, fetchMyProfile } from '@services/supabase';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
-import { placeholderAvatarUrl, uploadAvatar } from '@services/storage';
+import { placeholderAvatarUrl, uploadAvatar, getOptimizedImageUrl } from '@services/storage';
 
 const AGE_VALUES = ['<18', '18-24', '25-35', '35-44', '45+'] as const;
 const AGE_KEYS = ['under18', 'range18_24', 'range25_35', 'range35_44', 'range45_plus'] as const;
@@ -40,17 +41,146 @@ const UserSettingsScreen: React.FC = () => {
   const [hobbies, setHobbies] = useState<string[]>(profile?.hobbies ?? []);
   const [hobbyInput, setHobbyInput] = useState('');
   const [hobbyError, setHobbyError] = useState<string | null>(null);
+  const [decryptingHobbies, setDecryptingHobbies] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url ?? null);
   const [matchAllowElo, setMatchAllowElo] = useState<boolean>(profile?.match_allow_elo ?? true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(!!user?.email_confirmed_at);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await fetchMyProfile();
+      if (data?.email_confirmed_at) {
+        setIsVerified(true);
+      }
+    })();
+  }, []);
+
+  // Decrypt hobbies if needed
+  useEffect(() => {
+    if (profile?.hobbies?.length) {
+      setHobbies(profile.hobbies);
+      return;
+    }
+    if (profile?.hobbies_cipher && profile?.hobbies_iv) {
+      setDecryptingHobbies(true);
+      decryptGenericRemote<string[]>(profile.hobbies_cipher, profile.hobbies_iv)
+        .then((decrypted) => {
+          if (decrypted && Array.isArray(decrypted)) {
+            setHobbies(decrypted);
+          }
+        })
+        .finally(() => setDecryptingHobbies(false));
+    }
+  }, [profile?.hobbies, profile?.hobbies_cipher, profile?.hobbies_iv]);
 
   const [scores, setScores] = useState<Record<string, number> | null>(null);
   const [scoreState, setScoreState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
-  // ... loadScores logic ...
+  const loadScores = useCallback(async () => {
+    const b5Cipher = profile?.b5_cipher;
+    const b5Iv = profile?.b5_iv;
+    let cipher = b5Cipher;
+    let iv = b5Iv;
+
+    if ((!cipher || !iv) && user?.id) {
+      const { data } = await supabaseClient
+        .from('profiles')
+        .select('b5_cipher, b5_iv')
+        .eq('id', user.id)
+        .maybeSingle();
+      cipher = data?.b5_cipher ?? null;
+      iv = data?.b5_iv ?? null;
+    }
+
+    if (!cipher || !iv) {
+      setScores(null);
+      setScoreState('idle');
+      return;
+    }
+
+    setScoreState('loading');
+    try {
+      const data = await decryptScoresRemote(cipher as string, iv as string);
+      if (data) {
+        setScores(data);
+        setScoreState('ready');
+      } else {
+        setScores(null);
+        setScoreState('error');
+      }
+    } catch {
+      setScores(null);
+      setScoreState('error');
+    }
+  }, [profile?.b5_cipher, profile?.b5_iv, user?.id]);
+
+  useEffect(() => {
+    if (scoreState === 'idle') {
+      void loadScores();
+    }
+  }, [loadScores, scoreState]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (scoreState === 'ready' && scores) return;
+      if (scoreState === 'loading') return;
+      void loadScores();
+    }, [loadScores, scoreState, scores]),
+  );
+
+  const chartData = useMemo(() => {
+    if (!scores) return null;
+    return [
+      { label: 'Extraversion', score: (scores['Extraversion'] ?? 0) * 100 },
+      { label: 'Agreeableness', score: (scores['Agreeableness'] ?? 0) * 100 },
+      { label: 'Conscientiousness', score: (scores['Conscientiousness'] ?? 0) * 100 },
+      { label: 'Emotional Stability', score: (scores['Emotional Stability'] ?? 0) * 100 },
+      { label: 'Intellect/Imagination', score: (scores['Intellect/Imagination'] ?? 0) * 100 },
+    ];
+  }, [scores]);
+
+  const topTraits = useMemo(() => {
+    if (!scores) return [];
+    return Object.entries(scores)
+      .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
+      .slice(0, 3);
+  }, [scores]);
+
+  const ageOptions = useMemo(
+    () => AGE_KEYS.map((key, idx) => ({ label: t(`registration.options.ageGroups.${key}`), value: AGE_VALUES[idx] })),
+    [t],
+  );
+  const genderOptions = useMemo(
+    () => GENDER_KEYS.map((key, idx) => ({ label: t(`registration.options.genders.${key}`), value: GENDER_VALUES[idx] })),
+    [t],
+  );
+
+  const languageOptions = useMemo(
+    () =>
+      availableLocales.map((loc) => ({
+        label: t(`login.languages.${loc}`),
+        value: loc,
+      })),
+    [availableLocales, t],
+  );
+
+  const themeOptions = useMemo(
+    () => [
+      { label: t('settings.themeOptions.system'), value: 'system' },
+      { label: t('settings.themeOptions.light'), value: 'light' },
+      { label: t('settings.themeOptions.dark'), value: 'dark' },
+    ],
+    [t],
+  );
+
+  useEffect(() => {
+    setAvatarUrl(profile?.avatar_url ?? null);
+    setMatchAllowElo(profile?.match_allow_elo ?? true);
+  }, [profile?.avatar_url]);
 
   // Preset colors for hobbies
   const hobbyColors = useMemo(() => [
@@ -110,27 +240,51 @@ const UserSettingsScreen: React.FC = () => {
     setSaving(true);
     try {
       let embedding: number[] | null = null;
-      // Only generate embedding if hobbies are present
+      let hobbiesCipher: string | null = null;
+      let hobbiesIv: string | null = null;
+
+      // Only generate embedding and encrypt if hobbies are present
       if (hobbies.length > 0) {
-        // Simple join for now; could be weighted
+        // 1. Embed
         const text = hobbies.join(', ');
-        const { data, error } = await supabaseClient.functions.invoke('embed', { body: { text } });
-        if (!error && data?.embedding) {
-          embedding = data.embedding;
+        const { data: embedData, error: embedError } = await supabaseClient.functions.invoke('embed', { body: { text } });
+        if (!embedError && embedData?.embedding) {
+          embedding = embedData.embedding;
         } else if (__DEV__) {
-          console.warn('[settings] embed error', error);
+          console.warn('[settings] embed error', embedError);
+        }
+
+        // 2. Encrypt
+        const cryptoResult = await encryptGenericRemote(hobbies);
+        if (cryptoResult) {
+          hobbiesCipher = cryptoResult.cipher;
+          hobbiesIv = cryptoResult.iv;
+        } else {
+          // If encryption failed but we have hobbies, DO NOT save (or we lose data)
+          console.error('[settings] hobby encryption failed');
+          setUploadError('Failed to save hobbies. Please try again.');
+          setSaving(false);
+          return;
         }
       }
       
+      // We purposefully don't send 'hobbies' plaintext to DB if we have cipher
+      // Actually, we should clear it if we are encrypting.
       const payload = buildProfilePayload({ 
         match_allow_elo: matchAllowElo,
-        hobby_embedding: embedding ? (JSON.stringify(embedding) as any) : null // Postgres vector needs string or array depending on client; supabase-js usually handles array -> vector string if typed correctly, or we pass formatted string
+        hobby_embedding: embedding ? (JSON.stringify(embedding) as any) : null,
+        hobbies_cipher: hobbiesCipher,
+        hobbies_iv: hobbiesIv
       });
-      // Force array for vector column if needed, but JS array usually works with supabase-js v2
       
-      await upsertProfile(payload);
+      // Remove 'hobbies' from payload as the column is dropped from DB
+      delete (payload as any).hobbies;
+      
+      const { error } = await upsertProfile(payload);
+      if (error) throw error;
     } catch (err) {
       if (__DEV__) console.error('[settings] save failed', err);
+      setUploadError('Failed to save profile.');
     } finally {
       setSaving(false);
     }
@@ -159,8 +313,18 @@ const UserSettingsScreen: React.FC = () => {
 
       const result =
         mode === 'camera'
-          ? await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 })
-          : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 });
+          ? await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              quality: 1,
+              allowsEditing: true,
+              aspect: [1, 1],
+            })
+          : await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              quality: 1,
+              allowsEditing: true,
+              aspect: [1, 1],
+            });
       if (result.canceled || !result.assets?.length) return;
       const asset = result.assets[0];
       setUploadingAvatar(true);
@@ -190,7 +354,12 @@ const UserSettingsScreen: React.FC = () => {
           icon="person-circle-outline"
         >
           <View style={{ alignItems: 'center', marginBottom: 12 }}>
-            <Image source={{ uri: avatarUrl || placeholderAvatarUrl }} style={styles.avatar} />
+            <Image
+              source={{ uri: getOptimizedImageUrl(avatarUrl || placeholderAvatarUrl, 320) }}
+              style={styles.avatar}
+              contentFit="cover"
+              transition={200}
+            />
             {uploadError ? (
               <Text style={{ color: toRgb(theme.colors['--danger']), marginTop: 6 }}>{uploadError}</Text>
             ) : null}
@@ -218,9 +387,22 @@ const UserSettingsScreen: React.FC = () => {
             placeholderTextColor={toRgb(theme.colors['--text-muted'])}
           />
           <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 6 }}>{t('settings.emailReadonly')}</Text>
-          <Text style={[styles.readonly, { color: toRgb(theme.colors['--text-secondary']), borderColor: toRgba(theme.colors['--border'], 0.12) }]}>
-            {user?.email ?? '—'}
-          </Text>
+          <View style={[styles.readonly, { 
+            borderColor: toRgba(theme.colors['--border'], 0.12),
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }]}>
+            <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>
+              {user?.email ?? '—'}
+            </Text>
+            {isVerified && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Ionicons name="checkmark-circle" size={16} color={toRgb(theme.colors['--accent-cyan'])} />
+                <Text style={{ color: toRgb(theme.colors['--accent-cyan']), fontSize: 12, fontWeight: '600' }}>Verified</Text>
+              </View>
+            )}
+          </View>
           <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 6, marginTop: 6 }}>{t('settings.ageGroup')}</Text>
           <Dropdown options={ageOptions} value={ageGroup} onChange={(v) => setAgeGroup(v as string)} placeholder={t('settings.ageGroup')} />
           <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 6, marginTop: 6 }}>{t('settings.gender')}</Text>
@@ -251,27 +433,31 @@ const UserSettingsScreen: React.FC = () => {
             <Button title={t('settings.hobbyAdd')} onPress={addHobby} variant="neutral" />
           </View>
           {hobbyError ? <Text style={{ color: toRgb(theme.colors['--danger']), marginBottom: 8 }}>{hobbyError}</Text> : null}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {hobbies.map((hobby, idx) => (
-              <View
-                key={idx}
-                style={{
-                  backgroundColor: toRgb(hobbyColors[idx % hobbyColors.length]),
-                  borderRadius: 16,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <Text style={{ color: '#fff', fontWeight: '600' }}>{hobby}</Text>
-                <Pressable onPress={() => removeHobby(idx)}>
-                  <Ionicons name="close-circle" size={16} color="#fff" />
-                </Pressable>
-              </View>
-            ))}
-          </View>
+          {decryptingHobbies ? (
+             <ActivityIndicator size="small" color={toRgb(theme.colors['--brand-primary'])} style={{ marginBottom: 12 }} />
+          ) : (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {hobbies.map((hobby, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    backgroundColor: toRgb(hobbyColors[idx % hobbyColors.length]),
+                    borderRadius: 16,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '600' }}>{hobby}</Text>
+                  <Pressable onPress={() => removeHobby(idx)}>
+                    <Ionicons name="close-circle" size={16} color="#fff" />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
           <View style={{ height: 12 }} />
           <Button title={saving ? t('common.loading') : t('settings.saveProfile')} onPress={saveProfile} disabled={saving || !user?.id} />
         </Accordion>
