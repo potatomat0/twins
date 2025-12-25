@@ -13,6 +13,9 @@ type ProfileRow = {
   pca_dim4: number | null;
   elo_rating: number | null;
   match_allow_elo: boolean | null;
+  hobby_embedding: string | null;
+  hobbies_cipher: string | null;
+  hobbies_iv: string | null;
 };
 
 type Filters = {
@@ -40,6 +43,8 @@ type SimilarUser = {
   elo_rating?: number | null;
   score?: number;
   hobby_score?: number;
+  hobbies_cipher?: string | null;
+  hobbies_iv?: string | null;
 };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('SUPABASE_URL_REST');
@@ -112,12 +117,14 @@ serve(async (req) => {
   let body: RequestBody;
   try {
     body = await req.json();
-  } catch {
+  } catch (e) {
+    console.error('[recommend-users]', reqId, 'json parse error', e);
     return json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
   const userId = body?.userId;
   if (!userId) {
+    console.error('[recommend-users]', reqId, 'missing userId');
     return json({ error: 'userId is required' }, { status: 400 });
   }
 
@@ -130,15 +137,16 @@ serve(async (req) => {
   try {
     const { data: me, error: meErr } = await supabase
       .from('profiles')
-      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding')
+      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding, hobbies_cipher, hobbies_iv')
       .eq('id', userId)
-      .maybeSingle<ProfileRow & { hobby_embedding: string | null }>();
+      .maybeSingle<ProfileRow>();
     if (meErr || !me) {
       console.error('[recommend-users]', reqId, 'fetch self error', meErr);
       return json({ error: 'User profile not found' }, { status: 404 });
     }
     const meVec = buildVector(me);
     if (!meVec) {
+      console.error('[recommend-users]', reqId, 'missing pca data for user', userId, 'pca_dim1=', me.pca_dim1);
       return json({ error: 'User profile missing PCA data' }, { status: 400 });
     }
     const meElo = me.elo_rating ?? 1200;
@@ -170,16 +178,9 @@ serve(async (req) => {
       console.error('[recommend-users]', reqId, 'match fetch error', matchErr);
     }
 
-    // If using hobbies, we can use pgvector's <-> operator (L2) or <=> (cosine) to find nearest neighbors efficiently in the DB
-    // However, since we mix PCA + ELO + Hobbies, simple NN search might miss high PCA matches with low hobby overlap or vice versa.
-    // For this prototype/scale, we fetch a candidate pool (filtered) and compute distances in memory or fetch extra embedding data.
-    // Ideally: select ..., (1 - (hobby_embedding <=> meHobbyVec)) as hobby_sim from profiles ...
-    // But supabase-js doesn't support complex RPC/raw SQL selectors easily without a function.
-    // We'll select the embedding string and compute in Deno for flexibility.
-
     let query = supabase
       .from('profiles')
-      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding')
+      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding, hobbies_cipher, hobbies_iv')
       .neq('id', userId)
       .not('pca_dim1', 'is', null)
       .not('pca_dim2', 'is', null)
@@ -202,10 +203,10 @@ serve(async (req) => {
       console.error('[recommend-users]', reqId, 'fetch candidates error', candErr);
       return json({ error: 'Failed to fetch candidates' }, { status: 500 });
     }
-    const shuffled = shuffle(candidates ?? []);
+    const shuffled = shuffle((candidates as ProfileRow[]) ?? []);
     const scored: SimilarUser[] = [];
     for (const c of shuffled) {
-      const vec = buildVector(c as ProfileRow);
+      const vec = buildVector(c);
       if (!vec) continue;
       if (matchedIds.has(c.id as string)) continue;
       
@@ -214,34 +215,35 @@ serve(async (req) => {
       let eloScore = 0;
       let hobbyScore = 0;
 
-      // Base: 80% PCA, 20% ELO (if enabled)
-      if (allowElo) {
-        const cElo = (c as ProfileRow).elo_rating ?? 1200;
-        const prox = eloProximity(meElo, cElo);
-        eloScore = prox;
-        score = 0.8 * pcaSim + 0.2 * prox;
-      }
-      
-      // If Hobbies enabled: 
-      // Re-weight? e.g. 60% PCA, 20% ELO, 20% Hobby? 
-      // Or additive bonus?
-      // Let's try: 60% PCA, 15% ELO, 25% Hobby
-      if (useHobbies && meHobbyVec && (c as any).hobby_embedding) {
-        let cHobbyVec: number[] | null = null;
-        try {
-           cHobbyVec = JSON.parse((c as any).hobby_embedding);
-        } catch {}
-
-        if (cHobbyVec) {
-           const hSim = Math.max(0, Math.min(1, cosine(meHobbyVec, cHobbyVec)));
-           hobbyScore = hSim;
-           
-           if (allowElo) {
-             score = 0.6 * pcaSim + 0.15 * eloScore + 0.25 * hSim;
-           } else {
-             // 70% PCA, 30% Hobby
-             score = 0.7 * pcaSim + 0.3 * hSim;
+      if (!useHobbies) {
+        if (allowElo) {
+          const cElo = c.elo_rating ?? 1200;
+          const prox = eloProximity(meElo, cElo);
+          score = 0.8 * pcaSim + 0.2 * prox;
+        } else {
+          score = pcaSim;
+        }
+      } else {
+        // Hobbies ENABLED
+        let hSim = 0.5; // Default neutral
+        if (meHobbyVec && c.hobby_embedding) {
+           let cHobbyVec: number[] | null = null;
+           try {
+              cHobbyVec = JSON.parse(c.hobby_embedding);
+           } catch {}
+           if (cHobbyVec) {
+              hSim = Math.max(0, Math.min(1, cosine(meHobbyVec, cHobbyVec)));
            }
+        }
+        hobbyScore = hSim;
+
+        if (allowElo) {
+          const cElo = c.elo_rating ?? 1200;
+          const prox = eloProximity(meElo, cElo);
+          eloScore = prox;
+          score = 0.6 * pcaSim + 0.15 * prox + 0.25 * hSim;
+        } else {
+          score = 0.7 * pcaSim + 0.3 * hSim;
         }
       }
 
@@ -251,26 +253,26 @@ serve(async (req) => {
         age_group: c.age_group as string | null,
         gender: c.gender as string | null,
         character_group: c.character_group as string | null,
-        similarity: pcaSim, // Keep original PCA sim as 'similarity' field for UI consistency or update? UI uses it for "Match %"
-        // actually, let's expose the composite score as similarity for the UI match label, 
-        // OR keep similarity as personality match and use score for sorting. 
-        // The UI displays `u.similarity * 100`. If we change this, the user sees the composite.
-        // Let's update `similarity` to be the composite `score` so the UI reflects the "Total Match".
-        elo_rating: (c as ProfileRow).elo_rating ?? null,
+        similarity: score,
+        elo_rating: c.elo_rating ?? null,
         score,
-        hobby_score: hobbyScore
+        hobby_score: hobbyScore,
+        hobbies_cipher: c.hobbies_cipher,
+        hobbies_iv: c.hobbies_iv
       });
     }
 
     const sorted = scored.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-    // Update similarity field in result to match score for UI display
-    const finalResult = sorted.map(s => ({ ...s, similarity: s.score ?? s.similarity }));
-
     const pools = poolSizes.map((size) => ({
       size,
-      users: finalResult.slice(0, size),
-      available: finalResult.length >= size,
+      users: finalResult(sorted, size),
+      available: sorted.length >= size,
     }));
+
+    // Helper for pool generation
+    function finalResult(sortedUsers: SimilarUser[], size: number) {
+        return sortedUsers.slice(0, size).map(s => ({ ...s, similarity: s.score ?? s.similarity, hobbies_cipher: s.hobbies_cipher, hobbies_iv: s.hobbies_iv }));
+    }
 
     return json({
       requestId: reqId,
@@ -278,7 +280,7 @@ serve(async (req) => {
       totalCandidates: scored.length,
       appliedFilters: filters,
       pools,
-      sample: finalResult.slice(0, 5),
+      sample: sorted.slice(0, 5),
       usedElo: allowElo,
       usedHobbies: useHobbies,
       excludedMatches: matchedIds.size,

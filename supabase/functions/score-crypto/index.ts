@@ -37,10 +37,10 @@ async function importKey(reqId: string) {
   return crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['encrypt', 'decrypt']);
 }
 
-async function encrypt(scores: Scores, reqId: string) {
+async function encrypt(data: unknown, reqId: string) {
   const key = await importKey(reqId);
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const payload = toBytes(JSON.stringify(scores));
+  const payload = toBytes(JSON.stringify(data));
   const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, payload);
   return { cipher: toBase64(cipher), iv: toBase64(iv) };
 }
@@ -74,15 +74,22 @@ serve(async (req) => {
     }
     const body = await req.json();
     const mode = body?.mode;
-    console.log(`[score-crypto] [${reqId}] mode=${mode}`);
+    const isScores = !!body?.scores;
+    const isPayload = !!body?.payload;
+    const typeHint = isScores ? 'personality_scores' : (isPayload && Array.isArray(body.payload) ? 'generic_array' : 'unknown_payload');
+
+    console.log(`[score-crypto] [${reqId}] mode=${mode} hint=${typeHint}`);
+
     if (mode === 'encrypt') {
-      const scores = body?.scores;
-      if (!scores || typeof scores !== 'object') {
-        console.warn(`[score-crypto] [${reqId}] encrypt missing scores: ${typeof scores}`);
-        return json({ error: 'scores required' }, { status: 400 });
+      const payload = body?.payload ?? body?.scores; // Support 'payload' (generic) or 'scores' (legacy)
+      if (!payload) {
+        console.warn(`[score-crypto] [${reqId}] encrypt missing payload`);
+        return json({ error: 'payload required' }, { status: 400 });
       }
-      console.log(`[score-crypto] [${reqId}] encrypt payload summary: ${summarizeScores(scores)}`);
-      const result = await encrypt(scores, reqId);
+      const summary = typeof payload === 'object' ? JSON.stringify(payload).substring(0, 50) + '...' : String(payload);
+      console.log(`[score-crypto] [${reqId}] encrypting: ${summary}`);
+      
+      const result = await encrypt(payload, reqId);
       console.log(`[score-crypto] [${reqId}] encrypt success (${Date.now() - started}ms)`);
       return json(result, { status: 200 });
     }
@@ -93,9 +100,13 @@ serve(async (req) => {
         return json({ error: 'payload and iv required' }, { status: 400 });
       }
       console.log(`[score-crypto] [${reqId}] decrypt payload length=${payload?.length ?? 0}`);
-      const scores = await decrypt(payload, iv, reqId);
-      console.log(`[score-crypto] [${reqId}] decrypt success (${Date.now() - started}ms)`);
-      return json({ scores }, { status: 200 });
+      const decoded = await decrypt(payload, iv, reqId);
+      
+      const decodedSummary = typeof decoded === 'object' ? JSON.stringify(decoded).substring(0, 50) + '...' : String(decoded);
+      console.log(`[score-crypto] [${reqId}] decrypt success: ${decodedSummary} (${Date.now() - started}ms)`);
+      
+      // Return both 'payload' (generic) and 'scores' (legacy compatibility)
+      return json({ payload: decoded, scores: decoded }, { status: 200 });
     }
     console.warn(`[score-crypto] [${reqId}] invalid mode`);
     return json({ error: 'mode must be encrypt or decrypt' }, { status: 400 });
