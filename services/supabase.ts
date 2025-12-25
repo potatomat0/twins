@@ -65,29 +65,34 @@ export type Profile = {
   b5_iv?: string | null;
   hobbies?: string[] | null;
   hobby_embedding?: string | null;
+  hobbies_cipher?: string | null;
+  hobbies_iv?: string | null;
 };
 
 export async function fetchProfile(id: string) {
   return supabase
     .from('profiles')
     .select(
-      'id, username, age_group, gender, avatar_url, elo_rating, match_allow_elo, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv, hobbies',
+      'id, username, age_group, gender, avatar_url, elo_rating, match_allow_elo, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv, hobbies_cipher, hobbies_iv',
     )
     .eq('id', id)
     .maybeSingle();
 }
 
 export async function upsertProfile(profile: Profile) {
+  // Clean payload: remove fields that don't exist in DB or shouldn't be written directly
+  const payload = { ...profile };
+  delete (payload as any).hobbies;
+
   // Requires RLS allowing owner id === auth.uid()
   return supabase
     .from('profiles')
-    .upsert(profile, { onConflict: 'id' })
+    .upsert(payload, { onConflict: 'id' })
     .select(
-      'id, username, age_group, gender, avatar_url, elo_rating, match_allow_elo, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv, hobbies',
+      'id, username, age_group, gender, avatar_url, elo_rating, match_allow_elo, personality_fingerprint, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, b5_cipher, b5_iv, hobbies_cipher, hobbies_iv',
     )
     .single();
 }
-
 // Email OTP helpers (for when email confirmation is enabled)
 export async function resendEmailOtp(email: string) {
   // Triggers sending a new confirmation code to the email for signup
@@ -109,6 +114,7 @@ export type MyProfile = {
   personality_fingerprint: number | null;
   character_group: string | null;
   email: string | null;
+  email_confirmed_at: string | null;
 };
 
 export async function fetchMyProfile() {

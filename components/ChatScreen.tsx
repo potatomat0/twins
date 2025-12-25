@@ -46,7 +46,7 @@ const ChatScreen: React.FC = () => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [expandedMeta, setExpandedMeta] = useState<Set<string>>(new Set());
   const listRef = useRef<FlatList<MessageRow>>(null);
-  const CACHE_KEY = `messages:${matchId}`;
+  const CACHE_KEY = `messages:${user?.id ?? 'anon'}:${matchId}`;
 
   useEffect(() => {
     nav.setOptions?.({
