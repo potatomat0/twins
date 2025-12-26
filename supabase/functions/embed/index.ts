@@ -1,47 +1,56 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-// Deterministic mock embedding generator
-// This allows the app flow (save hobbies, match users) to be fully tested
-// without crashing the limited Edge Runtime with heavy ML models.
-function mockEmbed(text: string): number[] {
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-        hash = ((hash << 5) - hash) + text.charCodeAt(i);
-        hash |= 0;
-    }
-    const rng = () => {
-        var t = hash += 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    }
-    const vec: number[] = [];
-    for (let i = 0; i < 384; i++) {
-        vec.push(rng() * 2 - 1); // -1 to 1
-    }
-    // Normalize
-    const mag = Math.sqrt(vec.reduce((sum, v) => sum + v*v, 0));
-    return vec.map(v => v / mag);
-}
+const EMBED_URL = 'https://api.supa.ai/v1/embeddings';
+const API_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const MODEL = 'gte-small';
 
 serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
+  if (!API_KEY) {
+    return new Response(JSON.stringify({ error: 'Missing service role key' }), { status: 500 });
+  }
 
   try {
-    const { text } = await req.json();
-    if (!text) {
+    const body = await req.json();
+    const input = typeof body?.text === 'string' ? body.text.trim() : '';
+    if (!input) {
       return new Response(JSON.stringify({ error: 'Text required' }), { status: 400 });
     }
 
-    const embedding = mockEmbed(text.toLowerCase().trim());
+    const resp = await fetch(EMBED_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        input,
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error('[embed] upstream error', resp.status, errText);
+      return new Response(JSON.stringify({ error: 'Embedding request failed', details: errText }), {
+        status: 502,
+      });
+    }
+
+    const json = await resp.json();
+    const embedding = json?.data?.[0]?.embedding;
+    if (!embedding || !Array.isArray(embedding)) {
+      console.error('[embed] invalid embedding response', json);
+      return new Response(JSON.stringify({ error: 'Invalid embedding response' }), { status: 502 });
+    }
 
     return new Response(JSON.stringify({ embedding }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err: any) {
-    console.error(err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    console.error('[embed] exception', err);
+    return new Response(JSON.stringify({ error: err?.message ?? 'Unknown error' }), { status: 500 });
   }
 });
