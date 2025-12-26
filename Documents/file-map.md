@@ -10,32 +10,40 @@ High-level overview of the directories and core files you will touch most often.
 - `components/`: Screen components and shared UI. Notable subfolders:
   - `components/common/`: Reusable primitives (buttons, modals, dropdowns, etc.).
   - `components/charts/`: SVG/chart renderers (e.g., radar chart).
+  - `components/ProfileDetailModal.tsx`: Reusable modal for detailed user profile view (matches, hobbies).
 - `navigation/`: Stack navigator definitions (`AppNavigator.tsx`).
-- `context/`: React context providers (`ThemeContext`, `LocaleContext`, etc.).
-- `hooks/`: Custom hooks (resource loading, TensorFlow model loader placeholders).
+- `context/`: React context providers (`ThemeContext`, `LocaleContext`, `AuthContext`).
+- `hooks/`: Custom hooks (`useNotifications`, `useAppResources`, etc.).
 - `i18n/`: Translation dictionaries and helpers.
 - `themes/`: Theme definitions (`index.ts` exposes `themes`, `toRgb`, `toRgba`).
-- `services/`: External integrations (Supabase client, haptics, audio).
+- `services/`: External integrations.
+  - `services/supabase.ts`: Supabase client, auth, and profile/hobby data fetching.
+  - `services/scoreCrypto.ts`: Client-side wrapper for generic encryption (hobbies) and Big Five scoring.
+  - `services/storage.ts`: Avatar upload and optimized image URL generation.
 - `services/pcaEvaluator.ts`: Lazy loader for the TensorFlow Lite PCA converter (`assets/ml/pca_evaluator_4d.tflite`).
 - `store/`: Zustand-powered persistent state (draft flows, resume handling).
-- `assets/`: Static assets organised by type (`images`, `sound`, `svg`). SVG imports currently rely on inline XML; clean raw files live under `assets/svg/`.
+- `assets/`: Static assets organised by type (`images`, `sound`, `svg`).
 - `assets/ml/`: TensorFlow Lite artifacts (`pca_evaluator_4d.tflite`).
 - `Documents/`: Product notes, conventions, lookup references (this file), progress log.
+  - `Documents/nlp_recommendation_system.md`: Architecture of the hobby matching system.
 - `data/`: Static datasets (question bank, scoring helpers).
-- `hooks/`, `services/`, `store/`: Support code referenced across screens; when adding new domain logic, ensure you update relevant lookups and documents here.
 
 ## Backend & Infra
-- `services/supabase.ts`: Supabase client singleton, auth helpers, and typed `public.profiles` fetch/upsert calls (includes PCA dims + encrypted score blobs).
-- `services/scoreCrypto.ts`: Wraps the `score-crypto` edge function for encrypt/decrypt calls before persisting or after fetching scores.
-- `supabase/functions/score-crypto/`: Deno edge function implementing AES-256-GCM encryption for raw Big Five payloads; deploy via `npx supabase functions deploy`.
-- `.env.local` (gitignored): Stores local CLI/database credentials for Supabase/postgres access. Never commit.
-- `Documents/supabase.md` & `Documents/supabase_connection_and_schema_guide.md`: Schema definitions, CLI reference, and migration/back-end change log.
+- `services/supabase.ts`: Primary data access layer. Now handles single-table `profiles` schema with encrypted traits.
+- `supabase/functions/`: Deno Edge Functions.
+  - `score-crypto/`: AES-256-GCM encryption/decryption for generic payloads (Big Five + Hobbies).
+  - `recommend-users/`: Hybrid matching algorithm (PCA + ELO + Hobbies).
+  - `embed/`: Vector embedding generator (currently using deterministic hashing for stability).
+  - `match-update/`: Handles ELO updates and mutual match creation.
+  - `notify/`: Notification dispatcher.
+- `supabase/migrations/`: SQL migration history.
+- `Documents/supabase.md` & `Documents/supbabase_current_schema.md`: Schema definitions and architecture notes.
 
 ## Tooling
-- `babel.config.js`: Module resolver aliases; keep in sync with TypeScript paths.
-- `tsconfig.json`: TypeScript compiler options and path aliases.
-- `package.json` / `yarn.lock`: Dependency management (Yarn only; see coding convention).
+- `babel.config.js`: Module resolver aliases.
+- `tsconfig.json`: TypeScript compiler options.
+- `package.json` / `yarn.lock`: Dependency management (Yarn only).
 
 ## Documentation pointers
-- `Documents/coding-Convention.md`: House rules for contributing code. Update alongside this map whenever directory ownership or conventions shift.
-- `Documents/progress.md`: Chronological change log; append a dated entry for notable adjustments (new screens, rewrites, infra changes).
+- `Documents/coding-Convention.md`: House rules for contributing code.
+- `Documents/progress.md`: Chronological change log.

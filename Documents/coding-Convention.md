@@ -1,10 +1,22 @@
-- Append ./progress.md upon noticable changes 
-- Always use Safe area view for component at the bottom of the screen to make it sit on top of the Android App Navigation OS bar. 
-- i18n is implemented for English, Japanese and Vietnamese, so new text contents must be written in the i18n translation.ts first 
-- For UI texts, make them short and utilize icons 
-- Yarn is the package management
-- App run is prohibited in coding as it is already run 
-- use preset colors, if we ever need new color, define them both in dark and light theme (change accordingly for readability). colors are at ../themes/index.ts, the function `toRgb()` converts the rbg values from the theme index file to usable typescript values type. 
-- Add snappy haptics for navigation buttons 
-- Keep `Documents/file-map.md` in sync with the actual project layout; update the map whenever directories or ownership change, and follow it when adding new surface areas.
-- Supabase CLI is linked to the production project via `supabase link`; use `npx supabase` commands for remote SQL/migrations. Keep the linked project credentials secure (see `Documents/supabase-cli.md` for usage).
+- Append `./progress.md` upon noticeable changes.
+- **UI & Layout**:
+  - Always use `SafeAreaView` for components at the bottom of the screen to accommodate Android navigation bars.
+  - For UI texts, prioritize brevity and icons.
+  - Use preset colors defined in `themes/index.ts`. Use `toRgb()`/`toRgba()` helpers.
+  - **New Colors**: Added `--accent-pink` and `--accent-orange` for hobby tags and highlights.
+  - **Images**: Use `expo-image` (`<Image>`) instead of React Native's Image for caching and performance.
+- **Internationalization (i18n)**:
+  - All text must be in `i18n/translations.ts` (English, Japanese, Vietnamese).
+  - Group keys logically (e.g., `settings.hobbies`, `explore.filters`).
+- **State & Data**:
+  - **Privacy First**: Never store sensitive user traits (Big 5 scores, hobbies) in plaintext. Always encrypt via `score-crypto` before saving to `public.profiles`.
+  - **Hobbies**: Use `hobbies_cipher` for storage and `hobby_embedding` for matching. Do not use the deprecated `hobbies` plaintext column.
+  - **Vectors**: Use the `embed` edge function to generate vectors.
+- **Package Management**:
+  - Use Yarn.
+  - Do not run `npm start` or app builds during coding tasks unless explicitly requested.
+- **Backend (Supabase)**:
+  - Keep `Documents/supabase.md` and `Documents/supbabase_current_schema.md` updated.
+  - Use `npx supabase` CLI for migrations.
+  - **Edge Functions**: Deploy functions individually (`npx supabase functions deploy <name>`).
+- **Haptics**: Add snappy haptics for navigation buttons.

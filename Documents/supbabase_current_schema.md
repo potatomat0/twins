@@ -1,109 +1,82 @@
 # Supabase Schema Reference
 
 > **Last Updated:** 2025-02-26
-> **Status:** Active
-
-This document reflects the current database schema state for the Twins application.
+> **Status:** Active (Single Table Architecture)
 
 ## Schema: `public`
 
 ### Tables
 
 #### `public.profiles`
-Stores user profile data, Big Five scores (encrypted), and ELO rating.
+Consolidated user data table. Contains public identity, encrypted traits, and matching vectors.
 *   `id` (`uuid`, PK, FK -> `auth.users.id`)
 *   `username` (`text`, nullable)
 *   `age_group` (`text`, nullable)
 *   `gender` (`text`, nullable)
+*   `avatar_url` (`text`, nullable)
 *   `character_group` (`varchar`, nullable)
-*   `personality_fingerprint` (`float4`, nullable)
-*   `pca_dim1` (`float8`, nullable)
-*   `pca_dim2` (`float8`, nullable)
-*   `pca_dim3` (`float8`, nullable)
-*   `pca_dim4` (`float8`, nullable)
-*   `b5_cipher` (`text`, nullable)
-*   `b5_iv` (`text`, nullable)
-*   `created_at` (`timestamptz`, default `now()`)
 *   `elo_rating` (`numeric`, default `1200`)
 *   `match_allow_elo` (`boolean`, default `true`)
+*   **Personality (Encrypted)**:
+    *   `b5_cipher` (`text`): Encrypted Big Five scores.
+    *   `b5_iv` (`text`): Initialization vector.
+*   **Hobbies (Encrypted + Vector)**:
+    *   `hobbies_cipher` (`text`): Encrypted list of hobby keywords.
+    *   `hobbies_iv` (`text`): Initialization vector.
+    *   `hobby_embedding` (`vector(384)`): Semantic vector for matching.
+    *   *(Note: `hobbies` plaintext column is deprecated/unused).*
+*   **Matching Vectors**:
+    *   `pca_dim1` - `pca_dim4` (`float8`): Principal Component Analysis dimensions.
 
 **RLS Policies:**
 *   `profiles_is_owner`: Users can select/update their own profile.
 
-#### `public.match_events`
-Log of user actions (like/skip) for the matching algorithm.
-*   `id` (`uuid`, PK, default `gen_random_uuid()`)
-*   `actor_id` (`uuid`, not null, FK -> `auth.users.id`)
-*   `target_id` (`uuid`, not null, FK -> `auth.users.id`)
-*   `outcome` (`text`, check: `like` | `skip`)
-*   `created_at` (`timestamptz`, default `now()`)
-
-**RLS Policies:**
-*   `actor_can_insert`: Users can insert events where they are the actor.
-*   `actor_can_select`: Users can see their own events.
-
 #### `public.matches`
 Established matches (mutual likes).
-*   `id` (`uuid`, PK, default `gen_random_uuid()`)
-*   `user_a` (`uuid`, not null, FK -> `auth.users.id`)
-*   `user_b` (`uuid`, not null, FK -> `auth.users.id`)
-*   `created_at` (`timestamptz`, default `now()`)
-*   *Constraint:* Unique `(user_a, user_b)`
+*   `id` (`uuid`, PK)
+*   `user_a` / `user_b` (`uuid`, FK -> `auth.users`)
+*   Constraint: Unique pair.
 
-**RLS Policies:**
-*   `match_select`: Users can see matches they are part of.
-*   `match_insert`: Service role only (created by edge function).
+#### `public.match_events`
+Log of user actions (like/skip) for the matching algorithm.
+*   `actor_id` / `target_id`
+*   `outcome` (`like` | `skip`)
 
 #### `public.messages`
-Chat messages between matched users.
-*   `id` (`uuid`, PK, default `gen_random_uuid()`)
-*   `match_id` (`uuid`, not null, FK -> `public.matches.id`)
-*   `sender_id` (`uuid`, not null, FK -> `auth.users.id`)
-*   `receiver_id` (`uuid`, not null, FK -> `auth.users.id`)
-*   `body` (`text`, not null)
-*   `created_at` (`timestamptz`, default `now()`)
-*   `updated_at` (`timestamptz`, default `now()`)
-*   `status` (`text`, default `sent`, check: `sending`|`sent`|`delivered`|`seen`|`error`)
-
-**RLS Policies:**
-*   `messages_select`: Users can see messages for their matches.
-*   `messages_insert`: Users can send messages to their matches (sender=auth.uid).
-*   `messages_update_status`: Sender or Receiver can update the row (primarily for status).
+Chat messages.
+*   `match_id`, `sender_id`, `receiver_id`, `body`, `status`.
 
 #### `public.notifications`
-In-app notifications (Likes, New Matches, Messages).
-*   `id` (`uuid`, PK, default `gen_random_uuid()`)
-*   `recipient_id` (`uuid`, not null, FK -> `auth.users.id`)
-*   `actor_id` (`uuid`, nullable, FK -> `auth.users.id`)
-*   `type` (`text`, check: `like` | `mutual` | `message`)
-*   `payload` (`jsonb`)
-*   `read` (`boolean`, default `false`)
-*   `created_at` (`timestamptz`, default `now()`)
-
-**RLS Policies:**
-*   `recipient_select`: Users can see their own notifications.
-*   `recipient_update`: Users can update (mark read) their own notifications.
-*   `service_insert`: Service role only.
+In-app notifications.
+*   `recipient_id`, `actor_id`, `type`, `payload`, `read`.
 
 ### Views
 
-#### `public.profile_lookup`
-Secure view for looking up basic user info (username/avatar) by ID.
-*   `id`
-*   `username`
-*   `avatar_url` (derived from profile or metadata)
-*   `email`
-
 #### `public.my_profile`
-Convenience view for the current user to see their own profile + email.
+Convenience view joining `profiles` with `auth.users.email` and `email_confirmed_at`.
+
+#### `public.profile_lookup`
+Secure lookup view for basic user info (username/avatar) by ID.
 
 ---
 
-## Schema: `auth` (Managed by Supabase)
+## Edge Functions
 
-Core authentication tables. *Do not modify manually.*
+### `recommend-users`
+*   **Logic**: Hybrid Matching.
+*   **Formula**:
+    *   *Default*: `0.8 * PCA + 0.2 * ELO`
+    *   *With Hobbies*: `0.6 * PCA + 0.15 * ELO + 0.25 * Hobby`
+*   **Returns**: Candidate pool with `similarity` score and encrypted hobbies.
 
-*   `auth.users`: The identity store.
-*   `auth.sessions`: Active sessions.
-*   `auth.refresh_tokens`: Refresh tokens.
-*   (And other internal tables: `identities`, `mfa_factors`, etc.)
+### `embed`
+*   **Logic**: Generates 384-dimensional vector from text.
+*   **Model**: Currently uses a **Deterministic Hash Mock** for stability on free-tier edge runtime.
+*   **Future**: Can be swapped for `Supabase/gte-small` or OpenAI API.
+
+### `score-crypto`
+*   **Logic**: AES-256-GCM encryption/decryption.
+*   **Usage**: Handles both Personality Scores (object) and Hobbies (array).
+
+### `match-update`
+*   **Logic**: Updates ELO ratings (cooperative) and creates mutual matches.
