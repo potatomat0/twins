@@ -1,0 +1,1 @@
+-- Placeholder to align migration history (remote version 20250226 already applied)

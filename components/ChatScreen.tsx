@@ -141,11 +141,7 @@ const ChatScreen: React.FC = () => {
             AsyncStorage.setItem(CACHE_KEY, JSON.stringify((prev: any) => prev)).catch(() => {});
           }, 0);
           if (incoming.receiver_id === user?.id) {
-            supabase
-              .from('messages')
-              .update({ status: 'seen' })
-              .eq('id', incoming.id)
-              .catch(() => {});
+            void supabase.from('messages').update({ status: 'seen' }).eq('id', incoming.id);
           }
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         },
@@ -233,12 +229,12 @@ const ChatScreen: React.FC = () => {
     return (
       <View>
         {newSession ? (
-          <View style={[styles.sessionHeader, { justifyContent: 'center', alignItems: 'center', paddingVertical: 12 }]}>
-             <View style={{ position: 'absolute', left: 16, right: 16, top: '50%', height: 1, backgroundColor: toRgba(theme.colors['--border'], 0.4) }} />
-            <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 12, backgroundColor: toRgb(theme.colors['--bg']), paddingHorizontal: 12 }}>
+          <View style={[styles.sessionHeader, { paddingVertical: 12 }]}>
+            <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 12, textAlign: 'center', marginBottom: 6 }}>
               {created.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}{' '}
               {created.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
+            <View style={{ height: 1, backgroundColor: toRgba(theme.colors['--border'], 0.4), marginHorizontal: 16 }} />
           </View>
         ) : null}
         <TouchableOpacity
@@ -368,4 +364,6 @@ const styles = StyleSheet.create({
   time: { fontSize: 10, color: '#dfe3e8', marginTop: 4, textAlign: 'right' },
   inputRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: 1 },
   input: { flex: 1, paddingVertical: 8, paddingHorizontal: 10 },
+  sessionHeader: { paddingVertical: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
 });

@@ -16,6 +16,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { placeholderAvatarUrl, uploadAvatar, getOptimizedImageUrl } from '@services/storage';
+import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
 
 const AGE_VALUES = ['<18', '18-24', '25-35', '35-44', '45+'] as const;
 const AGE_KEYS = ['under18', 'range18_24', 'range25_35', 'range35_44', 'range45_plus'] as const;
@@ -47,8 +48,11 @@ const UserSettingsScreen: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url ?? null);
   const [matchAllowElo, setMatchAllowElo] = useState<boolean>(profile?.match_allow_elo ?? true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(!!user?.email_confirmed_at);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showPublicProfile, setShowPublicProfile] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -177,6 +181,23 @@ const UserSettingsScreen: React.FC = () => {
     [t],
   );
 
+  const publicProfileCard = useMemo<ProfileDetail>(() => {
+    return {
+      id: user?.id ?? '',
+      username: username || profile?.username || user?.email || 'You',
+      age_group: ageGroup || profile?.age_group || null,
+      gender: gender || profile?.gender || null,
+      character_group: profile?.character_group ?? null,
+      avatar_url: avatarUrl || profile?.avatar_url || placeholderAvatarUrl,
+      hobbies: hobbies,
+      hobby_embedding: (profile as any)?.hobby_embedding ?? null,
+      pca_dim1: profile?.pca_dim1 ?? null,
+      pca_dim2: profile?.pca_dim2 ?? null,
+      pca_dim3: profile?.pca_dim3 ?? null,
+      pca_dim4: profile?.pca_dim4 ?? null,
+    };
+  }, [ageGroup, avatarUrl, gender, hobbies, profile, user?.email, user?.id, username]);
+
   useEffect(() => {
     setAvatarUrl(profile?.avatar_url ?? null);
     setMatchAllowElo(profile?.match_allow_elo ?? true);
@@ -238,6 +259,7 @@ const UserSettingsScreen: React.FC = () => {
   const saveProfile = useCallback(async () => {
     if (!user?.id) return;
     setSaving(true);
+    setSaveSuccess(false);
     try {
       let embedding: number[] | null = null;
       let hobbiesCipher: string | null = null;
@@ -246,7 +268,8 @@ const UserSettingsScreen: React.FC = () => {
       // Only generate embedding and encrypt if hobbies are present
       if (hobbies.length > 0) {
         // 1. Embed
-        const text = hobbies.join(', ');
+        // Minimal context to keep a single vector (avoid per-hobby matrix comparisons)
+        const text = `interests: ${hobbies.join('; ')}`;
         const { data: embedData, error: embedError } = await supabaseClient.functions.invoke('embed', { body: { text } });
         if (!embedError && embedData?.embedding) {
           embedding = embedData.embedding;
@@ -282,6 +305,7 @@ const UserSettingsScreen: React.FC = () => {
       
       const { error } = await upsertProfile(payload);
       if (error) throw error;
+      setSaveSuccess(true);
     } catch (err) {
       if (__DEV__) console.error('[settings] save failed', err);
       setUploadError('Failed to save profile.');
@@ -302,6 +326,7 @@ const UserSettingsScreen: React.FC = () => {
     async (mode: 'camera' | 'library') => {
       if (!user?.id) return;
       setUploadError(null);
+      setUploadProgress(0);
       const permission =
         mode === 'camera'
           ? await ImagePicker.requestCameraPermissionsAsync()
@@ -328,14 +353,22 @@ const UserSettingsScreen: React.FC = () => {
       if (result.canceled || !result.assets?.length) return;
       const asset = result.assets[0];
       setUploadingAvatar(true);
+      let timer: NodeJS.Timeout | null = null;
+      setUploadProgress(5);
+      timer = setInterval(() => {
+        setUploadProgress((p) => (p < 90 ? p + 5 : p));
+      }, 150);
       try {
         const { publicUrl } = await uploadAvatar(user.id, asset.uri, (asset as any).mimeType || asset.type);
         setAvatarUrl(publicUrl);
         await upsertProfile(buildProfilePayload({ avatar_url: publicUrl }));
+        setUploadProgress(100);
       } catch (err: any) {
         setUploadError(err?.message ?? 'Upload failed');
       } finally {
+        if (timer) clearInterval(timer);
         setUploadingAvatar(false);
+        setTimeout(() => setUploadProgress(0), 400);
       }
     },
     [buildProfilePayload, t, user?.id],
@@ -353,6 +386,15 @@ const UserSettingsScreen: React.FC = () => {
           onToggle={() => setSections((s) => ({ ...s, profile: !s.profile }))}
           icon="person-circle-outline"
         >
+          <Pressable
+            style={{ alignItems: 'center', marginBottom: 12, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: toRgba(theme.colors['--border'], 0.2) }}
+            onPress={() => setShowPublicProfile(true)}
+          >
+            <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>{t('settings.viewPublicProfile') ?? 'View public profile'}</Text>
+            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 4 }}>
+              {t('settings.viewPublicProfileHint') ?? 'See how others see your card'}
+            </Text>
+          </Pressable>
           <View style={{ alignItems: 'center', marginBottom: 12 }}>
             <Image
               source={{ uri: getOptimizedImageUrl(avatarUrl || placeholderAvatarUrl, 320) }}
@@ -360,6 +402,16 @@ const UserSettingsScreen: React.FC = () => {
               contentFit="cover"
               transition={200}
             />
+            {uploadingAvatar || uploadProgress > 0 ? (
+              <View style={[styles.progressBar, { backgroundColor: toRgba(theme.colors['--border'], 0.3) }]}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${uploadProgress}%`, backgroundColor: toRgb(theme.colors['--brand-primary']) },
+                  ]}
+                />
+              </View>
+            ) : null}
             {uploadError ? (
               <Text style={{ color: toRgb(theme.colors['--danger']), marginTop: 6 }}>{uploadError}</Text>
             ) : null}
@@ -409,6 +461,9 @@ const UserSettingsScreen: React.FC = () => {
           <Dropdown options={genderOptions} value={gender} onChange={(v) => setGender(v as string)} placeholder={t('settings.gender')} />
           <View style={{ height: 12 }} />
           <Button title={saving ? t('common.loading') : t('settings.saveProfile')} onPress={saveProfile} disabled={saving || !user?.id} />
+          {saveSuccess ? (
+            <Text style={{ color: toRgb(theme.colors['--accent-cyan']), marginTop: 6 }}>{t('settings.saveSuccess') ?? 'Saved successfully'}</Text>
+          ) : null}
         </Accordion>
 
         <Accordion
@@ -460,6 +515,9 @@ const UserSettingsScreen: React.FC = () => {
           )}
           <View style={{ height: 12 }} />
           <Button title={saving ? t('common.loading') : t('settings.saveProfile')} onPress={saveProfile} disabled={saving || !user?.id} />
+          {saveSuccess ? (
+            <Text style={{ color: toRgb(theme.colors['--accent-cyan']), marginTop: 6 }}>{t('settings.saveSuccess') ?? 'Saved successfully'}</Text>
+          ) : null}
         </Accordion>
 
         <Accordion
@@ -540,6 +598,7 @@ const UserSettingsScreen: React.FC = () => {
           />
         </Accordion>
       </ScrollView>
+      <ProfileDetailModal visible={showPublicProfile} onClose={() => setShowPublicProfile(false)} profile={publicProfileCard} />
       <View style={{ padding: 16 }}>
         <Button title={t('dashboard.logout')} variant="danger" onPress={handleLogout} />
       </View>
@@ -557,6 +616,8 @@ const styles = StyleSheet.create({
   readonly: { borderWidth: 1, borderRadius: 10, padding: 12 },
   avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#d1d5db' },
   avatarActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  progressBar: { height: 6, width: '100%', borderRadius: 6, overflow: 'hidden', marginTop: 8 },
+  progressFill: { height: '100%', borderRadius: 6 },
 });
 
 const Accordion: React.FC<{

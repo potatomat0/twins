@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { Modal, View, Text, StyleSheet, Pressable, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { Modal, View, Text, StyleSheet, Pressable, ScrollView, Dimensions, ActivityIndicator, Animated, PanResponder } from 'react-native';
 import { Image } from 'expo-image';
 import { toRgb, toRgba } from '@themes/index';
 import { useTheme } from '@context/ThemeContext';
@@ -7,6 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { getOptimizedImageUrl } from '@services/storage';
 import { decryptGenericRemote } from '@services/scoreCrypto';
 import { useTranslation } from '@context/LocaleContext';
+import * as Haptics from 'expo-haptics';
 
 export type ProfileDetail = {
   id: string;
@@ -18,7 +19,13 @@ export type ProfileDetail = {
   bio?: string | null;
   hobbies_cipher?: string | null;
   hobbies_iv?: string | null;
+  hobbies?: string[] | null;
+  hobby_embedding?: number[] | string | null;
   match_percentage?: number | null; // For display
+  pca_dim1?: number | null;
+  pca_dim2?: number | null;
+  pca_dim3?: number | null;
+  pca_dim4?: number | null;
 };
 
 type Props = {
@@ -44,8 +51,60 @@ const ProfileDetailModal: React.FC<Props> = ({
   const { t } = useTranslation();
   const [hobbies, setHobbies] = useState<string[]>([]);
   const [decrypting, setDecrypting] = useState(false);
+  const [visibleState, setVisibleState] = useState(false);
+  const pan = useRef(new Animated.Value(0)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gesture) => gesture.dy > 5,
+      onPanResponderMove: (_, gesture) => {
+        if (gesture.dy > 0) {
+          pan.setValue(gesture.dy);
+        }
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dy > 120) {
+          Animated.timing(pan, {
+            toValue: Dimensions.get('window').height,
+            duration: 250,
+            useNativeDriver: true,
+          }).start(() => {
+            void Haptics.selectionAsync();
+            onClose();
+            setTimeout(() => pan.setValue(0), 100);
+          });
+        } else {
+          Animated.spring(pan, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 80,
+            friction: 10,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(pan, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 80,
+          friction: 10,
+        }).start();
+      },
+    }),
+  ).current;
 
   useEffect(() => {
+    if (visible) {
+      pan.setValue(0);
+    }
+  }, [visible, pan]);
+
+  useEffect(() => {
+    if (profile?.hobbies && profile.hobbies.length) {
+      setHobbies(profile.hobbies);
+      return;
+    }
     if (visible && profile?.hobbies_cipher && profile?.hobbies_iv) {
       setDecrypting(true);
       decryptGenericRemote<string[]>(profile.hobbies_cipher, profile.hobbies_iv)
@@ -62,10 +121,17 @@ const ProfileDetailModal: React.FC<Props> = ({
     }
   }, [visible, profile]);
 
+  useEffect(() => {
+    if (visible !== visibleState) {
+      setVisibleState(visible);
+      void Haptics.selectionAsync();
+    }
+  }, [visible, visibleState]);
+
   if (!visible || !profile) return null;
 
   const imageUrl = getOptimizedImageUrl(profile.avatar_url, 1080); // High res for detail
-  
+
   // Color palette for hobbies
   const hobbyColors = [
     theme.colors['--brand-primary'],
@@ -76,7 +142,10 @@ const ProfileDetailModal: React.FC<Props> = ({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>
+      <Animated.View
+        style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']), transform: [{ translateY: pan }] }]}
+        {...panResponder.panHandlers}
+      >
         <ScrollView contentContainerStyle={{ paddingBottom: 100 }} bounces={false}>
           {/* Header Image */}
           <View style={styles.imageContainer}>
@@ -88,7 +157,10 @@ const ProfileDetailModal: React.FC<Props> = ({
             />
             <Pressable 
               style={[styles.closeBtn, { backgroundColor: 'rgba(0,0,0,0.3)' }]} 
-              onPress={onClose}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                onClose();
+              }}
             >
               <Ionicons name="chevron-down" size={28} color="#fff" />
             </Pressable>
@@ -98,7 +170,7 @@ const ProfileDetailModal: React.FC<Props> = ({
               <View style={[styles.matchBadge, { backgroundColor: toRgb(theme.colors['--brand-primary']) }]}>
                 <Ionicons name="sparkles" size={14} color="#fff" style={{ marginRight: 4 }} />
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>
-                  {Math.round(profile.match_percentage)}% Match
+                  {t('explore.matchLabel', { percent: Math.round(profile.match_percentage) })}
                 </Text>
               </View>
             )}
@@ -131,34 +203,34 @@ const ProfileDetailModal: React.FC<Props> = ({
               <Text style={[styles.sectionTitle, { color: toRgb(theme.colors['--text-primary']) }]}>
                 {t('settings.hobbies')}
               </Text>
-              {decrypting ? (
-                <ActivityIndicator color={toRgb(theme.colors['--brand-primary'])} style={{ alignSelf: 'flex-start', marginVertical: 8 }} />
-              ) : hobbies.length > 0 ? (
-                <View style={styles.hobbyWrap}>
-                  {hobbies.map((hobby, idx) => {
-                    // Highlight if it matches one of current user's hobbies (case-insensitive simple match)
-                    const isMatch = currentUserHobbies.some(h => h.toLowerCase() === hobby.toLowerCase());
-                    const bgColor = isMatch ? theme.colors['--brand-primary'] : hobbyColors[idx % hobbyColors.length];
-                    
-                    return (
-                      <View 
-                        key={idx} 
-                        style={[
-                          styles.hobbyTag, 
-                          { backgroundColor: toRgb(bgColor) }
-                        ]}
-                      >
-                        {isMatch && <Ionicons name="star" size={10} color="#fff" style={{ marginRight: 4 }} />}
-                        <Text style={styles.hobbyText}>{hobby}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              ) : (
-                <Text style={{ color: toRgb(theme.colors['--text-muted']), fontStyle: 'italic' }}>
-                  No hobbies listed.
-                </Text>
-              )}
+             {decrypting ? (
+               <ActivityIndicator color={toRgb(theme.colors['--brand-primary'])} style={{ alignSelf: 'flex-start', marginVertical: 8 }} />
+             ) : hobbies.length > 0 ? (
+               <View style={styles.hobbyWrap}>
+                 {hobbies.map((hobby, idx) => {
+                   // Highlight if it matches one of current user's hobbies (case-insensitive simple match)
+                   const isMatch = currentUserHobbies.some(h => h.toLowerCase() === hobby.toLowerCase());
+                   const bgColor = isMatch ? theme.colors['--brand-primary'] : hobbyColors[idx % hobbyColors.length];
+                   
+                   return (
+                     <View 
+                       key={idx} 
+                       style={[
+                         styles.hobbyTag, 
+                         { backgroundColor: toRgb(bgColor) }
+                       ]}
+                     >
+                       {isMatch && <Ionicons name="star" size={10} color="#fff" style={{ marginRight: 4 }} />}
+                       <Text style={styles.hobbyText}>{hobby}</Text>
+                     </View>
+                   );
+                 })}
+               </View>
+             ) : (
+               <Text style={{ color: toRgb(theme.colors['--text-muted']), fontStyle: 'italic' }}>
+                 No hobbies listed.
+               </Text>
+             )}
             </View>
 
             {/* Bio (if available) - Assuming bio might be added later, currently mostly implied by character group */}
@@ -206,7 +278,7 @@ const ProfileDetailModal: React.FC<Props> = ({
             )}
           </View>
         )}
-      </View>
+      </Animated.View>
     </Modal>
   );
 };

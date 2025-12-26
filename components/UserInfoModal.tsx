@@ -69,12 +69,12 @@ const UserInfoModal: React.FC<Props> = ({ visible, user, onClose, onLike, onSkip
           </View>
         ) : null}
         {onMessage ? (
-          <View style={[styles.row, { marginTop: 10 }]}>
+          <View style={[styles.row, { marginTop: 10 }]}> 
             <Button
               title="Message"
               onPress={() => onMessage?.(user)}
               style={{ flex: 1 }}
-              variant="secondary"
+              variant="neutral"
             />
           </View>
         ) : null}

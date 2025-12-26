@@ -70,3 +70,90 @@ We use an ELO proximity term to gently favor similar ratings:
 - user must have more than 5 categories/keywords they have in their bio 
 -... maybe we can implement this later with a clearer strategy
 
+
+___
+
+
+
+
+
+
+
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.match_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  actor_id uuid NOT NULL,
+  target_id uuid NOT NULL,
+  outcome text NOT NULL CHECK (outcome = ANY (ARRAY['like'::text, 'skip'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT match_events_pkey PRIMARY KEY (id),
+  CONSTRAINT match_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES auth.users(id),
+  CONSTRAINT match_events_target_id_fkey FOREIGN KEY (target_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.matches (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_a uuid NOT NULL,
+  user_b uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT matches_pkey PRIMARY KEY (id),
+  CONSTRAINT matches_user_a_fkey FOREIGN KEY (user_a) REFERENCES auth.users(id),
+  CONSTRAINT matches_user_b_fkey FOREIGN KEY (user_b) REFERENCES auth.users(id)
+);
+CREATE TABLE public.messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  match_id uuid NOT NULL,
+  sender_id uuid NOT NULL,
+  receiver_id uuid NOT NULL,
+  body text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  status text NOT NULL DEFAULT 'sent'::text CHECK (status = ANY (ARRAY['sending'::text, 'sent'::text, 'delivered'::text, 'seen'::text, 'error'::text])),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT messages_pkey PRIMARY KEY (id),
+  CONSTRAINT messages_match_id_fkey FOREIGN KEY (match_id) REFERENCES public.matches(id),
+  CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES auth.users(id),
+  CONSTRAINT messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.notifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  recipient_id uuid NOT NULL,
+  actor_id uuid,
+  type text NOT NULL CHECK (type = ANY (ARRAY['like'::text, 'mutual'::text, 'message'::text])),
+  payload jsonb,
+  read boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_recipient_id_fkey FOREIGN KEY (recipient_id) REFERENCES auth.users(id),
+  CONSTRAINT notifications_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  username text,
+  age_group text,
+  gender text,
+  created_at timestamp with time zone DEFAULT now(),
+  character_group character varying,
+  personality_fingerprint jsonb,
+  avatar_url text,
+  elo_rating numeric DEFAULT 1200,
+  match_allow_elo boolean DEFAULT true,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.user_traits (
+  user_id uuid NOT NULL,
+  pca_dim1 double precision,
+  pca_dim2 double precision,
+  pca_dim3 double precision,
+  pca_dim4 double precision,
+  hobby_embedding USER-DEFINED,
+  b5_cipher text,
+  b5_iv text,
+  hobbies_cipher text,
+  hobbies_iv text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_traits_pkey PRIMARY KEY (user_id),
+  CONSTRAINT user_traits_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);

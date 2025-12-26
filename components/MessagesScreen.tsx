@@ -9,6 +9,7 @@ import supabase from '@services/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
 
 type Thread = {
   matchId: string;
@@ -27,6 +28,9 @@ const MessagesScreen: React.FC = () => {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [modalProfile, setModalProfile] = useState<ProfileDetail | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [activeThread, setActiveThread] = useState<Thread | null>(null);
 
   const loadThreads = async () => {
     if (!user?.id) return;
@@ -56,11 +60,6 @@ const MessagesScreen: React.FC = () => {
       if (profErr && __DEV__) console.warn('[messages] profile lookup error', profErr);
       (profs ?? []).forEach((p) => {
         profilesById[p.id] = { username: p.username ?? null, avatar_url: (p as any).avatar_url ?? null };
-      });
-      peers.forEach((p) => {
-        if (!profilesById[p.peerId] && __DEV__) {
-          console.warn('[messages] missing profile for peer', p.peerId);
-        }
       });
     }
     const results: Thread[] = [];
@@ -92,15 +91,71 @@ const MessagesScreen: React.FC = () => {
     void loadThreads();
   }, [user?.id]);
 
-  const sorted = useMemo(
-    () =>
-      threads.sort((a, b) => {
-        if (!a.lastAt) return 1;
-        if (!b.lastAt) return -1;
-        return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
-      }),
-    [threads],
-  );
+  const sorted = useMemo(() => {
+    return [...threads].sort((a, b) => {
+      if (!a.lastAt) return 1;
+      if (!b.lastAt) return -1;
+      return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+    });
+  }, [threads]);
+
+  const openProfile = async (item: Thread) => {
+    void Haptics.selectionAsync();
+    setActiveThread(item);
+    setModalProfile({
+      id: item.peerId,
+      username: item.peerName ?? null,
+      age_group: null,
+      gender: null,
+      character_group: null,
+      avatar_url: item.peerAvatar ?? null,
+      hobbies: [],
+      hobby_embedding: null,
+      pca_dim1: null,
+      pca_dim2: null,
+      pca_dim3: null,
+      pca_dim4: null,
+    });
+    setModalVisible(true);
+
+    const { data, error } = await supabase
+      .from('profile_lookup')
+      .select('id,username,age_group,gender,character_group,avatar_url,hobbies,hobbies_cipher,hobbies_iv,pca_dim1,pca_dim2,pca_dim3,pca_dim4')
+      .eq('id', item.peerId)
+      .maybeSingle();
+    if (error) {
+      if (__DEV__) console.warn('[messages] profile lookup error', error);
+      return;
+    }
+    if (data) {
+      setModalProfile({
+        id: data.id,
+        username: data.username ?? item.peerName ?? null,
+        age_group: data.age_group ?? null,
+        gender: data.gender ?? null,
+        character_group: data.character_group ?? null,
+        avatar_url: data.avatar_url ?? item.peerAvatar ?? null,
+        hobbies: (data as any).hobbies ?? null,
+        hobbies_cipher: (data as any).hobbies_cipher ?? null,
+        hobbies_iv: (data as any).hobbies_iv ?? null,
+        hobby_embedding: null,
+        pca_dim1: (data as any).pca_dim1 ?? null,
+        pca_dim2: (data as any).pca_dim2 ?? null,
+        pca_dim3: (data as any).pca_dim3 ?? null,
+        pca_dim4: (data as any).pca_dim4 ?? null,
+      });
+    }
+  };
+
+  const openChat = (item: Thread) => {
+    void Haptics.selectionAsync();
+    nav.navigate('Chat', {
+      matchId: item.matchId,
+      peerId: item.peerId,
+      peerName: item.peerName,
+      peerAvatar: item.peerAvatar,
+    });
+  };
 
   const renderItem = ({ item }: { item: Thread }) => {
     return (
@@ -112,31 +167,28 @@ const MessagesScreen: React.FC = () => {
             borderColor: toRgba(theme.colors['--border'], 0.12),
           },
         ]}
-        onPress={() => {
-          void Haptics.selectionAsync();
-          nav.navigate('Chat', {
-            matchId: item.matchId,
-            peerId: item.peerId,
-            peerName: item.peerName,
-            peerAvatar: item.peerAvatar,
-          });
-        }}
+        onPress={() => openChat(item)}
       >
-        <View style={styles.avatarWrap}>
+        <Pressable
+          style={styles.avatarWrap}
+          onPress={() => openChat(item)}
+          onLongPress={() => openProfile(item)}
+          delayLongPress={120}
+        >
           {item.peerAvatar ? (
             <Image source={{ uri: item.peerAvatar }} style={styles.avatar} resizeMode="cover" />
           ) : (
             <Ionicons name="person-circle-outline" size={40} color={toRgb(theme.colors['--text-secondary'])} />
           )}
-        </View>
-        <View style={{ flex: 1 }}>
+        </Pressable>
+        <Pressable style={{ flex: 1 }} onPress={() => openChat(item)}>
           <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>
             {item.peerName ?? t('messages.unknown')}
           </Text>
           <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 2 }} numberOfLines={1}>
             {item.lastMessage ?? t('messages.noMessages')}
           </Text>
-        </View>
+        </Pressable>
         <Ionicons name="chevron-forward" size={18} color={toRgb(theme.colors['--text-muted'])} />
       </Pressable>
     );
@@ -177,6 +229,26 @@ const MessagesScreen: React.FC = () => {
           />
         )}
       </View>
+      {modalProfile ? (
+        <ProfileDetailModal
+          visible={modalVisible}
+          onClose={() => {
+            void Haptics.selectionAsync();
+            setModalVisible(false);
+          }}
+          profile={modalProfile}
+          currentUserHobbies={[]}
+          onMessage={() => {
+            setModalVisible(false);
+            nav.navigate('Chat', {
+              matchId: activeThread?.matchId ?? modalProfile.id,
+              peerId: modalProfile.id,
+              peerName: modalProfile.username ?? modalProfile.id,
+              peerAvatar: modalProfile.avatar_url ?? undefined,
+            } as any);
+          }}
+        />
+      ) : null}
     </SafeAreaView>
   );
 };
@@ -188,14 +260,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '800', marginBottom: 10 },
   card: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, borderWidth: 1 },
   avatarWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: 'rgba(255,255,255,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
     overflow: 'hidden',
   },
-  avatar: { width: 96, height: 96 },
+  avatar: { width: 80, height: 80 },
 });

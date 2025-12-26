@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, SectionList, Pressable, RefreshControl } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
@@ -9,7 +9,7 @@ import useNotifications, { NotificationRecord } from '@hooks/useNotifications';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import UserInfoModal, { UserInfo } from '@components/UserInfoModal';
 import supabase from '@services/supabase';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const iconForType = (type: NotificationRecord['type']) => {
   if (type === 'mutual') return 'sparkles-outline';
@@ -35,6 +35,15 @@ const MatchesScreen: React.FC = () => {
   const [modalType, setModalType] = useState<NotificationRecord['type'] | null>(null);
   const [canMessage, setCanMessage] = useState(false);
   const [actioning, setActioning] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Clear badge by marking all read when user views the screen
+      if (notifications.length > 0) {
+        void markRead(notifications.map((n) => n.id));
+      }
+    }, [notifications, markRead]),
+  );
 
   const sections = useMemo(() => {
     const unread = notifications.filter((n) => !n.read);

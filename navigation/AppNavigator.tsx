@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import RegistrationScreen from '@components/RegistrationScreen';
 import QuestionnaireScreen from '@components/QuestionnaireScreen';
@@ -21,6 +22,7 @@ import type { PcaFingerprint } from '@services/pcaEvaluator';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import useNotifications from '@hooks/useNotifications';
+import { useTranslation } from '@context/LocaleContext';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -86,6 +88,7 @@ const Tab = createBottomTabNavigator<TabParamList>();
 const MainTabs: React.FC = () => {
   const { user } = useAuth();
   const { unreadCount } = useNotifications(user?.id, { enabled: true, limit: 50 });
+  const { t } = useTranslation();
   const showBadge = unreadCount > 0;
   return (
     <Tab.Navigator
@@ -106,6 +109,23 @@ const MainTabs: React.FC = () => {
           return <Ionicons name={icon as any} color={color} size={size} />;
         },
         tabBarBadge: route.name === 'Matches' && showBadge ? '•' : undefined,
+        tabBarLabel: ({ color, focused }: { color: string; focused: boolean }) => {
+          const key =
+            route.name === 'Explore'
+              ? 'explore.title'
+              : route.name === 'Matches'
+              ? 'notifications.title'
+              : route.name === 'Messages'
+              ? 'messages.title'
+              : route.name === 'Settings'
+              ? 'settings.accordion.profile'
+              : route.name;
+          return (
+            <Text style={{ color, fontSize: 11, fontWeight: focused ? '700' : '500' }}>
+              {t(key)}
+            </Text>
+          );
+        },
       })}
     >
       <Tab.Screen name="Explore" component={ExploreSwipeScreen as any} />

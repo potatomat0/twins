@@ -27,8 +27,11 @@ type Filters = {
 type RequestBody = {
   userId: string;
   filters?: Filters;
-  chunkSize?: number;
-  poolSizes?: number[];
+  // Pagination
+  offset?: number;
+  pageSize?: number;
+  // Optionally exclude already shown ids (client-managed dedupe)
+  excludeIds?: string[];
   useElo?: boolean;
   useHobbies?: boolean;
 };
@@ -131,8 +134,12 @@ serve(async (req) => {
   const filters: Filters = body.filters ?? {};
   const useElo = body.useElo ?? true;
   const useHobbies = body.useHobbies ?? false;
-  const chunkSize = Math.max(10, Math.min(body.chunkSize ?? 400, 2000));
-  const poolSizes = body.poolSizes && body.poolSizes.length > 0 ? body.poolSizes : [25, 50, 100, 200];
+  const offset = Math.max(0, body.offset ?? 0);
+  const pageSize = Math.max(10, Math.min(body.pageSize ?? 25, 100));
+  const excludeIds = new Set<string>(body.excludeIds ?? []);
+  // Fetch enough to cover the requested window; cap to keep memory sane
+  const chunkSize = Math.max(pageSize + offset, 400);
+  const cappedChunkSize = Math.min(chunkSize, 2000);
 
   try {
     const { data: me, error: meErr } = await supabase
@@ -203,12 +210,13 @@ serve(async (req) => {
       console.error('[recommend-users]', reqId, 'fetch candidates error', candErr);
       return json({ error: 'Failed to fetch candidates' }, { status: 500 });
     }
-    const shuffled = shuffle((candidates as ProfileRow[]) ?? []);
+    const shuffled = (candidates as ProfileRow[]) ?? [];
     const scored: SimilarUser[] = [];
     for (const c of shuffled) {
       const vec = buildVector(c);
       if (!vec) continue;
       if (matchedIds.has(c.id as string)) continue;
+      if (excludeIds.has(c.id as string)) continue;
       
       const pcaSim = Math.max(0, Math.min(1, cosine(meVec, vec)));
       let score = pcaSim;
@@ -241,9 +249,11 @@ serve(async (req) => {
           const cElo = c.elo_rating ?? 1200;
           const prox = eloProximity(meElo, cElo);
           eloScore = prox;
-          score = 0.6 * pcaSim + 0.15 * prox + 0.25 * hSim;
+          // Increase hobby weight: PCA 50%, ELO 20%, Hobbies 30%
+          score = 0.5 * pcaSim + 0.2 * prox + 0.3 * hSim;
         } else {
-          score = 0.7 * pcaSim + 0.3 * hSim;
+          // Without ELO: PCA 55%, Hobbies 45%
+          score = 0.55 * pcaSim + 0.45 * hSim;
         }
       }
 
@@ -263,23 +273,24 @@ serve(async (req) => {
     }
 
     const sorted = scored.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-    const pools = poolSizes.map((size) => ({
-      size,
-      users: finalResult(sorted, size),
-      available: sorted.length >= size,
+    const page = sorted.slice(offset, offset + pageSize).map((s) => ({
+      ...s,
+      similarity: s.score ?? s.similarity,
+      hobbies_cipher: s.hobbies_cipher,
+      hobbies_iv: s.hobbies_iv,
     }));
-
-    // Helper for pool generation
-    function finalResult(sortedUsers: SimilarUser[], size: number) {
-        return sortedUsers.slice(0, size).map(s => ({ ...s, similarity: s.score ?? s.similarity, hobbies_cipher: s.hobbies_cipher, hobbies_iv: s.hobbies_iv }));
-    }
+    const total = sorted.length;
+    const hasMore = offset + pageSize < total;
+    const exhausted = total === 0;
 
     return json({
       requestId: reqId,
       elapsedMs: Date.now() - started,
-      totalCandidates: scored.length,
+      totalCandidates: total,
       appliedFilters: filters,
-      pools,
+      users: page,
+      hasMore,
+      exhausted,
       sample: sorted.slice(0, 5),
       usedElo: allowElo,
       usedHobbies: useHobbies,
