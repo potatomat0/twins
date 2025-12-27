@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, ScrollView, Switch, Pressable, ActivityIndicator, Image } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
@@ -6,96 +6,55 @@ import { toRgb, toRgba } from '@themes/index';
 import { useTranslation } from '@context/LocaleContext';
 import Button from '@components/common/Button';
 import { useAuth } from '@context/AuthContext';
-import supabase from '@services/supabase';
 import { placeholderAvatarUrl } from '@services/storage';
-import { getCache, setCache } from '@services/cache';
-
-type SimilarUser = {
-  id: string;
-  username: string | null;
-  age_group: string | null;
-  gender: string | null;
-  character_group: string | null;
-  avatar_url?: string | null;
-  similarity: number;
-};
-
-type Pool = {
-  size: number;
-  users: SimilarUser[];
-  available: boolean;
-};
+import { useRecommendations } from '@context/RecommendationContext';
 
 const ExploreScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { user, profile } = useAuth();
-  const [filters, setFilters] = useState({ ageGroup: false, gender: false, characterGroup: false });
-  const [pools, setPools] = useState<Pool[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-  const useElo = profile?.match_allow_elo ?? true;
-  const [useHobbies, setUseHobbies] = useState(false);
-  const hasEnoughHobbies = (profile?.hobbies?.length ?? 0) >= 3;
+  const { deck, loading, initialLoading, filters, useHobbies, setFilters, setUseHobbies, reset } = useRecommendations();
+  const hasEnoughHobbies = !!profile?.hobbies_cipher;
 
-  const toggle = useCallback(
-    (key: 'ageGroup' | 'gender' | 'characterGroup') => {
-      setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
-    },
-    [],
-  );
+  const genderOptions = ['All', 'Male', 'Female', 'Non-Binary'] as const;
+  const ageOptions = ['18-24', '25-35', '36-45', '46-60', '60+'] as const;
 
-  const fetchRecommendations = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: fnErr } = await supabase.functions.invoke('recommend-users', {
-        body: {
-          userId: user.id,
-          filters,
-          chunkSize: 400,
-          poolSizes: [25, 50, 100],
-          useElo,
-          useHobbies: useHobbies && hasEnoughHobbies,
-        },
-      });
-      if (fnErr) {
-        setError(fnErr.message ?? 'Failed to fetch recommendations');
-        return;
-      }
-      const payload = data as { pools?: Pool[]; error?: string };
-      if (payload?.error) {
-        setError(payload.error);
-        return;
-      }
-      const filtered = (payload?.pools ?? []).map((p) => ({
-        ...p,
-        users: (p.users ?? []).filter((u) => u.id !== user.id),
-      }));
-      setPools(filtered);
-      await setCache(`pool:list:${user.id}:${useElo}:${JSON.stringify(filters)}`, filtered);
-    } catch (e: any) {
-      setError(e?.message ?? 'Unexpected error');
-    } finally {
-      setLoading(false);
+  const genderLabel = (g: (typeof genderOptions)[number]) => {
+    if (g === 'All') return t('explore.genderAll');
+    if (g === 'Male') return t('registration.options.genders.male');
+    if (g === 'Female') return t('registration.options.genders.female');
+    return t('registration.options.genders.nonBinary');
+  };
+
+  const ageLabel = (a: string) => {
+    if (a === 'All') return t('explore.ageAll');
+    switch (a) {
+      case '18-24':
+        return t('registration.options.ageGroups.range18_24');
+      case '25-35':
+        return t('registration.options.ageGroups.range25_35');
+      case '36-45':
+        return t('registration.options.ageGroups.range35_44');
+      case '46-60':
+        return t('registration.options.ageGroups.range45_plus');
+      default:
+        return a;
     }
-  }, [filters, useElo, user?.id]);
+  };
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      if (!user?.id) return;
-      const cached = await getCache<Pool[]>(`pool:list:${user.id}:${useElo}:${JSON.stringify(filters)}`, CACHE_TTL_MS);
-      if (cached && active) setPools(cached);
-    })();
-    return () => {
-      active = false;
-    };
-  }, [filters, useElo, user?.id]);
+  const applyFilter = (type: 'gender' | 'age', value: string) => {
+    if (type === 'gender') {
+      setFilters({ ...filters, genders: value === 'All' ? [] : [value] });
+    } else {
+      setFilters({ ...filters, ageGroups: value === 'All' ? [] : [value] });
+    }
+  };
 
-  const topPool = useMemo(() => pools.find((p) => p.users?.length), [pools]);
+  const applyArchetype = (val: 'most' | 'least') => {
+    setFilters({ ...filters, archetype: val });
+  };
+
+  const topPreview = useMemo(() => deck.slice(0, 5), [deck]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>
@@ -120,37 +79,116 @@ const ExploreScreen: React.FC = () => {
              <Switch value={useHobbies} onValueChange={setUseHobbies} disabled={!hasEnoughHobbies} />
           </View>
 
-          {(['ageGroup', 'gender', 'characterGroup'] as const).map((key) => (
-            <View key={key} style={styles.filterRow}>
-              <Text style={{ color: toRgb(theme.colors['--text-secondary']), flex: 1 }}>
-                {key === 'ageGroup'
-                  ? t('explore.filterAge')
-                  : key === 'gender'
-                  ? t('explore.filterGender')
-                  : t('explore.filterArchetype')}
-              </Text>
-              <Switch value={filters[key]} onValueChange={() => toggle(key)} />
-            </View>
-          ))}
-          <Button title={loading ? t('common.loading') : t('explore.fetchMatches')} onPress={fetchRecommendations} disabled={loading || !user?.id} />
-          {error ? <Text style={{ color: toRgb(theme.colors['--danger']), marginTop: 8 }}>{error}</Text> : null}
+          <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']), marginTop: 12 }]}>
+            {t('explore.filterGender')}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {genderOptions.map((g) => {
+              const isActive = filters.genders?.length === 0 ? g === 'All' : filters.genders?.includes(g);
+              return (
+              <Pressable
+                key={g}
+                onPress={() => applyFilter('gender', g)}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: isActive ? toRgb(theme.colors['--brand-primary']) : toRgba(theme.colors['--border'], 0.3),
+                    backgroundColor: isActive ? toRgba(theme.colors['--brand-primary'], 0.12) : 'transparent',
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: isActive ? toRgb(theme.colors['--brand-primary']) : toRgb(theme.colors['--text-secondary']),
+                    fontWeight: '600',
+                  }}
+                >
+                  {genderLabel(g)}
+                </Text>
+              </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']), marginTop: 12 }]}>
+            {t('explore.filterAge')}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {['All', ...ageOptions].map((a) => {
+              const isActive = filters.ageGroups?.length === 0 ? a === 'All' : filters.ageGroups?.includes(a);
+              return (
+              <Pressable
+                key={a}
+                onPress={() => applyFilter('age', a)}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: isActive ? toRgb(theme.colors['--brand-primary']) : toRgba(theme.colors['--border'], 0.3),
+                    backgroundColor: isActive ? toRgba(theme.colors['--brand-primary'], 0.12) : 'transparent',
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: isActive ? toRgb(theme.colors['--brand-primary']) : toRgb(theme.colors['--text-secondary']),
+                    fontWeight: '600',
+                  }}
+                >
+                  {ageLabel(a)}
+                </Text>
+              </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']), marginTop: 12 }]}>
+            {t('explore.filterArchetype')}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+            {(['most', 'least'] as const).map((opt) => (
+              <Pressable
+                key={opt}
+                onPress={() => applyArchetype(opt)}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: filters.archetype === opt ? toRgb(theme.colors['--brand-primary']) : toRgba(theme.colors['--border'], 0.3),
+                    backgroundColor: filters.archetype === opt ? toRgba(theme.colors['--brand-primary'], 0.12) : 'transparent',
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: filters.archetype === opt ? toRgb(theme.colors['--brand-primary']) : toRgb(theme.colors['--text-secondary']),
+                    fontWeight: '600',
+                  }}
+                >
+                  {opt === 'most' ? t('explore.archetypeMost') : t('explore.archetypeLeast')}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 8 }}>{t('explore.filterNote')}</Text>
+          <View style={{ height: 8 }} />
+          <Button title={loading ? t('common.loading') : t('explore.applyFilters')} onPress={reset} disabled={loading || !user?.id} />
         </View>
 
         <View style={{ height: 16 }} />
 
-        {loading && (
+        {initialLoading && (
           <View style={{ alignItems: 'center', padding: 16 }}>
             <ActivityIndicator color={toRgb(theme.colors['--brand-primary'])} />
             <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 8 }}>{t('explore.loadingList')}</Text>
           </View>
         )}
 
-        {!loading && topPool && topPool.users.length > 0 ? (
+        {!initialLoading && deck.length > 0 ? (
           <View style={{ gap: 12 }}>
             <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']) }]}>
-              {t('explore.topMatches', { count: topPool.users.length })}
+              {t('explore.topMatches', { count: deck.length })}
             </Text>
-            {topPool.users.map((u) => (
+            {topPreview.map((u) => (
               <View
                 key={u.id}
                 style={[
@@ -181,7 +219,7 @@ const ExploreScreen: React.FC = () => {
           </View>
         ) : null}
 
-        {!loading && (!topPool || topPool.users.length === 0) && !error ? (
+        {!initialLoading && deck.length === 0 ? (
           <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('explore.noListMatches')}</Text>
         ) : null}
       </ScrollView>
@@ -197,6 +235,12 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, marginBottom: 12 },
   card: { borderRadius: 12, padding: 12, borderWidth: 1 },
   cardTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
   filterRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   userCard: { flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 12, borderWidth: 1, gap: 10 },
   avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 8 },

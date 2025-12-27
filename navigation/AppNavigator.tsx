@@ -23,6 +23,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import useNotifications from '@hooks/useNotifications';
 import { useTranslation } from '@context/LocaleContext';
+import { RecommendationProvider } from '@context/RecommendationContext';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -139,93 +140,95 @@ const MainTabs: React.FC = () => {
 
 const AppNavigator = () => {
   return (
-    <Stack.Navigator
-      initialRouteName="Login"
-      screenOptions={{
-        headerShown: false,
-        cardStyleInterpolator: CardStyleInterpolators.forFadeFromBottomAndroid,
-      }}
-    >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen
-        name="QuizIntro"
-        component={PreQuizIntroScreen}
-        options={{
+    <RecommendationProvider>
+      <Stack.Navigator
+        initialRouteName="Login"
+        screenOptions={{
           headerShown: false,
-          gestureEnabled: false,
-        }}
-      />
-      <Stack.Screen
-        name="Registration"
-        component={RegistrationScreen}
-        options={({ navigation }) => ({
-          headerShown: true,
-          gestureEnabled: false,
-          header: () => <SwipeHeader title="Registration" onBack={() => navigation.goBack()} />,
-        })}
-      />
-      <Stack.Screen
-        name="QuizPrimer"
-        component={QuizPrimerScreen}
-        options={{
-          headerShown: false,
-          gestureEnabled: false,
-        }}
-      />
-      <Stack.Screen
-        name="ResumePrompt"
-        component={ResumePromptScreen}
-        options={{
-          headerShown: false,
-          presentation: 'transparentModal',
           cardStyleInterpolator: CardStyleInterpolators.forFadeFromBottomAndroid,
-          gestureEnabled: false,
         }}
-      />
-      <Stack.Screen
-        name="Questionnaire"
-        component={QuestionnaireScreen}
-        options={{ headerShown: false, gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="Results"
-        component={ResultsScreen}
-        options={({ navigation }) => ({
-          headerShown: true,
-          gestureEnabled: false,
-          header: () => <SwipeHeader title="Results" onBack={() => navigation.goBack()} />,
-        })}
-      />
-      <Stack.Screen
-        name="Character"
-        component={require('@components/CharacterScreen').default}
-        options={({ navigation }) => ({
-          headerShown: true,
-          gestureEnabled: false,
-          header: () => <SwipeHeader title="Your Character" onBack={() => navigation.goBack()} />,
-        })}
-      />
-      <Stack.Screen
-        name="CreateAccount"
-        component={CreateAccountScreen}
-        options={({ navigation }) => ({
-          headerShown: true,
-          gestureEnabled: false,
-          header: () => <SwipeHeader title="Create Account" onBack={() => navigation.goBack()} />,
-        })}
-      />
-      <Stack.Screen name="Chat" component={ChatScreen as any} />
-      <Stack.Screen name="Dashboard" component={MainTabs} />
-      <Stack.Screen
-        name="VerifyEmail"
-        component={require('@components/VerifyEmailScreen').default}
-        options={({ navigation }) => ({
-          headerShown: true,
-          gestureEnabled: false,
-          header: () => <SwipeHeader title="Verify Email" onBack={() => navigation.goBack()} />,
-        })}
-      />
-    </Stack.Navigator>
+      >
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen
+          name="QuizIntro"
+          component={PreQuizIntroScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="Registration"
+          component={RegistrationScreen}
+          options={({ navigation }) => ({
+            headerShown: true,
+            gestureEnabled: false,
+            header: () => <SwipeHeader title="Registration" onBack={() => navigation.goBack()} />,
+          })}
+        />
+        <Stack.Screen
+          name="QuizPrimer"
+          component={QuizPrimerScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="ResumePrompt"
+          component={ResumePromptScreen}
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            cardStyleInterpolator: CardStyleInterpolators.forFadeFromBottomAndroid,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="Questionnaire"
+          component={QuestionnaireScreen}
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="Results"
+          component={ResultsScreen}
+          options={({ navigation }) => ({
+            headerShown: true,
+            gestureEnabled: false,
+            header: () => <SwipeHeader title="Results" onBack={() => navigation.goBack()} />,
+          })}
+        />
+        <Stack.Screen
+          name="Character"
+          component={require('@components/CharacterScreen').default}
+          options={({ navigation }) => ({
+            headerShown: true,
+            gestureEnabled: false,
+            header: () => <SwipeHeader title="Your Character" onBack={() => navigation.goBack()} />,
+          })}
+        />
+        <Stack.Screen
+          name="CreateAccount"
+          component={CreateAccountScreen}
+          options={({ navigation }) => ({
+            headerShown: true,
+            gestureEnabled: false,
+            header: () => <SwipeHeader title="Create Account" onBack={() => navigation.goBack()} />,
+          })}
+        />
+        <Stack.Screen name="Chat" component={ChatScreen as any} />
+        <Stack.Screen name="Dashboard" component={MainTabs} />
+        <Stack.Screen
+          name="VerifyEmail"
+          component={require('@components/VerifyEmailScreen').default}
+          options={({ navigation }) => ({
+            headerShown: true,
+            gestureEnabled: false,
+            header: () => <SwipeHeader title="Verify Email" onBack={() => navigation.goBack()} />,
+          })}
+        />
+      </Stack.Navigator>
+    </RecommendationProvider>
   );
 };
 

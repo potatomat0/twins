@@ -265,12 +265,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 </Pressable>
               </View>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-              <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>{t('login.welcomeTitle')}</Text>
-              {supabaseOk ? (
-                <Text style={{ color: '#22c55e', fontWeight: '700' }}>{t('login.connectionStatus')}</Text>
-              ) : supabaseOk === false ? null : null}
-            </View>
             <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>{t('login.subtitle')}</Text>
 
             <View style={styles.inputWrap}>

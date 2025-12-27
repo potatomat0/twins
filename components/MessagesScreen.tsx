@@ -7,7 +7,7 @@ import { useAuth } from '@context/AuthContext';
 import { useTranslation } from '@context/LocaleContext';
 import supabase from '@services/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
 
@@ -21,7 +21,7 @@ type Thread = {
 };
 
 const MessagesScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const nav = useNavigation<any>();
@@ -31,6 +31,8 @@ const MessagesScreen: React.FC = () => {
   const [modalProfile, setModalProfile] = useState<ProfileDetail | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeThread, setActiveThread] = useState<Thread | null>(null);
+  const [matchIds, setMatchIds] = useState<string[]>([]);
+  const channelRef = React.useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const loadThreads = async () => {
     if (!user?.id) return;
@@ -48,6 +50,7 @@ const MessagesScreen: React.FC = () => {
       matchId: m.id as string,
       peerId: m.user_a === user.id ? (m.user_b as string) : (m.user_a as string),
     }));
+    setMatchIds(peers.map((p) => p.matchId));
     const profilesById: Record<string, { username: string | null; avatar_url: string | null }> = {};
     if (peers.length > 0) {
       const { data: profs, error: profErr } = await supabase
@@ -91,6 +94,66 @@ const MessagesScreen: React.FC = () => {
     void loadThreads();
   }, [user?.id]);
 
+  // Refresh when screen focused to catch messages sent from chat flows
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user?.id) {
+        void loadThreads();
+      }
+    }, [user?.id]),
+  );
+
+  useEffect(() => {
+    // subscribe to message inserts for current matches to keep previews fresh
+    if (!user?.id || matchIds.length === 0) {
+      if (channelRef.current) {
+        void supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      return;
+    }
+    if (channelRef.current) {
+      void supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    const channel = supabase
+      .channel(`messages-preview-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          const rec = payload.new as any;
+          if (!rec?.match_id || !matchIds.includes(rec.match_id)) return;
+          setThreads((prev) => {
+            const exists = prev.find((t) => t.matchId === rec.match_id);
+            if (!exists) return prev;
+            const updated = prev.map((t) =>
+              t.matchId === rec.match_id
+                ? {
+                    ...t,
+                    lastMessage: rec.body ?? t.lastMessage,
+                    lastAt: rec.created_at ?? t.lastAt,
+                  }
+                : t,
+            );
+            return updated.sort((a, b) => {
+              if (!a.lastAt) return 1;
+              if (!b.lastAt) return -1;
+              return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+            });
+          });
+        },
+      )
+      .subscribe();
+    channelRef.current = channel;
+    return () => {
+      if (channelRef.current) {
+        void supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [matchIds, user?.id]);
+
   const sorted = useMemo(() => {
     return [...threads].sort((a, b) => {
       if (!a.lastAt) return 1;
@@ -110,6 +173,8 @@ const MessagesScreen: React.FC = () => {
       character_group: null,
       avatar_url: item.peerAvatar ?? null,
       hobbies: [],
+      hobbies_cipher: null,
+      hobbies_iv: null,
       hobby_embedding: null,
       pca_dim1: null,
       pca_dim2: null,
@@ -120,29 +185,54 @@ const MessagesScreen: React.FC = () => {
 
     const { data, error } = await supabase
       .from('profile_lookup')
-      .select('id,username,age_group,gender,character_group,avatar_url,hobbies,hobbies_cipher,hobbies_iv,pca_dim1,pca_dim2,pca_dim3,pca_dim4')
+      .select('id,username,avatar_url')
       .eq('id', item.peerId)
       .maybeSingle();
-    if (error) {
-      if (__DEV__) console.warn('[messages] profile lookup error', error);
-      return;
-    }
+    if (error && __DEV__) console.warn('[messages] profile lookup error', error);
+
     if (data) {
       setModalProfile({
         id: data.id,
         username: data.username ?? item.peerName ?? null,
-        age_group: data.age_group ?? null,
-        gender: data.gender ?? null,
-        character_group: data.character_group ?? null,
-        avatar_url: data.avatar_url ?? item.peerAvatar ?? null,
-        hobbies: (data as any).hobbies ?? null,
-        hobbies_cipher: (data as any).hobbies_cipher ?? null,
-        hobbies_iv: (data as any).hobbies_iv ?? null,
+        age_group: null,
+        gender: null,
+        character_group: null,
+        avatar_url: (data as any).avatar_url ?? item.peerAvatar ?? null,
+        hobbies: [],
+        hobbies_cipher: null,
+        hobbies_iv: null,
         hobby_embedding: null,
-        pca_dim1: (data as any).pca_dim1 ?? null,
-        pca_dim2: (data as any).pca_dim2 ?? null,
-        pca_dim3: (data as any).pca_dim3 ?? null,
-        pca_dim4: (data as any).pca_dim4 ?? null,
+        pca_dim1: null,
+        pca_dim2: null,
+        pca_dim3: null,
+        pca_dim4: null,
+      });
+    }
+
+    const { data: prof, error: profErr } = await supabase
+      .from('profiles')
+      .select(
+        'id,username,age_group,gender,character_group,avatar_url,hobbies,hobbies_cipher,hobbies_iv,pca_dim1,pca_dim2,pca_dim3,pca_dim4',
+      )
+      .eq('id', item.peerId)
+      .maybeSingle();
+    if (profErr && __DEV__) console.warn('[messages] profiles fetch error', profErr);
+    if (prof) {
+      setModalProfile({
+        id: prof.id,
+        username: (prof as any).username ?? item.peerName ?? null,
+        age_group: ((prof as any).age_group ?? null) as string | null,
+        gender: ((prof as any).gender ?? null) as string | null,
+        character_group: ((prof as any).character_group ?? null) as string | null,
+        avatar_url: ((prof as any).avatar_url ?? item.peerAvatar ?? null) as string | null,
+        hobbies: (prof as any).hobbies ?? [],
+        hobbies_cipher: (prof as any).hobbies_cipher ?? null,
+        hobbies_iv: (prof as any).hobbies_iv ?? null,
+        hobby_embedding: null,
+        pca_dim1: (prof as any).pca_dim1 ?? null,
+        pca_dim2: (prof as any).pca_dim2 ?? null,
+        pca_dim3: (prof as any).pca_dim3 ?? null,
+        pca_dim4: (prof as any).pca_dim4 ?? null,
       });
     }
   };
@@ -171,9 +261,9 @@ const MessagesScreen: React.FC = () => {
       >
         <Pressable
           style={styles.avatarWrap}
-          onPress={() => openChat(item)}
-          onLongPress={() => openProfile(item)}
-          delayLongPress={120}
+          onPress={() => openProfile(item)}
+          accessibilityRole="button"
+          accessibilityLabel={t('messages.viewProfile')}
         >
           {item.peerAvatar ? (
             <Image source={{ uri: item.peerAvatar }} style={styles.avatar} resizeMode="cover" />
@@ -230,19 +320,19 @@ const MessagesScreen: React.FC = () => {
         )}
       </View>
       {modalProfile ? (
-        <ProfileDetailModal
-          visible={modalVisible}
-          onClose={() => {
-            void Haptics.selectionAsync();
-            setModalVisible(false);
-          }}
+      <ProfileDetailModal
+        visible={modalVisible}
+        onClose={() => {
+          void Haptics.selectionAsync();
+          setModalVisible(false);
+        }}
           profile={modalProfile}
-          currentUserHobbies={[]}
-          onMessage={() => {
-            setModalVisible(false);
-            nav.navigate('Chat', {
-              matchId: activeThread?.matchId ?? modalProfile.id,
-              peerId: modalProfile.id,
+          currentUserHobbies={profile?.hobbies ?? []}
+        onMessage={() => {
+          setModalVisible(false);
+          nav.navigate('Chat', {
+            matchId: activeThread?.matchId ?? modalProfile.id,
+            peerId: modalProfile.id,
               peerName: modalProfile.username ?? modalProfile.id,
               peerAvatar: modalProfile.avatar_url ?? undefined,
             } as any);

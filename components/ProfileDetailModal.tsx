@@ -51,6 +51,7 @@ const ProfileDetailModal: React.FC<Props> = ({
   const { t } = useTranslation();
   const [hobbies, setHobbies] = useState<string[]>([]);
   const [decrypting, setDecrypting] = useState(false);
+   const [decryptError, setDecryptError] = useState<string | null>(null);
   const [visibleState, setVisibleState] = useState(false);
   const pan = useRef(new Animated.Value(0)).current;
 
@@ -101,6 +102,7 @@ const ProfileDetailModal: React.FC<Props> = ({
   }, [visible, pan]);
 
   useEffect(() => {
+    setDecryptError(null);
     if (profile?.hobbies && profile.hobbies.length) {
       setHobbies(profile.hobbies);
       return;
@@ -114,6 +116,11 @@ const ProfileDetailModal: React.FC<Props> = ({
           } else {
             setHobbies([]);
           }
+        })
+        .catch((err) => {
+          if (__DEV__) console.warn('[ProfileDetailModal] hobby decrypt error', err);
+          setDecryptError(t('dashboard.decryptError'));
+          setHobbies([]);
         })
         .finally(() => setDecrypting(false));
     } else {
@@ -179,14 +186,15 @@ const ProfileDetailModal: React.FC<Props> = ({
           {/* Info Section */}
           <View style={styles.content}>
             <Text style={[styles.name, { color: toRgb(theme.colors['--text-primary']) }]}>
-              {profile.username ?? 'Unknown'}, {profile.age_group}
+              {profile.username ?? t('messages.unknown')}
+              {profile.age_group ? `, ${profile.age_group}` : ''}
             </Text>
             
             <View style={styles.metaRow}>
               <View style={[styles.pill, { borderColor: toRgba(theme.colors['--border'], 0.2) }]}>
                 <Ionicons name="male-female" size={14} color={toRgb(theme.colors['--text-secondary'])} />
                 <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginLeft: 6 }}>
-                  {profile.gender}
+                  {profile.gender ?? '—'}
                 </Text>
               </View>
               
@@ -208,7 +216,6 @@ const ProfileDetailModal: React.FC<Props> = ({
              ) : hobbies.length > 0 ? (
                <View style={styles.hobbyWrap}>
                  {hobbies.map((hobby, idx) => {
-                   // Highlight if it matches one of current user's hobbies (case-insensitive simple match)
                    const isMatch = currentUserHobbies.some(h => h.toLowerCase() === hobby.toLowerCase());
                    const bgColor = isMatch ? theme.colors['--brand-primary'] : hobbyColors[idx % hobbyColors.length];
                    
@@ -226,6 +233,8 @@ const ProfileDetailModal: React.FC<Props> = ({
                    );
                  })}
                </View>
+             ) : decryptError ? (
+               <Text style={{ color: toRgb(theme.colors['--danger']), fontStyle: 'italic' }}>{decryptError}</Text>
              ) : (
                <Text style={{ color: toRgb(theme.colors['--text-muted']), fontStyle: 'italic' }}>
                  No hobbies listed.

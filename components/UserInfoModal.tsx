@@ -4,6 +4,7 @@ import { toRgb, toRgba } from '@themes/index';
 import { useTheme } from '@context/ThemeContext';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Button from '@components/common/Button';
+import { useTranslation } from '@context/LocaleContext';
 
 export type UserInfo = {
   id: string;
@@ -23,10 +24,21 @@ type Props = {
   onSkip?: (user: UserInfo) => void;
   onMessage?: (user: UserInfo) => void;
   showActions?: boolean;
+  onViewProfile?: (user: UserInfo) => void;
 };
 
-const UserInfoModal: React.FC<Props> = ({ visible, user, onClose, onLike, onSkip, onMessage, showActions = true }) => {
+const UserInfoModal: React.FC<Props> = ({
+  visible,
+  user,
+  onClose,
+  onLike,
+  onSkip,
+  onMessage,
+  showActions = true,
+  onViewProfile,
+}) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   if (!user) return null;
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -40,10 +52,29 @@ const UserInfoModal: React.FC<Props> = ({ visible, user, onClose, onLike, onSkip
           },
         ]}
       >
-        <Pressable accessibilityRole="button" onPress={onClose} style={styles.closeBtn}>
-          <Ionicons name="close" size={18} color={toRgb(theme.colors['--text-primary'])} />
+        <View style={styles.headerRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('messages.viewProfile')}
+            onPress={() => onViewProfile?.(user)}
+            style={styles.infoBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="information-circle-outline" size={24} color={toRgb(theme.colors['--text-primary'])} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={onClose}
+            style={styles.closeBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="close" size={18} color={toRgb(theme.colors['--text-primary'])} />
+          </Pressable>
+        </View>
+        <Pressable onPress={() => onViewProfile?.(user)}>
+          <Image source={{ uri: user.avatar_url || 'https://placehold.co/320x320/png' }} style={styles.avatar} />
         </Pressable>
-        <Image source={{ uri: user.avatar_url || 'https://placehold.co/320x320/png' }} style={styles.avatar} />
         <Text style={[styles.name, { color: toRgb(theme.colors['--text-primary']) }]}>{user.username ?? 'Unknown'}</Text>
         <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginBottom: 8 }}>
           {user.age_group ?? '—'} · {user.gender ?? '—'} · {user.character_group ?? '—'}
@@ -97,7 +128,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
   },
-  closeBtn: { position: 'absolute', top: 10, right: 10, padding: 8 },
+  headerRow: { position: 'absolute', top: 10, right: 10, flexDirection: 'row', alignItems: 'center' },
+  infoBtn: { padding: 8 },
+  closeBtn: { padding: 8 },
   avatar: { width: 120, height: 120, borderRadius: 60, marginBottom: 12 },
   name: { fontSize: 18, fontWeight: '800' },
   row: { flexDirection: 'row', width: '100%', marginTop: 8 },

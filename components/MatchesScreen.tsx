@@ -8,8 +8,9 @@ import { useAuth } from '@context/AuthContext';
 import useNotifications, { NotificationRecord } from '@hooks/useNotifications';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import UserInfoModal, { UserInfo } from '@components/UserInfoModal';
+import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
 import supabase from '@services/supabase';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 const iconForType = (type: NotificationRecord['type']) => {
   if (type === 'mutual') return 'sparkles-outline';
@@ -35,15 +36,8 @@ const MatchesScreen: React.FC = () => {
   const [modalType, setModalType] = useState<NotificationRecord['type'] | null>(null);
   const [canMessage, setCanMessage] = useState(false);
   const [actioning, setActioning] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      // Clear badge by marking all read when user views the screen
-      if (notifications.length > 0) {
-        void markRead(notifications.map((n) => n.id));
-      }
-    }, [notifications, markRead]),
-  );
+  const [profileDetail, setProfileDetail] = useState<ProfileDetail | null>(null);
+  const [profileDetailVisible, setProfileDetailVisible] = useState(false);
 
   const sections = useMemo(() => {
     const unread = notifications.filter((n) => !n.read);
@@ -128,6 +122,74 @@ const MatchesScreen: React.FC = () => {
     }
   };
 
+  const openProfileDetail = async (actor: UserInfo) => {
+    setProfileDetailVisible(true);
+    setProfileDetail({
+      id: actor.id,
+      username: actor.username ?? null,
+      age_group: actor.age_group ?? null,
+      gender: actor.gender ?? null,
+      character_group: actor.character_group ?? null,
+      avatar_url: actor.avatar_url ?? null,
+      hobbies: null,
+      hobbies_cipher: null,
+      hobbies_iv: null,
+      hobby_embedding: null,
+      pca_dim1: null,
+      pca_dim2: null,
+      pca_dim3: null,
+      pca_dim4: null,
+    });
+    const { data, error } = await supabase
+      .from('profile_lookup')
+      .select('id,username,avatar_url')
+      .eq('id', actor.id)
+      .maybeSingle();
+    if (error && __DEV__) console.warn('[matches] profile lookup error', error);
+    if (data) {
+      setProfileDetail({
+        id: data.id,
+        username: data.username ?? actor.username ?? null,
+        age_group: actor.age_group ?? null,
+        gender: actor.gender ?? null,
+        character_group: actor.character_group ?? null,
+        avatar_url: (data as any).avatar_url ?? actor.avatar_url ?? null,
+        hobbies: [],
+        hobbies_cipher: null,
+        hobbies_iv: null,
+        hobby_embedding: null,
+        pca_dim1: null,
+        pca_dim2: null,
+        pca_dim3: null,
+        pca_dim4: null,
+      });
+    }
+    const { data: prof, error: profErr } = await supabase
+      .from('profiles')
+      .select('id,username,age_group,gender,character_group,avatar_url,hobbies,hobbies_cipher,hobbies_iv,pca_dim1,pca_dim2,pca_dim3,pca_dim4')
+      .eq('id', actor.id)
+      .maybeSingle();
+    if (profErr && __DEV__) console.warn('[matches] profiles fetch error', profErr);
+    if (prof) {
+      setProfileDetail({
+        id: prof.id,
+        username: (prof as any).username ?? actor.username ?? null,
+        age_group: ((prof as any).age_group ?? null) as string | null,
+        gender: ((prof as any).gender ?? null) as string | null,
+        character_group: ((prof as any).character_group ?? null) as string | null,
+        avatar_url: ((prof as any).avatar_url ?? actor.avatar_url ?? null) as string | null,
+        hobbies: (prof as any).hobbies ?? [],
+        hobbies_cipher: (prof as any).hobbies_cipher ?? null,
+        hobbies_iv: (prof as any).hobbies_iv ?? null,
+        hobby_embedding: null,
+        pca_dim1: (prof as any).pca_dim1 ?? null,
+        pca_dim2: (prof as any).pca_dim2 ?? null,
+        pca_dim3: (prof as any).pca_dim3 ?? null,
+        pca_dim4: (prof as any).pca_dim4 ?? null,
+      });
+    }
+  };
+
   const renderItem = ({ item }: { item: NotificationRecord }) => {
     const isUnread = !item.read;
     const actor: UserInfo | null = item.payload?.actor ?? null;
@@ -144,6 +206,9 @@ const MatchesScreen: React.FC = () => {
         onPress={() => {
           // Only mark read when user takes an action; viewing alone should not mark read
           if (actor) {
+            if (isUnread) {
+              markRead([item.id]);
+            }
             if (item.type === 'message') {
               void openChat(actor, item.id);
               return;
@@ -157,6 +222,7 @@ const MatchesScreen: React.FC = () => {
               const match = await findMatch(actor.id);
               setCanMessage(!!match);
             })();
+            void openProfileDetail(actor);
           }
         }}
       >
@@ -242,6 +308,13 @@ const MatchesScreen: React.FC = () => {
         onSkip={() => handleAction('skip')}
         showActions={modalType !== 'mutual'}
         onMessage={modalType === 'mutual' && canMessage ? (u) => openChat(u, modalNotificationId ?? undefined) : undefined}
+        onViewProfile={(u) => void openProfileDetail(u)}
+      />
+      <ProfileDetailModal
+        visible={profileDetailVisible}
+        onClose={() => setProfileDetailVisible(false)}
+        profile={profileDetail}
+        currentUserHobbies={[]}
       />
       {actioning ? (
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 24, alignItems: 'center' }}>

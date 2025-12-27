@@ -19,32 +19,14 @@ import { toRgb, toRgba } from '@themes/index';
 import { useTranslation } from '@context/LocaleContext';
 import { useAuth } from '@context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import supabase from '@services/supabase';
 import Button from '@components/common/Button';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { placeholderAvatarUrl, getOptimizedImageUrl } from '@services/storage';
-import { getCache, setCache } from '@services/cache';
 import haptics from '@services/haptics';
 import useNotifications from '@hooks/useNotifications';
 import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
-
-type SimilarUser = {
-  id: string;
-  username: string | null;
-  age_group: string | null;
-  gender: string | null;
-  character_group: string | null;
-  avatar_url?: string | null;
-  similarity: number;
-  hobbies_cipher?: string | null;
-  hobbies_iv?: string | null;
-};
-
-type Pool = {
-  size: number;
-  users: SimilarUser[];
-  available: boolean;
-};
+import { useRecommendations } from '@context/RecommendationContext';
+import supabase from '@services/supabase';
 
 const ExploreSwipeScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -52,83 +34,81 @@ const ExploreSwipeScreen: React.FC = () => {
   const { user, profile } = useAuth();
   const navigation = useNavigation<any>();
   const { notifications, unreadCount } = useNotifications(user?.id, { enabled: true, limit: 50 });
-  const [pool, setPool] = useState<SimilarUser[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({ ageGroup: false, gender: false, characterGroup: false });
-  const [useElo, setUseElo] = useState<boolean>(profile?.match_allow_elo ?? true);
-  const [useHobbies, setUseHobbies] = useState(false);
+  const {
+    deck,
+    loading,
+    initialLoading,
+    hasMore,
+    exhausted,
+    filters,
+    useHobbies,
+    setFilters,
+    setUseHobbies,
+    loadMore,
+    removeCard,
+    reset,
+  } = useRecommendations();
+  const hasEnoughHobbies = !!profile?.hobbies_cipher;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [detailVisible, setDetailVisible] = useState(false);
-  
-  // Check cipher presence instead of array length since plaintext is gone
-  const hasEnoughHobbies = !!profile?.hobbies_cipher;
-  const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  const genderOptions = useMemo(() => ['All', 'Male', 'Female', 'Non-Binary'], []);
+  const ageOptions = useMemo(() => ['18-24', '25-35', '36-45', '46-60', '60+'], []);
+  const genderLabel = useCallback(
+    (g: string) => {
+      if (g === 'All') return t('explore.genderAll');
+      if (g === 'Male') return t('registration.options.genders.male');
+      if (g === 'Female') return t('registration.options.genders.female');
+      return t('registration.options.genders.nonBinary');
+    },
+    [t],
+  );
+  const ageLabel = useCallback(
+    (a: string) => {
+      if (a === 'All') return t('explore.ageAll');
+      switch (a) {
+        case '18-24':
+          return t('registration.options.ageGroups.range18_24');
+        case '25-35':
+          return t('registration.options.ageGroups.range25_35');
+        case '36-45':
+          return t('registration.options.ageGroups.range35_44');
+        case '46-60':
+          return t('registration.options.ageGroups.range45_plus');
+        default:
+          return a;
+      }
+    },
+    [t],
+  );
 
-  const current = pool[0];
-  const remaining = pool.length - 1;
+  const applyFilter = useCallback(
+    (type: 'gender' | 'age', value: string) => {
+      if (type === 'gender') {
+        setFilters({ ...filters, genders: value === 'All' ? [] : [value] });
+      } else {
+        setFilters({ ...filters, ageGroups: value === 'All' ? [] : [value] });
+      }
+    },
+    [filters, setFilters],
+  );
+
+  const applyArchetype = useCallback(
+    (val: 'most' | 'least') => {
+      setFilters({ ...filters, archetype: val });
+    },
+    [filters, setFilters],
+  );
+
+  const current = deck[0];
+  const remaining = deck.length - 1;
   const anim = useRef(new Animated.Value(0)).current;
   const fading = useRef(new Animated.Value(1)).current;
   const screenWidth = useRef(Dimensions.get('window').width).current;
   const swipeThreshold = screenWidth * 0.25;
-
-  const fetchPool = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: fnErr } = await supabase.functions.invoke('recommend-users', {
-        body: {
-          userId: user.id,
-          filters,
-          chunkSize: 500,
-          poolSizes: [200],
-          useElo,
-          useHobbies: useHobbies && hasEnoughHobbies,
-        },
-      });
-      if (fnErr) {
-        setError(fnErr.message ?? 'Failed to load matches');
-        return;
-      }
-      const payload = data as { pools?: Pool[]; error?: string };
-      if (payload?.error) {
-        setError(payload.error);
-        return;
-      }
-      const users = (payload?.pools?.[0]?.users ?? []).filter((u) => u.id !== user.id);
-      setPool(users);
-      // await setCache(`pool:${user.id}:${useElo}:${JSON.stringify(filters)}`, users);
-    } catch (e: any) {
-      setError(e?.message ?? 'Unexpected error');
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, useElo, useHobbies, hasEnoughHobbies, user?.id]);
-
-  useEffect(() => {
-    // let mounted = true;
-    (async () => {
-      if (!user?.id) return;
-      // Disable cache for now to ensure hobby toggle works immediately
-      // const cached = await getCache<SimilarUser[]>(`pool:${user.id}:${useElo}:${JSON.stringify(filters)}`, CACHE_TTL_MS);
-      // if (cached && mounted) {
-      //   setPool(cached);
-      // }
-      await fetchPool();
-    })();
-    // return () => { mounted = false; };
-  }, [fetchPool]); // simplified deps
-
   const advance = useCallback(() => {
-    setPool((prev) => {
-      if (prev.length <= 1) {
-        void fetchPool();
-        return prev;
-      }
-      return prev.slice(1);
-    });
-  }, [fetchPool]);
+    if (!current) return;
+    removeCard(current.id);
+  }, [current, removeCard]);
 
   const onSwipe = useCallback(
     async (action: 'like' | 'skip', dxOverride?: number) => {
@@ -259,22 +239,20 @@ const ExploreSwipeScreen: React.FC = () => {
         </View>
         {/* <Text style={[styles.subtitle, { color: toRgb(theme.colors['--text-secondary']) }]}>{t('explore.swipeSubtitle')}</Text> */}
 
-        {loading && (
+        {initialLoading ? (
           <View style={styles.center}>
             <ActivityIndicator color={toRgb(theme.colors['--brand-primary'])} />
             <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 8 }}>{t('explore.loadingPool')}</Text>
           </View>
-        )}
-
-        {!loading && error && (
+        ) : !current ? (
           <View style={styles.center}>
-            <Text style={{ color: toRgb(theme.colors['--danger']) }}>{error}</Text>
+            <Text style={{ color: toRgb(theme.colors['--text-primary']), fontSize: 18, fontWeight: '700', textAlign: 'center' }}>
+              {t('explore.noListMatches')}
+            </Text>
             <View style={{ height: 8 }} />
-            <Button title={t('explore.retry')} onPress={fetchPool} />
+            <Button title={t('explore.retry')} onPress={loadMore} />
           </View>
-        )}
-
-        {!loading && !error && current && (
+        ) : (
           <Animated.View
             style={[
               styles.card,
@@ -330,7 +308,7 @@ const ExploreSwipeScreen: React.FC = () => {
           </Animated.View>
         )}
 
-        {!loading && !error && current && (
+        {!loading && current && (
           <View style={styles.actionRow}>
             {/* Buttons... same as before but maybe styled better */}
             <Pressable
@@ -357,14 +335,6 @@ const ExploreSwipeScreen: React.FC = () => {
             </Pressable>
           </View>
         )}
-
-        {!loading && !error && !current && (
-          <View style={styles.center}>
-            <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('explore.noMatches')}</Text>
-            <View style={{ height: 8 }} />
-            <Button title={t('explore.retry')} onPress={fetchPool} />
-          </View>
-        )}
       </View>
 
       <Modal visible={settingsOpen} transparent animationType="fade" onRequestClose={() => setSettingsOpen(false)}>
@@ -376,49 +346,107 @@ const ExploreSwipeScreen: React.FC = () => {
           ]}
         >
           <Text style={[styles.name, { color: toRgb(theme.colors['--text-primary']), marginBottom: 8, fontSize: 20 }]}>{t('explore.filters')}</Text>
-          
+
           <View style={styles.filterRow}>
-            <Ionicons name="pulse-outline" size={18} color={toRgb(theme.colors['--text-secondary'])} style={{ marginRight: 8 }} />
+            <Ionicons name="pricetags-outline" size={18} color={hasEnoughHobbies ? toRgb(theme.colors['--text-secondary']) : toRgb(theme.colors['--text-muted'])} style={{ marginRight: 8 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('explore.useElo')}</Text>
-              <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 11 }}>{t('explore.useEloHint')}</Text>
-            </View>
-            <Switch value={useElo} onValueChange={setUseElo} />
-          </View>
-
-          <View style={styles.filterRow}>
-             <Ionicons name="pricetags-outline" size={18} color={hasEnoughHobbies ? toRgb(theme.colors['--text-secondary']) : toRgb(theme.colors['--text-muted'])} style={{ marginRight: 8 }} />
-             <View style={{ flex: 1 }}>
-                <Text style={{ color: hasEnoughHobbies ? toRgb(theme.colors['--text-secondary']) : toRgb(theme.colors['--text-muted']) }}>
-                  {t('explore.useHobbies')}
-                </Text>
-                 <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 11 }}>
-                  {t('explore.useHobbiesHint')}
-                </Text>
-             </View>
-             <Switch value={useHobbies} onValueChange={setUseHobbies} disabled={!hasEnoughHobbies} />
-          </View>
-
-          {(['ageGroup', 'gender', 'characterGroup'] as const).map((key) => (
-            <View key={key} style={styles.filterRow}>
-              <Ionicons
-                name={key === 'ageGroup' ? 'calendar-outline' : key === 'gender' ? 'male-female-outline' : 'sparkles-outline'}
-                size={18}
-                color={toRgb(theme.colors['--text-secondary'])}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={{ color: toRgb(theme.colors['--text-secondary']), flex: 1 }}>
-                {key === 'ageGroup'
-                  ? t('explore.filterAge')
-                  : key === 'gender'
-                  ? t('explore.filterGender')
-                  : t('explore.filterArchetype')}
+              <Text style={{ color: hasEnoughHobbies ? toRgb(theme.colors['--text-secondary']) : toRgb(theme.colors['--text-muted']) }}>
+                {t('explore.useHobbies')}
               </Text>
-              <Switch value={filters[key]} onValueChange={() => setFilters((prev) => ({ ...prev, [key]: !prev[key] }))} />
+              <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 11 }}>
+                {t('explore.useHobbiesHint')}
+              </Text>
             </View>
-          ))}
-          <View style={{height: 12}} />
-          <Button title={t('explore.applyFilters')} onPress={() => { setSettingsOpen(false); fetchPool(); }} />
+            <Switch value={useHobbies} onValueChange={setUseHobbies} disabled={!hasEnoughHobbies} />
+          </View>
+
+          <Text style={[styles.modalTitle, { color: toRgb(theme.colors['--text-primary']) }]}>{t('explore.filterGender')}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {genderOptions.map((g) => {
+              const isActive = filters.genders?.length === 0 ? g === 'All' : filters.genders?.includes(g);
+              return (
+              <Pressable
+                key={g}
+                onPress={() => applyFilter('gender', g)}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: isActive ? toRgb(theme.colors['--brand-primary']) : toRgba(theme.colors['--border'], 0.3),
+                    backgroundColor: isActive ? toRgba(theme.colors['--brand-primary'], 0.12) : 'transparent',
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: isActive ? toRgb(theme.colors['--brand-primary']) : toRgb(theme.colors['--text-secondary']),
+                    fontWeight: '600',
+                  }}
+                >
+                  {genderLabel(g)}
+                </Text>
+              </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.modalTitle, { color: toRgb(theme.colors['--text-primary']) }]}>{t('explore.filterAge')}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {['All', ...ageOptions].map((a) => {
+              const isActive = filters.ageGroups?.length === 0 ? a === 'All' : filters.ageGroups?.includes(a);
+              return (
+              <Pressable
+                key={a}
+                onPress={() => applyFilter('age', a)}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: isActive ? toRgb(theme.colors['--brand-primary']) : toRgba(theme.colors['--border'], 0.3),
+                    backgroundColor: isActive ? toRgba(theme.colors['--brand-primary'], 0.12) : 'transparent',
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: isActive ? toRgb(theme.colors['--brand-primary']) : toRgb(theme.colors['--text-secondary']),
+                    fontWeight: '600',
+                  }}
+                >
+                  {ageLabel(a)}
+                </Text>
+              </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.modalTitle, { color: toRgb(theme.colors['--text-primary']) }]}>{t('explore.filterArchetype')}</Text>
+          <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+            {(['most', 'least'] as const).map((opt) => (
+              <Pressable
+                key={opt}
+                onPress={() => applyArchetype(opt)}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: filters.archetype === opt ? toRgb(theme.colors['--brand-primary']) : toRgba(theme.colors['--border'], 0.3),
+                    backgroundColor: filters.archetype === opt ? toRgba(theme.colors['--brand-primary'], 0.12) : 'transparent',
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: filters.archetype === opt ? toRgb(theme.colors['--brand-primary']) : toRgb(theme.colors['--text-secondary']),
+                    fontWeight: '600',
+                  }}
+                >
+                  {opt === 'most' ? t('explore.archetypeMost') : t('explore.archetypeLeast')}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 8 }}>{t('explore.filterNote')}</Text>
+          <View style={{ height: 12 }} />
+          <Button title={t('explore.applyFilters')} onPress={() => { setSettingsOpen(false); reset(); }} />
         </View>
       </Modal>
 
@@ -505,6 +533,13 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   modalCard: { position: 'absolute', left: 16, right: 16, top: '20%', borderRadius: 20, padding: 20, borderWidth: 1 },
   filterRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
   badge: { position: 'absolute', top: 40, padding: 10, borderRadius: 12, borderWidth: 2, borderColor: 'white', zIndex: 10 },
   actionBadge: { position: 'absolute', top: -24, padding: 10, borderRadius: 14 },
+  modalTitle: { fontSize: 16, fontWeight: '700', marginTop: 12, marginBottom: 6 },
 });

@@ -19,9 +19,9 @@ type ProfileRow = {
 };
 
 type Filters = {
-  ageGroup?: boolean;
-  gender?: boolean;
-  characterGroup?: boolean;
+  ageGroups?: string[];
+  genders?: string[];
+  archetype?: 'most' | 'least'; // most similar (default) or least similar
 };
 
 type RequestBody = {
@@ -194,14 +194,11 @@ serve(async (req) => {
       .not('pca_dim3', 'is', null)
       .not('pca_dim4', 'is', null);
 
-    if (filters.ageGroup && me.age_group) {
-      query = query.eq('age_group', me.age_group);
+    if (filters.ageGroups && filters.ageGroups.length > 0) {
+      query = query.in('age_group', filters.ageGroups);
     }
-    if (filters.gender && me.gender) {
-      query = query.eq('gender', me.gender);
-    }
-    if (filters.characterGroup && me.character_group) {
-      query = query.eq('character_group', me.character_group);
+    if (filters.genders && filters.genders.length > 0) {
+      query = query.in('gender', filters.genders);
     }
 
     // Fetch a manageable chunk; randomness applied in memory
@@ -218,7 +215,10 @@ serve(async (req) => {
       if (matchedIds.has(c.id as string)) continue;
       if (excludeIds.has(c.id as string)) continue;
       
-      const pcaSim = Math.max(0, Math.min(1, cosine(meVec, vec)));
+      let pcaSim = Math.max(0, Math.min(1, cosine(meVec, vec)));
+      if (filters.archetype === 'least') {
+        pcaSim = Math.max(0, Math.min(1, 1 - pcaSim));
+      }
       let score = pcaSim;
       let eloScore = 0;
       let hobbyScore = 0;
