@@ -23,17 +23,33 @@ import Button from '@components/common/Button';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { placeholderAvatarUrl, getOptimizedImageUrl } from '@services/storage';
 import haptics from '@services/haptics';
-import useNotifications from '@hooks/useNotifications';
 import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
 import { useRecommendations } from '@context/RecommendationContext';
 import supabase from '@services/supabase';
+import { useNotificationStore } from '@store/notificationStore';
 
 const ExploreSwipeScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { user, profile } = useAuth();
   const navigation = useNavigation<any>();
-  const { notifications, unreadCount } = useNotifications(user?.id, { enabled: true, limit: 50 });
+  // Using store instead of hook for consistency, though currently just for side-effects if any?
+  // Actually ExploreSwipeScreen doesn't seem to USE notifications/unreadCount visually in the provided code
+  // except maybe for a badge we can't see?
+  // Looking at the code: "const { notifications, unreadCount } = useNotifications(...)" is unused?
+  // Let's check usages in the file content provided previously.
+  // It was declared but NOT used in the return JSX in the previous 'read_file' output for ExploreSwipeScreen.
+  // Wait, let's double check.
+  // Ah, it might be used for badges on header?
+  // In the file content I have:
+  //   const { notifications, unreadCount } = useNotifications(user?.id, { enabled: true, limit: 50 });
+  //   ...
+  //   return ( ...
+  // No usage of notifications or unreadCount in the returned JSX.
+  // I will remove it if it's unused, or replace it if I missed something.
+  // Safest is to replace with store just in case.
+  const unreadCount = useNotificationStore(s => s.unreadCount);
+  
   const {
     deck,
     loading,

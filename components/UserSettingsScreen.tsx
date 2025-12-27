@@ -27,7 +27,7 @@ const UserSettingsScreen: React.FC = () => {
   const { theme, name: themeName, setTheme } = useTheme();
   const { t, setLocale, availableLocales, locale } = useTranslation();
   const navigation = useNavigation<any>();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const [sections, setSections] = useState<Record<string, boolean>>({
     profile: false,
     hobbies: false,
@@ -236,23 +236,30 @@ const UserSettingsScreen: React.FC = () => {
   }, []);
 
   const buildProfilePayload = useCallback(
-    (extra?: Partial<Profile>): Profile => ({
-      id: user?.id as string,
-      username: username.trim() || null,
-      age_group: ageGroup || null,
-      gender: gender || null,
-      hobbies: hobbies,
-      character_group: profile?.character_group ?? null,
-      pca_dim1: profile?.pca_dim1 ?? null,
-      pca_dim2: profile?.pca_dim2 ?? null,
-      pca_dim3: profile?.pca_dim3 ?? null,
-      pca_dim4: profile?.pca_dim4 ?? null,
-      b5_cipher: profile?.b5_cipher ?? null,
-      b5_iv: profile?.b5_iv ?? null,
-      avatar_url: avatarUrl ?? profile?.avatar_url ?? null,
-      match_allow_elo: matchAllowElo,
-      ...extra,
-    }),
+    (extra?: Partial<Profile>): Profile => {
+      const base: Profile = {
+        id: user?.id as string,
+        username: username.trim() || null,
+        age_group: ageGroup || null,
+        gender: gender || null,
+        hobbies: hobbies,
+        character_group: profile?.character_group,
+        pca_dim1: profile?.pca_dim1,
+        pca_dim2: profile?.pca_dim2,
+        pca_dim3: profile?.pca_dim3,
+        pca_dim4: profile?.pca_dim4,
+        b5_cipher: profile?.b5_cipher,
+        b5_iv: profile?.b5_iv,
+        avatar_url: avatarUrl ?? profile?.avatar_url,
+        match_allow_elo: matchAllowElo,
+        ...extra,
+      };
+      // Filter out undefined to prevent overwriting with null/default if data is missing from context
+      // This creates a "partial" object effectively, but cast as Profile
+      return Object.fromEntries(
+        Object.entries(base).filter(([_, v]) => v !== undefined)
+      ) as Profile;
+    },
     [ageGroup, avatarUrl, gender, hobbies, matchAllowElo, profile, user?.id, username],
   );
 
@@ -306,6 +313,7 @@ const UserSettingsScreen: React.FC = () => {
       const { error } = await upsertProfile(payload);
       if (error) throw error;
       setSaveSuccess(true);
+      await refreshProfile();
     } catch (err) {
       if (__DEV__) console.error('[settings] save failed', err);
       setUploadError('Failed to save profile.');

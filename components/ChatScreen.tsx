@@ -10,6 +10,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from '@context/LocaleContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMessagesStore } from '@store/messagesStore';
 
 type ChatRoute = RouteProp<
   {
@@ -39,6 +40,10 @@ const ChatScreen: React.FC = () => {
   const { theme } = useTheme();
   const nav = useNavigation();
   const { t } = useTranslation();
+  
+  const updateThread = useMessagesStore((s) => s.updateThread);
+  const markRead = useMessagesStore((s) => s.markRead);
+  
   const [peerName, setPeerName] = useState<string | null>(routePeerName ?? null);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [input, setInput] = useState('');
@@ -103,11 +108,13 @@ const ChatScreen: React.FC = () => {
       const unseen = data.filter((m) => m.receiver_id === user?.id && m.status !== 'seen').map((m) => m.id);
       if (unseen.length) {
         await supabase.from('messages').update({ status: 'seen' }).in('id', unseen);
+        // Optimistic store update
+        markRead(matchId);
       }
     } else if (__DEV__ && error) {
       console.warn('[chat] load error', error);
     }
-  }, [matchId]);
+  }, [matchId, markRead]);
 
   useEffect(() => {
     void loadMessages();
@@ -122,6 +129,7 @@ const ChatScreen: React.FC = () => {
       const ids = (data ?? []).map((m: any) => m.id);
       if (ids.length) {
         await supabase.from('messages').update({ status: 'seen' }).in('id', ids);
+        markRead(matchId);
       }
     })();
 
@@ -142,6 +150,7 @@ const ChatScreen: React.FC = () => {
           }, 0);
           if (incoming.receiver_id === user?.id) {
             void supabase.from('messages').update({ status: 'seen' }).eq('id', incoming.id);
+            markRead(matchId);
           }
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         },
@@ -162,7 +171,7 @@ const ChatScreen: React.FC = () => {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [matchId, loadMessages]);
+  }, [matchId, loadMessages, markRead]);
 
   const send = async () => {
     if (!input.trim() || !user?.id) return;
@@ -176,6 +185,14 @@ const ChatScreen: React.FC = () => {
       created_at: new Date().toISOString(),
       status: 'sending',
     };
+    
+    // Update store immediately
+    updateThread(matchId, {
+      lastMessage: input.trim(),
+      lastAt: new Date().toISOString(),
+      hasUnread: false // sent by me
+    });
+
     setMessages((prev) => [...prev, optimistic]);
     try {
       const { error } = await supabase.from('messages').insert({

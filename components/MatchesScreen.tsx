@@ -1,16 +1,25 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, SectionList, Pressable, RefreshControl } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { toRgb, toRgba } from '@themes/index';
 import { useTranslation } from '@context/LocaleContext';
 import { useAuth } from '@context/AuthContext';
-import useNotifications, { NotificationRecord } from '@hooks/useNotifications';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import UserInfoModal, { UserInfo } from '@components/UserInfoModal';
 import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
 import supabase from '@services/supabase';
 import { useNavigation } from '@react-navigation/native';
+import { useNotificationStore, NotificationRecord } from '@store/notificationStore';
+
+// Simplified user info interface from notification payload
+type NotificationActor = {
+  id: string;
+  username?: string | null;
+  avatar_url?: string | null;
+  age_group?: string | null;
+  gender?: string | null;
+  character_group?: string | null;
+};
 
 const iconForType = (type: NotificationRecord['type']) => {
   if (type === 'mutual') return 'sparkles-outline';
@@ -29,15 +38,17 @@ const MatchesScreen: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigation = useNavigation<any>();
-  const { notifications, unreadCount, markRead, reload, loading } = useNotifications(user?.id, { enabled: true, limit: 50 });
-  const [modalUser, setModalUser] = useState<UserInfo | null>(null);
+  
+  const notifications = useNotificationStore((s) => s.notifications);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const markRead = useNotificationStore((s) => s.markRead);
+  const loading = useNotificationStore((s) => s.loading);
+  const init = useNotificationStore((s) => s.initialize);
+  
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalNotificationId, setModalNotificationId] = useState<string | null>(null);
-  const [modalType, setModalType] = useState<NotificationRecord['type'] | null>(null);
-  const [canMessage, setCanMessage] = useState(false);
-  const [actioning, setActioning] = useState(false);
   const [profileDetail, setProfileDetail] = useState<ProfileDetail | null>(null);
-  const [profileDetailVisible, setProfileDetailVisible] = useState(false);
+  const [currentNotification, setCurrentNotification] = useState<NotificationRecord | null>(null);
+  const [actioning, setActioning] = useState(false);
 
   const sections = useMemo(() => {
     const unread = notifications.filter((n) => !n.read);
@@ -47,46 +58,6 @@ const MatchesScreen: React.FC = () => {
     if (read.length > 0) res.push({ title: t('notifications.read'), data: read });
     return res;
   }, [notifications, t]);
-
-  const handleAction = async (action: 'like' | 'skip') => {
-    if (!user?.id || !modalUser) return;
-    setActioning(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('match-update', {
-        body: {
-          actorId: user.id,
-          targetId: modalUser.id,
-          outcome: action,
-        },
-      });
-      if (__DEV__) {
-        if (error) console.warn('[match-update][matches] error', error);
-        else console.log('[match-update][matches] ok', data);
-      }
-      if (error) {
-        setActioning(false);
-        return;
-      }
-      if (modalNotificationId) {
-        markRead([modalNotificationId]);
-      }
-
-      // If mutual created (or already exists), open chat after like
-      if (action === 'like') {
-        const { mutualCreated } = (data as any) ?? {};
-        const match = await findMatch(modalUser.id);
-        setCanMessage(!!match);
-        if (mutualCreated || match) {
-          void openChat(modalUser);
-        }
-      }
-    } catch (err) {
-      if (__DEV__) console.warn('[match-update][matches] exception', err);
-    } finally {
-      setActioning(false);
-      setModalVisible(false);
-    }
-  };
 
   const findMatch = async (peerId: string) => {
     if (!user?.id) return null;
@@ -102,29 +73,75 @@ const MatchesScreen: React.FC = () => {
     return data;
   };
 
-  const openChat = async (actor: UserInfo, notificationId?: string) => {
+  const openChat = async (peerId: string, peerName?: string | null, peerAvatar?: string | null, notificationId?: string) => {
     if (!user?.id) return;
-    const data = await findMatch(actor.id);
-    if (!data) {
+    const match = await findMatch(peerId);
+    if (!match) {
       if (__DEV__) console.warn('[matches] no match found for chat');
-      setCanMessage(false);
       return;
     }
-    setModalVisible(false);
-    navigation.navigate('Chat', {
-      matchId: data.id,
-      peerId: actor.id,
-      peerName: actor.username ?? null,
-      peerAvatar: actor.avatar_url ?? null,
-    });
+    
     if (notificationId) {
-      markRead([notificationId]);
+      void markRead([notificationId]);
+    }
+    setModalVisible(false);
+    
+    navigation.navigate('Chat', {
+      matchId: match.id,
+      peerId: peerId,
+      peerName: peerName ?? null,
+      peerAvatar: peerAvatar ?? null,
+    });
+  };
+
+  const handleAction = async (action: 'like' | 'skip') => {
+    if (!user?.id || !profileDetail || !currentNotification) return;
+    setActioning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('match-update', {
+        body: {
+          actorId: user.id,
+          targetId: profileDetail.id,
+          outcome: action,
+        },
+      });
+      
+      if (error) {
+        if (__DEV__) console.warn('[match-update][matches] error', error);
+        return;
+      }
+
+      // Mark notification as read after successful action
+      void markRead([currentNotification.id]);
+
+      // If mutual created, allow opening chat
+      if (action === 'like') {
+        const { mutualCreated } = (data as any) ?? {};
+        if (mutualCreated) {
+           // Provide feedback or auto-open chat? 
+           // For now, let's close the modal and maybe the user sees the new match
+           // Or ideally, transition the modal to "It's a match!" state. 
+           // Currently just close and maybe navigate if we wanted.
+           // Let's just close modal for simplicity as requested "reuse components".
+           setModalVisible(false);
+           // Optionally navigate to chat immediately
+           void openChat(profileDetail.id, profileDetail.username, profileDetail.avatar_url);
+           return;
+        }
+      }
+      setModalVisible(false);
+    } catch (err) {
+      if (__DEV__) console.warn('[match-update][matches] exception', err);
+    } finally {
+      setActioning(false);
     }
   };
 
-  const openProfileDetail = async (actor: UserInfo) => {
-    setProfileDetailVisible(true);
-    setProfileDetail({
+  const loadProfileAndOpen = async (actor: NotificationActor, notification: NotificationRecord) => {
+    setCurrentNotification(notification);
+    
+    // Pre-fill with available info
+    const initialProfile: ProfileDetail = {
       id: actor.id,
       username: actor.username ?? null,
       age_group: actor.age_group ?? null,
@@ -139,60 +156,47 @@ const MatchesScreen: React.FC = () => {
       pca_dim2: null,
       pca_dim3: null,
       pca_dim4: null,
-    });
-    const { data, error } = await supabase
-      .from('profile_lookup')
-      .select('id,username,avatar_url')
-      .eq('id', actor.id)
-      .maybeSingle();
-    if (error && __DEV__) console.warn('[matches] profile lookup error', error);
-    if (data) {
-      setProfileDetail({
-        id: data.id,
-        username: data.username ?? actor.username ?? null,
-        age_group: actor.age_group ?? null,
-        gender: actor.gender ?? null,
-        character_group: actor.character_group ?? null,
-        avatar_url: (data as any).avatar_url ?? actor.avatar_url ?? null,
-        hobbies: [],
-        hobbies_cipher: null,
-        hobbies_iv: null,
-        hobby_embedding: null,
-        pca_dim1: null,
-        pca_dim2: null,
-        pca_dim3: null,
-        pca_dim4: null,
+    };
+    setProfileDetail(initialProfile);
+    setModalVisible(true);
+
+    // Fetch full details via Edge Function
+    try {
+      const { data, error } = await supabase.functions.invoke('get-profile-details', {
+        body: { userId: user?.id, targetId: actor.id }
       });
-    }
-    const { data: prof, error: profErr } = await supabase
-      .from('profiles')
-      .select('id,username,age_group,gender,character_group,avatar_url,hobbies,hobbies_cipher,hobbies_iv,pca_dim1,pca_dim2,pca_dim3,pca_dim4')
-      .eq('id', actor.id)
-      .maybeSingle();
-    if (profErr && __DEV__) console.warn('[matches] profiles fetch error', profErr);
-    if (prof) {
-      setProfileDetail({
-        id: prof.id,
-        username: (prof as any).username ?? actor.username ?? null,
-        age_group: ((prof as any).age_group ?? null) as string | null,
-        gender: ((prof as any).gender ?? null) as string | null,
-        character_group: ((prof as any).character_group ?? null) as string | null,
-        avatar_url: ((prof as any).avatar_url ?? actor.avatar_url ?? null) as string | null,
-        hobbies: (prof as any).hobbies ?? [],
-        hobbies_cipher: (prof as any).hobbies_cipher ?? null,
-        hobbies_iv: (prof as any).hobbies_iv ?? null,
-        hobby_embedding: null,
-        pca_dim1: (prof as any).pca_dim1 ?? null,
-        pca_dim2: (prof as any).pca_dim2 ?? null,
-        pca_dim3: (prof as any).pca_dim3 ?? null,
-        pca_dim4: (prof as any).pca_dim4 ?? null,
-      });
+
+      if (error) {
+        console.warn('[MatchesScreen] get-profile-details error', error);
+        return;
+      }
+
+      if (data) {
+        setProfileDetail({
+          ...initialProfile,
+          id: data.id,
+          username: data.username ?? initialProfile.username,
+          age_group: data.age_group ?? initialProfile.age_group,
+          gender: data.gender ?? initialProfile.gender,
+          character_group: data.character_group ?? initialProfile.character_group,
+          avatar_url: data.avatar_url ?? initialProfile.avatar_url,
+          hobbies_cipher: data.hobbies_cipher,
+          hobbies_iv: data.hobbies_iv,
+          pca_dim1: data.pca_dim1,
+          pca_dim2: data.pca_dim2,
+          pca_dim3: data.pca_dim3,
+          pca_dim4: data.pca_dim4,
+        });
+      }
+    } catch (err) {
+      console.warn('[MatchesScreen] get-profile-details exception', err);
     }
   };
 
   const renderItem = ({ item }: { item: NotificationRecord }) => {
     const isUnread = !item.read;
-    const actor: UserInfo | null = item.payload?.actor ?? null;
+    const actor: NotificationActor | null = item.payload?.actor ?? null;
+    
     return (
       <Pressable
         style={[
@@ -204,25 +208,21 @@ const MatchesScreen: React.FC = () => {
           },
         ]}
         onPress={() => {
-          // Only mark read when user takes an action; viewing alone should not mark read
-          if (actor) {
+          if (!actor) return;
+          
+          if (item.type === 'message') {
+            void openChat(actor.id, actor.username, actor.avatar_url, item.id);
+          } else {
+            // For 'like' and 'mutual', open profile modal
+            // We do NOT mark read here immediately. We wait for user action in modal 
+            // OR we mark read when modal opens? 
+            // "ideally openning the message screen should not automatically set all notis to read"
+            // This implies separating the trigger.
+            // For non-messages, let's mark read when they open the modal to view the notification details.
             if (isUnread) {
-              markRead([item.id]);
+               void markRead([item.id]);
             }
-            if (item.type === 'message') {
-              void openChat(actor, item.id);
-              return;
-            }
-            setModalUser(actor);
-            setModalVisible(true);
-            setModalNotificationId(item.id);
-            setModalType(item.type);
-            // determine if message button should show
-            void (async () => {
-              const match = await findMatch(actor.id);
-              setCanMessage(!!match);
-            })();
-            void openProfileDetail(actor);
+            void loadProfileAndOpen(actor, item);
           }
         }}
       >
@@ -253,6 +253,8 @@ const MatchesScreen: React.FC = () => {
       </Pressable>
     );
   };
+
+  const notificationType = currentNotification?.type;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>
@@ -292,7 +294,7 @@ const MatchesScreen: React.FC = () => {
               <RefreshControl
                 refreshing={loading}
                 onRefresh={() => {
-                  void reload();
+                  if (user?.id) void init(user.id);
                 }}
                 tintColor={toRgb(theme.colors['--brand-primary'])}
               />
@@ -300,22 +302,19 @@ const MatchesScreen: React.FC = () => {
           />
         )}
       </View>
-      <UserInfoModal
-        visible={modalVisible}
-        user={modalUser}
-        onClose={() => setModalVisible(false)}
-        onLike={() => handleAction('like')}
-        onSkip={() => handleAction('skip')}
-        showActions={modalType !== 'mutual'}
-        onMessage={modalType === 'mutual' && canMessage ? (u) => openChat(u, modalNotificationId ?? undefined) : undefined}
-        onViewProfile={(u) => void openProfileDetail(u)}
-      />
+
       <ProfileDetailModal
-        visible={profileDetailVisible}
-        onClose={() => setProfileDetailVisible(false)}
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
         profile={profileDetail}
-        currentUserHobbies={[]}
+        currentUserHobbies={[]} // We could pass current user hobbies if available in AuthContext
+        onLike={notificationType === 'like' ? () => handleAction('like') : undefined}
+        onSkip={notificationType === 'like' ? () => handleAction('skip') : undefined}
+        onMessage={notificationType === 'mutual' ? () => {
+             if (profileDetail) void openChat(profileDetail.id, profileDetail.username, profileDetail.avatar_url);
+        } : undefined}
       />
+
       {actioning ? (
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 24, alignItems: 'center' }}>
           <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('common.loading')}</Text>

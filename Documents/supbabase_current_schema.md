@@ -1,6 +1,6 @@
 # Supabase Schema Reference
 
-> **Last Updated:** 2025-02-26
+> **Last Updated:** 2025-12-27
 > **Status:** Active (Single Table Architecture)
 
 ## Schema: `public`
@@ -57,6 +57,19 @@ Convenience view joining `profiles` with `auth.users.email` and `email_confirmed
 
 #### `public.profile_lookup`
 Secure lookup view for basic user info (username/avatar) by ID.
+
+### Database Functions (RPC)
+
+#### `public.get_matched_profile(target_id uuid)`
+Securely returns profile details (including encrypted hobbies and PCA dims) if:
+1. The requesting user is matched with `target_id`.
+2. The requesting user is looking up themselves.
+3. The `target_id` has a pending "Like" on the requesting user.
+*   **Returns**: `id`, `username`, `age_group`, `gender`, `character_group`, `avatar_url`, `hobbies_cipher`, `hobbies_iv`, `pca_dim1-4`.
+
+#### `public.get_profile_lookup(ids uuid[])`
+Securely returns basic public info (username, avatar) for a list of IDs. Bypasses `profiles` table RLS.
+*   **Returns**: `id`, `username`, `avatar_url`, `email`.
 
 ---
 

@@ -54,29 +54,41 @@ export const RecommendationProvider: React.FC<{ children: React.ReactNode }> = (
   const useElo = profile?.match_allow_elo ?? true;
   const hasEnoughHobbies = !!profile?.hobbies_cipher;
 
-  const loadMore = useCallback(async () => {
-    if (!user?.id || loading || exhausted) return;
+  const loadMore = useCallback(async (resetState = false) => {
+    if (!user?.id) return;
+    if (!resetState && (loading || exhausted)) return;
+
     setLoading(true);
     try {
+      const currentOffset = resetState ? 0 : deck.length;
+      const currentExclude = resetState ? [] : Array.from(shownIds);
+
       const { data, error: fnErr } = await supabase.functions.invoke('recommend-users', {
         body: {
           userId: user.id,
           filters,
-          offset: deck.length,
+          offset: currentOffset,
           pageSize: 20,
-          excludeIds: Array.from(shownIds),
+          excludeIds: currentExclude,
           useElo,
           useHobbies: useHobbies && hasEnoughHobbies,
         },
       });
       if (fnErr) throw fnErr;
       const users = (data?.users ?? []) as SimilarUser[];
-      setDeck((prev) => [...prev, ...users]);
-      setShownIds((prev) => {
-        const next = new Set(prev);
-        users.forEach((u) => next.add(u.id));
-        return next;
-      });
+      
+      if (resetState) {
+        setDeck(users);
+        setShownIds(new Set(users.map((u) => u.id)));
+      } else {
+        setDeck((prev) => [...prev, ...users]);
+        setShownIds((prev) => {
+          const next = new Set(prev);
+          users.forEach((u) => next.add(u.id));
+          return next;
+        });
+      }
+      
       setHasMore(data?.hasMore ?? false);
       setExhausted(data?.exhausted ?? false);
     } catch (err) {
@@ -101,22 +113,14 @@ export const RecommendationProvider: React.FC<{ children: React.ReactNode }> = (
   );
 
   const reset = useCallback(async () => {
-    setDeck([]);
-    setShownIds(new Set());
-    setHasMore(true);
-    setExhausted(false);
     setInitialLoading(true);
-    await loadMore();
+    await loadMore(true);
   }, [loadMore]);
 
   useEffect(() => {
     if (!user?.id) return;
-    setDeck([]);
-    setShownIds(new Set());
-    setHasMore(true);
-    setExhausted(false);
-    setInitialLoading(true);
-    void loadMore();
+    // Initial load
+    void reset();
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

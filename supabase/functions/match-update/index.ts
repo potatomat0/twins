@@ -149,17 +149,22 @@ serve(async (req) => {
 
   // Detect mutual like and insert match + notify both
   if (outcome === 'like') {
-    const { data: reverseLike, error: revErr } = await supabase
+    // Check if target has already liked actor (check LATEST action)
+    const { data: lastEvent, error: revErr } = await supabase
       .from('match_events')
-      .select('id')
+      .select('outcome')
       .eq('actor_id', targetId)
       .eq('target_id', actorId)
-      .eq('outcome', 'like')
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
     if (revErr) {
       console.error('[match-update] reverse like lookup error', revErr);
     }
+
+    const reverseLike = lastEvent?.outcome === 'like';
+
     if (reverseLike) {
       mutualCreated = true;
       notifyLike = false; // mutual notifications will be sent instead
@@ -240,7 +245,36 @@ serve(async (req) => {
         console.log('[match-update] mutual created', { actorId, targetId, matchId: sorted.join('-') });
       }
     } else {
-      console.log('[match-update] no mutual yet', { actorId, targetId, outcome, reverseLike });
+      console.log('[match-update] no mutual yet', { actorId, targetId, outcome, lastOutcome: lastEvent?.outcome });
+    }
+  }
+
+  // Send "Like" notification if applicable
+  if (notifyLike) {
+    const actorProfile = actor;
+    const payload = {
+      message: 'Someone liked you',
+      actor: {
+        id: actorProfile.id,
+        username: actorProfile.username ?? null,
+        age_group: actorProfile.age_group ?? null,
+        gender: actorProfile.gender ?? null,
+        character_group: actorProfile.character_group ?? null,
+        avatar_url: actorProfile.avatar_url ?? null,
+      },
+    };
+
+    const { error: notifyErr } = await supabase.from('notifications').insert({
+      recipient_id: targetId,
+      actor_id: actorId,
+      type: 'like',
+      payload: payload,
+    });
+
+    if (notifyErr) {
+      console.error('[match-update] failed to send like notification', notifyErr);
+    } else {
+      console.log('[match-update] sent like notification', { from: actorId, to: targetId });
     }
   }
 

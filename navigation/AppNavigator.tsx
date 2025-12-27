@@ -21,7 +21,6 @@ import type { ResumeDestination } from '@store/sessionStore';
 import type { PcaFingerprint } from '@services/pcaEvaluator';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import useNotifications from '@hooks/useNotifications';
 import { useTranslation } from '@context/LocaleContext';
 import { RecommendationProvider } from '@context/RecommendationContext';
 
@@ -86,9 +85,23 @@ type TabParamList = {
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
+import { useNotificationStore } from '@store/notificationStore';
+import { useMessagesStore } from '@store/messagesStore';
+
 const MainTabs: React.FC = () => {
   const { user } = useAuth();
-  const { unreadCount } = useNotifications(user?.id, { enabled: true, limit: 50 });
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const initNotis = useNotificationStore((s) => s.initialize);
+  const initMessages = useMessagesStore((s) => s.initialize);
+  
+  // Initialize stores on auth
+  React.useEffect(() => {
+    if (user?.id) {
+      void initNotis(user.id);
+      void initMessages(user.id);
+    }
+  }, [user?.id, initNotis, initMessages]);
+
   const { t } = useTranslation();
   const showBadge = unreadCount > 0;
   return (

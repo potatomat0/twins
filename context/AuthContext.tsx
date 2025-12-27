@@ -8,6 +8,7 @@ type AuthContextValue = {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -36,6 +37,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(null);
     }
   }, []);
+
+  const refreshProfile = useCallback(async () => {
+    await loadProfile(user);
+  }, [loadProfile, user]);
 
   useEffect(() => {
     let active = true;
@@ -91,8 +96,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       session,
       loading,
       signOut,
+      refreshProfile,
     }),
-    [user, profile, session, loading, signOut],
+    [user, profile, session, loading, signOut, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

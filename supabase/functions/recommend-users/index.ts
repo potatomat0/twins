@@ -7,6 +7,7 @@ type ProfileRow = {
   age_group: string | null;
   gender: string | null;
   character_group: string | null;
+  avatar_url: string | null;
   pca_dim1: number | null;
   pca_dim2: number | null;
   pca_dim3: number | null;
@@ -42,6 +43,7 @@ type SimilarUser = {
   age_group: string | null;
   gender: string | null;
   character_group: string | null;
+  avatar_url?: string | null;
   similarity: number;
   elo_rating?: number | null;
   score?: number;
@@ -187,7 +189,7 @@ serve(async (req) => {
 
     let query = supabase
       .from('profiles')
-      .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding, hobbies_cipher, hobbies_iv')
+      .select('id, username, age_group, gender, character_group, avatar_url, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding, hobbies_cipher, hobbies_iv')
       .neq('id', userId)
       .not('pca_dim1', 'is', null)
       .not('pca_dim2', 'is', null)
@@ -263,6 +265,7 @@ serve(async (req) => {
         age_group: c.age_group as string | null,
         gender: c.gender as string | null,
         character_group: c.character_group as string | null,
+        avatar_url: c.avatar_url as string | null,
         similarity: score,
         elo_rating: c.elo_rating ?? null,
         score,

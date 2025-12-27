@@ -10,162 +10,40 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
-
-type Thread = {
-  matchId: string;
-  peerId: string;
-  peerName: string | null;
-  peerAvatar?: string | null;
-  lastMessage: string | null;
-  lastAt: string | null;
-};
+import { useMessagesStore, Thread } from '@store/messagesStore';
 
 const MessagesScreen: React.FC = () => {
   const { user, profile } = useAuth();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const nav = useNavigation<any>();
-  const [threads, setThreads] = useState<Thread[]>([]);
-  const [loading, setLoading] = useState(false);
+  
+  const threads = useMessagesStore((s) => s.threads);
+  const loading = useMessagesStore((s) => s.loading);
+  const initMessages = useMessagesStore((s) => s.initialize);
+  
   const [refreshing, setRefreshing] = useState(false);
   const [modalProfile, setModalProfile] = useState<ProfileDetail | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeThread, setActiveThread] = useState<Thread | null>(null);
-  const [matchIds, setMatchIds] = useState<string[]>([]);
-  const channelRef = React.useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const loadThreads = async () => {
-    if (!user?.id) return;
-    const { data: matchRows, error } = await supabase
-      .from('matches')
-      .select('id,user_a,user_b,created_at')
-      .or(`user_a.eq.${user.id},user_b.eq.${user.id}`);
-    if (error) {
-      if (__DEV__) console.warn('[messages] matches error', error);
-      setLoading(false);
-      setRefreshing(false);
-      return;
-    }
-    const peers = (matchRows ?? []).map((m) => ({
-      matchId: m.id as string,
-      peerId: m.user_a === user.id ? (m.user_b as string) : (m.user_a as string),
-    }));
-    setMatchIds(peers.map((p) => p.matchId));
-    const profilesById: Record<string, { username: string | null; avatar_url: string | null }> = {};
-    if (peers.length > 0) {
-      const { data: profs, error: profErr } = await supabase
-        .from('profile_lookup')
-        .select('id,username,avatar_url')
-        .in(
-          'id',
-          peers.map((p) => p.peerId),
-        );
-      if (profErr && __DEV__) console.warn('[messages] profile lookup error', profErr);
-      (profs ?? []).forEach((p) => {
-        profilesById[p.id] = { username: p.username ?? null, avatar_url: (p as any).avatar_url ?? null };
-      });
-    }
-    const results: Thread[] = [];
-    for (const p of peers) {
-      const { data: msg } = await supabase
-        .from('messages')
-        .select('body,created_at')
-        .eq('match_id', p.matchId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      results.push({
-        matchId: p.matchId,
-        peerId: p.peerId,
-        peerName: profilesById[p.peerId]?.username ?? p.peerId,
-        peerAvatar: profilesById[p.peerId]?.avatar_url ?? null,
-        lastMessage: msg?.body ?? null,
-        lastAt: msg?.created_at ?? null,
-      });
-    }
-    setThreads(results);
-    setLoading(false);
-    setRefreshing(false);
-  };
-
-  useEffect(() => {
-    if (!user?.id) return;
-    setLoading(true);
-    void loadThreads();
-  }, [user?.id]);
-
-  // Refresh when screen focused to catch messages sent from chat flows
+  // Initialize/Refresh logic moved to store, triggered here or globally
   useFocusEffect(
     React.useCallback(() => {
       if (user?.id) {
-        void loadThreads();
+        // We rely on the store's subscription for real-time updates.
+        // But we can trigger a refresh if needed.
+        // For now, let's trust the subscription established in AppNavigator.
       }
     }, [user?.id]),
   );
 
-  useEffect(() => {
-    // subscribe to message inserts for current matches to keep previews fresh
-    if (!user?.id || matchIds.length === 0) {
-      if (channelRef.current) {
-        void supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-      return;
-    }
-    if (channelRef.current) {
-      void supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-    const channel = supabase
-      .channel(`messages-preview-${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
-          const rec = payload.new as any;
-          if (!rec?.match_id || !matchIds.includes(rec.match_id)) return;
-          setThreads((prev) => {
-            const exists = prev.find((t) => t.matchId === rec.match_id);
-            if (!exists) return prev;
-            const updated = prev.map((t) =>
-              t.matchId === rec.match_id
-                ? {
-                    ...t,
-                    lastMessage: rec.body ?? t.lastMessage,
-                    lastAt: rec.created_at ?? t.lastAt,
-                  }
-                : t,
-            );
-            return updated.sort((a, b) => {
-              if (!a.lastAt) return 1;
-              if (!b.lastAt) return -1;
-              return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
-            });
-          });
-        },
-      )
-      .subscribe();
-    channelRef.current = channel;
-    return () => {
-      if (channelRef.current) {
-        void supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, [matchIds, user?.id]);
-
-  const sorted = useMemo(() => {
-    return [...threads].sort((a, b) => {
-      if (!a.lastAt) return 1;
-      if (!b.lastAt) return -1;
-      return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
-    });
-  }, [threads]);
-
   const openProfile = async (item: Thread) => {
     void Haptics.selectionAsync();
     setActiveThread(item);
-    setModalProfile({
+    
+    // Initial optimistic state from thread item
+    const initialProfile: ProfileDetail = {
       id: item.peerId,
       username: item.peerName ?? null,
       age_group: null,
@@ -180,60 +58,40 @@ const MessagesScreen: React.FC = () => {
       pca_dim2: null,
       pca_dim3: null,
       pca_dim4: null,
-    });
+    };
+    
+    setModalProfile(initialProfile);
     setModalVisible(true);
 
-    const { data, error } = await supabase
-      .from('profile_lookup')
-      .select('id,username,avatar_url')
-      .eq('id', item.peerId)
-      .maybeSingle();
-    if (error && __DEV__) console.warn('[messages] profile lookup error', error);
-
-    if (data) {
-      setModalProfile({
-        id: data.id,
-        username: data.username ?? item.peerName ?? null,
-        age_group: null,
-        gender: null,
-        character_group: null,
-        avatar_url: (data as any).avatar_url ?? item.peerAvatar ?? null,
-        hobbies: [],
-        hobbies_cipher: null,
-        hobbies_iv: null,
-        hobby_embedding: null,
-        pca_dim1: null,
-        pca_dim2: null,
-        pca_dim3: null,
-        pca_dim4: null,
+    try {
+      const { data, error } = await supabase.functions.invoke('get-profile-details', {
+        body: { userId: user?.id, targetId: item.peerId }
       });
-    }
 
-    const { data: prof, error: profErr } = await supabase
-      .from('profiles')
-      .select(
-        'id,username,age_group,gender,character_group,avatar_url,hobbies,hobbies_cipher,hobbies_iv,pca_dim1,pca_dim2,pca_dim3,pca_dim4',
-      )
-      .eq('id', item.peerId)
-      .maybeSingle();
-    if (profErr && __DEV__) console.warn('[messages] profiles fetch error', profErr);
-    if (prof) {
-      setModalProfile({
-        id: prof.id,
-        username: (prof as any).username ?? item.peerName ?? null,
-        age_group: ((prof as any).age_group ?? null) as string | null,
-        gender: ((prof as any).gender ?? null) as string | null,
-        character_group: ((prof as any).character_group ?? null) as string | null,
-        avatar_url: ((prof as any).avatar_url ?? item.peerAvatar ?? null) as string | null,
-        hobbies: (prof as any).hobbies ?? [],
-        hobbies_cipher: (prof as any).hobbies_cipher ?? null,
-        hobbies_iv: (prof as any).hobbies_iv ?? null,
-        hobby_embedding: null,
-        pca_dim1: (prof as any).pca_dim1 ?? null,
-        pca_dim2: (prof as any).pca_dim2 ?? null,
-        pca_dim3: (prof as any).pca_dim3 ?? null,
-        pca_dim4: (prof as any).pca_dim4 ?? null,
-      });
+      if (error) {
+        console.warn('[MessagesScreen] get-profile-details error', error);
+        return;
+      }
+
+      if (data) {
+        setModalProfile({
+          ...initialProfile,
+          id: data.id,
+          username: data.username ?? initialProfile.username,
+          age_group: data.age_group ?? initialProfile.age_group,
+          gender: data.gender ?? initialProfile.gender,
+          character_group: data.character_group ?? initialProfile.character_group,
+          avatar_url: data.avatar_url ?? initialProfile.avatar_url,
+          hobbies_cipher: data.hobbies_cipher,
+          hobbies_iv: data.hobbies_iv,
+          pca_dim1: data.pca_dim1,
+          pca_dim2: data.pca_dim2,
+          pca_dim3: data.pca_dim3,
+          pca_dim4: data.pca_dim4,
+        });
+      }
+    } catch (err) {
+      console.warn('[MessagesScreen] get-profile-details exception', err);
     }
   };
 
@@ -272,14 +130,31 @@ const MessagesScreen: React.FC = () => {
           )}
         </Pressable>
         <Pressable style={{ flex: 1 }} onPress={() => openChat(item)}>
-          <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>
-            {item.peerName ?? t('messages.unknown')}
-          </Text>
-          <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 2 }} numberOfLines={1}>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+             <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>
+               {item.peerName ?? t('messages.unknown')}
+             </Text>
+             {item.lastAt && (
+               <Text style={{ color: toRgb(theme.colors['--text-muted']), fontSize: 10 }}>
+                 {new Date(item.lastAt).toLocaleDateString()}
+               </Text>
+             )}
+          </View>
+          <Text 
+            style={{ 
+              color: item.hasUnread ? toRgb(theme.colors['--text-primary']) : toRgb(theme.colors['--text-secondary']), 
+              marginTop: 2,
+              fontWeight: item.hasUnread ? '700' : '400' 
+            }} 
+            numberOfLines={1}
+          >
             {item.lastMessage ?? t('messages.noMessages')}
           </Text>
         </Pressable>
-        <Ionicons name="chevron-forward" size={18} color={toRgb(theme.colors['--text-muted'])} />
+        {item.hasUnread && (
+           <View style={{width: 8, height: 8, borderRadius: 4, backgroundColor: toRgb(theme.colors['--accent-cyan']), marginLeft: 8}} />
+        )}
+        <Ionicons name="chevron-forward" size={18} color={toRgb(theme.colors['--text-muted'])} style={{marginLeft: 4}}/>
       </Pressable>
     );
   };
@@ -288,11 +163,11 @@ const MessagesScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>
       <View style={{ padding: 16, flex: 1 }}>
         <Text style={[styles.title, { color: toRgb(theme.colors['--text-primary']) }]}>{t('messages.title')}</Text>
-        {loading ? (
+        {loading && threads.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('common.loading')}</Text>
           </View>
-        ) : sorted.length === 0 ? (
+        ) : threads.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
             <Ionicons name="chatbox-ellipses-outline" size={26} color={toRgb(theme.colors['--text-muted'])} />
             <Text style={{ color: toRgb(theme.colors['--text-muted']), marginTop: 8, textAlign: 'center' }}>
@@ -301,7 +176,7 @@ const MessagesScreen: React.FC = () => {
           </View>
         ) : (
           <FlatList
-            data={sorted}
+            data={threads}
             keyExtractor={(item) => item.matchId}
             renderItem={renderItem}
             ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
@@ -309,9 +184,10 @@ const MessagesScreen: React.FC = () => {
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
-                onRefresh={() => {
+                onRefresh={async () => {
                   setRefreshing(true);
-                  void loadThreads();
+                  if (user?.id) await initMessages(user.id);
+                  setRefreshing(false);
                 }}
                 tintColor={toRgb(theme.colors['--brand-primary'])}
               />
@@ -350,14 +226,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '800', marginBottom: 10 },
   card: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, borderWidth: 1 },
   avatarWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60, // Reduced from 80 for sleeker look in list
+    height: 60,
+    borderRadius: 30,
     backgroundColor: 'rgba(255,255,255,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
     overflow: 'hidden',
   },
-  avatar: { width: 80, height: 80 },
+  avatar: { width: 60, height: 60 },
 });
