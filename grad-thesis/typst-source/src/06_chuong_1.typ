@@ -1,0 +1,181 @@
+#import "/template.typ" : *
+
+#[
+  #set heading(numbering: "Chương 1.1")
+  = Giới thiệu <chuong1>
+]
+
+== Bối cảnh và vấn đề
+
+=== Mạng xã hội và nhu cầu kết nối theo tính cách
+
+Twins là một ứng dụng mạng xã hội theo hướng bán khép kín, tập trung vào các cộng đồng
+nhỏ và chất lượng. Ứng dụng hướng tới việc tìm bạn có tính cách và sở thích tương đồng,
+lấy cảm hứng từ cơ chế lướt của Tinder và yếu tố kết nối thân mật của Locket. Khác với
+những nền tảng đại trà, Twins ưu tiên kết nối có chiều sâu thay vì số lượng tương tác.
+Mục tiêu này dẫn tới việc giảm bớt các tín hiệu bề mặt và tăng trọng số cho các yếu tố
+phản ánh đặc trưng cá nhân ổn định hơn. Về mặt trải nghiệm, người dùng được dẫn qua một
+chuỗi câu hỏi ngắn gọn để trích xuất tính cách, sau đó dùng kết quả này như một “dấu vân
+tính cách” phục vụ gợi ý và phân nhóm.
+
+Các nền tảng mạng xã hội và ứng dụng kết nối hiện nay thường tối ưu cho tốc độ ghép cặp và
+số lượt tương tác, dựa trên yếu tố vị trí, sở thích bề mặt hoặc mạng bạn bè sẵn có. Cách
+tiếp cận này tạo ra nhiều kết quả, nhưng chưa chắc dẫn tới sự tương hợp lâu dài. Trong khi
+đó, các mô hình tính cách như Big Five được xem là khung tham chiếu ổn định, có khả năng
+giải thích xu hướng hành vi và mức độ phù hợp giữa các cá nhân @tupes1961recurrent@john1999bigfive.
+
+Ở góc nhìn của đề tài, nhu cầu kết nối theo tính cách có ý nghĩa vì nó gắn với các đặc
+trưng ít thay đổi theo thời gian, nên phù hợp cho bài toán gợi ý dài hạn. Lựa chọn này cũng
+tránh việc phụ thuộc quá nhiều vào dữ liệu tương tác ngắn hạn, vốn dễ bị ảnh hưởng bởi bối
+cảnh, tâm trạng hoặc hiệu ứng thuật toán. Hình #ref(<fig_context_social_apps>) minh họa bối
+cảnh ứng dụng và mục tiêu kết nối theo tính cách.
+
+#figure(
+  image("/images/placeHolderImage.png", width: 85%),
+  caption: [Bối cảnh ứng dụng mạng xã hội và nhu cầu kết nối theo tính cách],
+) <fig_context_social_apps>
+#text(10pt, [Gợi ý hình: fig_context_social_apps.png])
+
+=== Rủi ro dữ liệu tính cách và yêu cầu bảo vệ
+
+Dữ liệu tính cách có thể được suy diễn từ hành vi số hoặc từ bài trắc nghiệm, và thường
+được xem là dữ liệu nhạy cảm vì nó liên quan trực tiếp đến xu hướng tâm lý và hành vi của
+người dùng. Nhiều nghiên cứu chỉ ra rằng đặc điểm tính cách có thể dự đoán từ dữ liệu số
+và có mức độ ổn định cao @youyou2015computer. Đồng thời, các đặc điểm này có thể bị khai
+thác để tác động đến hành vi, ví dụ trong các kịch bản thao túng nội dung hoặc quảng cáo
+cá nhân hóa quá mức @meng2021tiktok. Việc thu thập và lưu trữ tập trung vì thế cần được
+xem xét cẩn trọng về quyền riêng tư.
+
+Trong những năm gần đây, nhiều nền tảng lớn liên tục bị cơ quan quản lý chỉ trích và xử
+phạt vì vi phạm quyền riêng tư. Ví dụ, FTC đã áp mức phạt 5 tỉ USD với Facebook vì các
+vi phạm về dữ liệu cá nhân @ftc2019facebook. Ở châu Âu, CNIL áp phạt Google vì thiếu minh
+bạch và không có cơ sở pháp lý đầy đủ cho việc xử lý dữ liệu @cnil2019google. Các vụ việc
+này cho thấy áp lực pháp lý ngày càng tăng đối với những hệ thống thu thập dữ liệu người
+dùng quy mô lớn. Trong bối cảnh đó, việc thiết kế pipeline có cơ chế bảo vệ dữ liệu ngay
+từ đầu là nhu cầu thực tế, không chỉ là lựa chọn kỹ thuật.
+
+Trong bối cảnh đó, đề tài đặt ra yêu cầu bảo vệ dữ liệu tính cách ở mức tương tự như các
+loại dữ liệu nhạy cảm khác (tin nhắn, mật khẩu). Thay vì để dữ liệu gốc tồn tại dạng
+plaintext trên máy chủ, hệ thống cần có cơ chế chuyển đổi và mã hóa để giảm rủi ro rò rỉ.
+Hình #ref(<fig_privacy_risks>) mô tả các rủi ro chính khi xử lý dữ liệu tính cách theo
+mô hình tập trung.
+
+#figure(
+  image("/images/placeHolderImage.png", width: 85%),
+  caption: [Rủi ro khi xử lý dữ liệu tính cách theo mô hình tập trung],
+) <fig_privacy_risks>
+#text(10pt, [Gợi ý hình: fig_privacy_risks.png])
+
+== Mục tiêu và phạm vi
+
+=== Mục tiêu chính
+
+Mục tiêu của đề tài là xây dựng một pipeline chuyển đổi và bảo vệ dữ liệu tính cách, trong
+đó dữ liệu gốc được xử lý trên thiết bị, chuyển sang biểu diễn gọn hơn, và chỉ lưu trữ
+trên máy chủ dưới dạng mã hóa. Bên cạnh đó, hệ thống vẫn phải giữ khả năng so khớp và gợi
+ý người dùng một cách hiệu quả.
+
+Các mục tiêu chính gồm:
+
+- Xây dựng cơ chế chuyển đổi điểm Big Five sang không gian đặc trưng nhỏ gọn bằng PCA‑4.
+- Thiết kế cơ chế mã hóa AES‑256‑GCM để bảo vệ dữ liệu tính cách khi lưu trữ.
+- Duy trì khả năng so khớp dựa trên cosine similarity để phục vụ pipeline gợi ý.
+
+=== Phạm vi thực hiện
+
+Đề tài tập trung vào khía cạnh chuyển đổi dữ liệu và bảo mật, không đi sâu vào triển khai
+giao diện hay tối ưu hóa trải nghiệm người dùng. Phạm vi hệ thống bao gồm:
+
+- Thiết bị người dùng thực hiện chấm điểm Big Five và chuyển đổi PCA‑4.
+- Edge Function chịu trách nhiệm mã hóa và giải mã bằng AES‑GCM.
+- Cơ sở dữ liệu lưu trữ PCA vector và ciphertext thay vì dữ liệu thô.
+
+Ngoài ra, từ các biểu diễn đã chuyển đổi này, hệ thống gợi ý sẽ khai thác thêm các nguồn
+dữ liệu đã được nhúng (embedding) từ sở thích và tương tác, nhằm tạo ra kết quả gợi ý có
+ý nghĩa thực tế nhưng vẫn giữ được nguyên tắc bảo mật thông tin cá nhân.
+
+== Bài toán và cách tiếp cận
+
+=== Bài toán chuyển đổi dữ liệu tính cách
+
+Bài toán đặt ra là chuyển đổi vector Big Five 5 chiều thành biểu diễn nhỏ gọn nhưng vẫn
+giữ được tính phân biệt đủ cao cho việc so khớp. Có nhiều hướng thay thế như dùng mô hình
+embedding ngữ nghĩa hoặc học sâu, nhưng các hướng này thường yêu cầu dữ liệu huấn luyện
+lớn hơn và khó giải thích.
+
+Trong đề tài, PCA được chọn vì Big Five là mô hình tâm lý chuẩn hóa, đã có dữ liệu công
+khai quy mô lớn và ổn định theo quốc gia @tupes1961recurrent@john1999bigfive. PCA cho phép
+giảm chiều mà vẫn giữ được phần lớn phương sai. Kết quả từ notebook thực nghiệm cho thấy
+PCA‑4 giữ khoảng hơn 90% phương sai của dữ liệu gốc, trong khi PCA‑2 hoặc PCA‑3 mất đáng
+kể thông tin @automoto2023bigfive. Hình #ref(<fig_pca_pipeline>) mô tả pipeline chuyển đổi
+Big Five sang PCA‑4.
+
+Một điểm quan trọng là tính cách khác với ngôn ngữ tự nhiên. Đối với ngôn ngữ, việc nhúng
+văn bản thường dựa trên các semantic model lớn vì nội dung có tính mơ hồ, đa nghĩa và phụ
+thuộc ngữ cảnh. Trong khi đó, Big Five đã là một mô hình tâm lý chuẩn hóa, có cấu trúc dữ
+liệu rõ ràng và nguồn dữ liệu đủ lớn. Vì vậy PCA và cosine similarity phù hợp hơn cho
+phần tính cách, giúp giữ tính diễn giải và ổn định. Các mô hình semantic vẫn được sử dụng
+cho phần sở thích (hobbies), nơi dữ liệu là văn bản tự do và cần ánh xạ ngữ nghĩa.
+
+Nói cách khác, đề tài không tìm cách “học lại” tính cách bằng mô hình ngôn ngữ, mà tận
+dụng một hệ đo đã có sẵn trong tâm lý học. PCA chỉ là bước nén và sắp xếp lại thông tin,
+không thay đổi ý nghĩa gốc của Big Five. Điều này giúp tránh lệch chuẩn khi dùng mô hình
+học sâu khó giải thích, đồng thời giảm phụ thuộc vào dữ liệu huấn luyện nội bộ. Tính cách
+vì thế được xử lý như một tín hiệu có cấu trúc, còn ngôn ngữ được xử lý như tín hiệu mở.
+
+Ở cấp độ thu thập, hệ thống sử dụng bộ câu hỏi tính cách lớn hơn, sau đó chọn ngẫu nhiên
+25 câu cho mỗi lượt làm bài. Mỗi 5 câu đại diện cho một nhóm trait, và điểm số được cộng
+hoặc trừ tùy theo hướng câu hỏi. Mô hình không phụ thuộc nội dung câu hỏi mà chỉ quan tâm
+đến hướng (key) và trait tương ứng. Cách tiếp cận này giúp duy trì tính nhất quán của
+thang đo trong khi giảm tải thời gian trả lời cho người dùng.
+
+#figure(
+  image("/images/placeHolderImage.png", width: 85%),
+  caption: [Pipeline chuyển đổi Big Five sang vector PCA‑4],
+) <fig_pca_pipeline>
+#text(10pt, [Gợi ý hình: fig_pca_pipeline.png])
+
+=== Bài toán bảo mật dữ liệu
+
+PCA không phải cơ chế bảo mật. Các thành phần PCA có thể bị suy ngược gần đúng nếu biết
+tham số mô hình. Vì vậy, dữ liệu gốc vẫn cần được mã hóa. Trong số các phương án, AES‑256‑GCM
+được chọn vì phù hợp với payload nhỏ, tốc độ cao và có tính toàn vẹn dữ liệu (integrity)
+nhờ GCM @nistel2007gcm. So với RSA hoặc Bcrypt, AES‑GCM ít tốn tài nguyên hơn cho dữ liệu
+dạng JSON, và phù hợp với mô hình edge function.
+
+Trong hệ thống, khóa AES chỉ nằm ở phía server (Edge Function). Thiết bị người dùng không
+giữ khóa, nhằm tránh nguy cơ bị trích xuất từ ứng dụng và vẫn cho phép khôi phục dữ liệu
+khi đăng nhập lại trên thiết bị khác. Hình #ref(<fig_encrypt_flow>) mô tả luồng mã hóa và
+lưu trữ dữ liệu tính cách.
+
+#figure(
+  image("/images/placeHolderImage.png", width: 85%),
+  caption: [Luồng mã hóa AES‑GCM và lưu trữ dữ liệu tính cách],
+) <fig_encrypt_flow>
+#text(10pt, [Gợi ý hình: fig_encrypt_flow.png])
+
+== Đóng góp chính
+
+=== Đóng góp về mô hình chuyển đổi
+
+Đề tài xây dựng pipeline chuyển đổi Big Five sang PCA‑4 chạy trên thiết bị, đảm bảo giảm
+kích thước dữ liệu nhưng vẫn giữ phần lớn thông tin. Hệ số PCA được huấn luyện trên tập
+dữ liệu công khai quy mô lớn, giúp kết quả có tính ổn định và tái lập.
+
+=== Đóng góp về bảo mật
+
+Đề tài đề xuất cơ chế mã hóa AES‑256‑GCM qua Edge Function, đảm bảo dữ liệu gốc không lưu
+plaintext trên cơ sở dữ liệu. Cách tiếp cận này cân bằng giữa khả năng so khớp và yêu cầu
+bảo mật dữ liệu nhạy cảm.
+
+== Cấu trúc của báo cáo
+
+Phần còn lại của báo cáo được trình bày như sau:
+- @chuong2: Trình bày pipeline tổng thể của hệ thống Twins, từ thu thập dữ liệu đến gợi ý.
+- @chuong3: Phân tích chi tiết PCA‑4, dữ liệu huấn luyện và cách chuyển đổi.
+- (Dự kiến) Chương 4: Trình bày cơ chế bảo mật và luồng mã hóa/giải mã.
+- (Dự kiến) Chương 5: Trình bày hệ gợi ý (PCA, ELO, hobbies) và cách tính trọng số.
+- (Dự kiến) Chương 6: Thực nghiệm và đánh giá hệ thống.
+- (Dự kiến) Chương 7: Kết luận và hướng phát triển.
+
+#pagebreak()
