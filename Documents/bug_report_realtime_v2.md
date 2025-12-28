@@ -10,7 +10,7 @@
 *   User A and User B match.
 *   The database correctly inserts rows into `public.matches` and `public.notifications` (via triggers).
 *   However, User A's **Messages Screen (Inbox)** does NOT show the new empty thread immediately.
-*   The thread only appears after a manual reload (pull-to-refresh) or app restart.
+*   The thread only appears after a manual reload js on expo go or app restart.
 
 **Root Cause Analysis:**
 *   **Realtime Subscription:** `RealtimeManager` subscribes to `matches` inserts.

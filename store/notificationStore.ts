@@ -16,10 +16,13 @@ type NotificationState = {
   unreadCount: number;
   loading: boolean;
   initialized: boolean;
+  currentUserId: string | null;
   
   initialize: (userId: string) => Promise<void>;
+  refresh: (userId: string, opts?: { silent?: boolean }) => Promise<void>;
   reset: () => void;
   markRead: (ids: string[]) => Promise<void>;
+  markMessagesFromActorRead: (actorId: string) => Promise<void>;
   addNotification: (notification: NotificationRecord) => void;
   removeNotification: (id: string) => void;
 };
@@ -29,13 +32,18 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   unreadCount: 0,
   loading: false,
   initialized: false,
+  currentUserId: null,
 
   initialize: async (userId: string) => {
-    if (get().initialized) return;
-    set({ loading: true });
+    if (get().initialized && get().currentUserId === userId) return;
+    await get().refresh(userId);
+  },
+
+  refresh: async (userId: string, opts?: { silent?: boolean }) => {
+    const silent = !!opts?.silent;
+    if (!silent) set({ loading: true });
 
     try {
-      // Initial fetch
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -45,22 +53,53 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
       if (error) throw error;
 
-      const notifications = (data as NotificationRecord[]) ?? [];
-      set({
-        notifications,
-        unreadCount: notifications.filter((n) => !n.read).length,
-        loading: false,
-        initialized: true,
+      const fetched = (data as NotificationRecord[]) ?? [];
+      set((state) => {
+        const mergedMap = new Map<string, NotificationRecord>();
+        // Keep any realtime notifications that landed during fetch
+        state.notifications.forEach((n) => mergedMap.set(n.id, n));
+        fetched.forEach((n) => {
+          const existing = mergedMap.get(n.id);
+          if (!existing) {
+            mergedMap.set(n.id, n);
+          } else {
+            mergedMap.set(n.id, { ...existing, ...n, read: n.read && existing.read });
+          }
+        });
+        let merged = Array.from(mergedMap.values());
+
+        // Dedup message notifications to 1 per sender (keep latest)
+        const latestMessageByActor = new Map<string, NotificationRecord>();
+        merged.forEach((n) => {
+          if (n.type === 'message' && n.actor_id) {
+            const prev = latestMessageByActor.get(n.actor_id);
+            if (!prev || new Date(n.created_at).getTime() > new Date(prev.created_at).getTime()) {
+              latestMessageByActor.set(n.actor_id, n);
+            }
+          }
+        });
+        if (latestMessageByActor.size > 0) {
+          merged = merged.filter((n) => n.type !== 'message' || !n.actor_id || latestMessageByActor.get(n.actor_id) === n);
+        }
+
+        merged = merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return {
+          notifications: merged,
+          unreadCount: merged.filter((n) => !n.read).length,
+          loading: silent ? state.loading : false,
+          initialized: true,
+          currentUserId: userId,
+        };
       });
 
     } catch (err) {
       console.warn('[notificationStore] init error', err);
-      set({ loading: false });
+      if (!silent) set({ loading: false });
     }
   },
 
   reset: () => {
-    set({ notifications: [], unreadCount: 0, initialized: false });
+    set({ notifications: [], unreadCount: 0, initialized: false, currentUserId: null });
   },
 
   markRead: async (ids: string[]) => {
@@ -86,6 +125,15 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
   },
 
+  markMessagesFromActorRead: async (actorId: string) => {
+    const ids = get()
+      .notifications
+      .filter((n) => n.type === 'message' && n.actor_id === actorId && !n.read)
+      .map((n) => n.id);
+    if (!ids.length) return;
+    await get().markRead(ids);
+  },
+
   removeNotification: (id: string) => {
     set((state) => {
       const nextNotifications = state.notifications.filter((n) => n.id !== id);
@@ -98,10 +146,37 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   addNotification: (notification: NotificationRecord) => {
     set((state) => {
-      // Dedupe by ID just in case
-      if (state.notifications.some((n) => n.id === notification.id)) return {};
-      
-      const next = [notification, ...state.notifications].slice(0, 50);
+      // Dedupe rule:
+      // - For generic notifications: dedupe by ID.
+      // - For message notifications: keep only ONE per sender (actor_id), always the latest, and revive to unread.
+      const isMessage = notification.type === 'message' && !!notification.actor_id;
+
+      if (__DEV__) {
+        console.log('[notificationStore] addNotification', {
+          id: notification.id,
+          type: notification.type,
+          created_at: notification.created_at,
+          actor: notification.actor_id,
+        });
+      }
+
+      const existingSameId = state.notifications.find((n) => n.id === notification.id);
+
+      let nextList = state.notifications;
+
+      if (isMessage) {
+        // Drop any older message notification from the same sender
+        nextList = state.notifications.filter(
+          (n) => !(n.type === 'message' && n.actor_id === notification.actor_id),
+        );
+        // Force unread on incoming/updated message and keep the latest payload/message text
+        notification = { ...notification, read: false };
+      } else if (existingSameId) {
+        // Replace same-ID notification (UPDATE) for non-message types
+        nextList = state.notifications.filter((n) => n.id !== notification.id);
+      }
+
+      const next = [notification, ...nextList].slice(0, 50);
       return {
         notifications: next,
         unreadCount: next.filter((n) => !n.read).length,

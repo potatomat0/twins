@@ -28,9 +28,13 @@ const iconForType = (type: NotificationRecord['type']) => {
   return 'heart-outline';
 };
 
-const labelForType = (t: ReturnType<typeof useTranslation>['t'], type: NotificationRecord['type']) => {
+const labelForType = (
+  t: ReturnType<typeof useTranslation>['t'],
+  type: NotificationRecord['type'],
+  actorName?: string | null,
+) => {
   if (type === 'mutual') return t('notifications.mutual');
-  if (type === 'message') return t('notifications.message');
+  if (type === 'message') return t('notifications.messageFrom', { name: actorName || t('messages.unknown') });
   return t('notifications.like');
 };
 
@@ -113,6 +117,7 @@ const MatchesScreen: React.FC = () => {
       peerId: peerId,
       peerName: peerName ?? null,
       peerAvatar: peerAvatar ?? null,
+      notificationId: notificationId ?? null,
     });
   };
 
@@ -238,14 +243,11 @@ const MatchesScreen: React.FC = () => {
           if (!actor) return;
           
           if (item.type === 'message') {
+            // Open chat and mark the notification as read
+            void markRead([item.id]);
             void openChat(actor.id, actor.username, actor.avatar_url, item.id);
           } else {
-            // For 'like' and 'mutual', open profile modal
-            // We do NOT mark read here immediately. We wait for user action in modal 
-            // OR we mark read when modal opens? 
-            // "ideally openning the message screen should not automatically set all notis to read"
-            // This implies separating the trigger.
-            // For non-messages, let's mark read when they open the modal to view the notification details.
+            // For like/mutual, mark read when opening details
             if (isUnread) {
                void markRead([item.id]);
             }
@@ -261,7 +263,7 @@ const MatchesScreen: React.FC = () => {
         />
         <View style={{ flex: 1 }}>
           <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>
-            {labelForType(t, item.type)}
+            {labelForType(t, item.type, actor?.username ?? actor?.id ?? null)}
           </Text>
           <Text style={{ color: toRgb(theme.colors['--text-secondary']), fontSize: 12 }}>
             {item.payload?.message ?? t('notifications.generic')}

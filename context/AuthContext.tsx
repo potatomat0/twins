@@ -56,6 +56,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setSession(data.session ?? null);
           setUser(data.session?.user ?? null);
+          // Ensure realtime uses the current access token for RLS-protected channels
+          if (data.session?.access_token) {
+            supabase.realtime.setAuth(data.session.access_token);
+          } else {
+            supabase.realtime.setAuth('');
+          }
           await loadProfile(data.session?.user ?? null);
         }
       } finally {
@@ -67,6 +73,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(newSession);
       const currentUser = newSession?.user ?? null;
       setUser(currentUser);
+      // Keep realtime channels authorized with the latest token
+      if (newSession?.access_token) {
+        supabase.realtime.setAuth(newSession.access_token);
+      } else {
+        supabase.realtime.setAuth('');
+      }
       void loadProfile(currentUser);
       setLoading(false);
     });

@@ -17,7 +17,7 @@ type MessagesState = {
   initialized: boolean;
   currentUserId: string | null;
   
-  initialize: (userId: string) => Promise<void>;
+  initialize: (userId: string, force?: boolean, silent?: boolean) => Promise<void>;
   reset: () => void;
   updateThread: (matchId: string, updates: Partial<Thread>) => void;
   addThread: (thread: Thread) => void;
@@ -34,9 +34,10 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   initialized: false,
   currentUserId: null,
 
-  initialize: async (userId: string) => {
-    if (get().initialized && get().currentUserId === userId) return;
-    set({ loading: true, currentUserId: userId });
+  initialize: async (userId: string, force = false, silent = false) => {
+    if (!force && get().initialized && get().currentUserId === userId) return;
+    if (!silent) set({ loading: true, currentUserId: userId });
+    else set({ currentUserId: userId });
 
     if (subscription) {
       subscription.unsubscribe();
@@ -93,17 +94,46 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
         });
       }));
 
-      const sorted = threads.sort((a, b) => {
-        if (!a.lastAt) return 1;
-        if (!b.lastAt) return -1;
-        return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
-      });
+      // Merge with any optimistic realtime threads that may have arrived during init
+      set((state) => {
+        const mergedMap = new Map<string, Thread>();
 
-      set({ threads: sorted, loading: false, initialized: true });
+        const mergeThread = (incoming: Thread) => {
+          const existing = mergedMap.get(incoming.matchId) ?? state.threads.find((t) => t.matchId === incoming.matchId);
+          if (!existing) {
+            mergedMap.set(incoming.matchId, incoming);
+            return;
+          }
+
+          const newer =
+            !existing.lastAt || (incoming.lastAt && new Date(incoming.lastAt).getTime() >= new Date(existing.lastAt).getTime())
+              ? incoming
+              : existing;
+
+          mergedMap.set(incoming.matchId, {
+            ...existing,
+            ...newer,
+            peerName: newer.peerName ?? existing.peerName,
+            peerAvatar: newer.peerAvatar ?? existing.peerAvatar,
+            hasUnread: existing.hasUnread || newer.hasUnread,
+          });
+        };
+
+        threads.forEach(mergeThread);
+        state.threads.forEach(mergeThread);
+
+        const merged = Array.from(mergedMap.values()).sort((a, b) => {
+          if (!a.lastAt) return 1;
+          if (!b.lastAt) return -1;
+          return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+        });
+
+        return { threads: merged, loading: silent ? state.loading : false, initialized: true, currentUserId: userId };
+      });
 
     } catch (err) {
       console.warn('[messagesStore] init error', err);
-      set({ loading: false });
+      if (!silent) set({ loading: false });
     }
   },
 
@@ -134,7 +164,37 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   
   addThread: (thread: Thread) => {
     set((state) => {
-        if (state.threads.some(t => t.matchId === thread.matchId)) return {};
+        const existing = state.threads.find(t => t.matchId === thread.matchId);
+        if (existing) {
+          // Upgrade existing skeleton with richer data if available
+          if (__DEV__) {
+            console.log('[messagesStore] upgrading thread', thread.matchId, {
+              incoming: { lastAt: thread.lastAt, lastMessage: thread.lastMessage, peerName: thread.peerName },
+              existing: { lastAt: existing.lastAt, lastMessage: existing.lastMessage, peerName: existing.peerName },
+            });
+          }
+          const updated: Thread = {
+            ...existing,
+            ...thread,
+            peerName: thread.peerName ?? existing.peerName,
+            peerAvatar: thread.peerAvatar ?? existing.peerAvatar,
+            hasUnread: existing.hasUnread || thread.hasUnread,
+          };
+          const others = state.threads.filter(t => t.matchId !== thread.matchId);
+          const next = [updated, ...others].sort((a, b) => {
+            if (!a.lastAt) return 1;
+            if (!b.lastAt) return -1;
+            return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+          });
+          return { threads: next };
+        }
+        if (__DEV__) {
+          console.log('[messagesStore] adding new thread', thread.matchId, {
+            peerId: thread.peerId,
+            peerName: thread.peerName,
+            lastAt: thread.lastAt,
+          });
+        }
         return {
             threads: [thread, ...state.threads]
         };
@@ -148,11 +208,19 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
     if (!existing) {
         console.warn('[messagesStore] Received message for unknown thread, refreshing...', rec.match_id);
         if (state.currentUserId) {
-             void state.initialize(state.currentUserId);
+             void state.initialize(state.currentUserId, true, true); // silent refresh to avoid spinner
         }
         return;
     }
     
+    if (__DEV__) {
+      console.log('[messagesStore] realtime message', rec.match_id, {
+        body: rec.body,
+        sender: rec.sender_id,
+        at: rec.created_at,
+      });
+    }
+
     set((state) => {
         const existing = state.threads.find(t => t.matchId === rec.match_id);
         if (!existing) return {}; 

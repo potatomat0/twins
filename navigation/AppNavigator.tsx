@@ -71,6 +71,7 @@ export type RootStackParamList = {
     peerId: string;
     peerName: string | null;
     peerAvatar?: string | null;
+    notificationId?: string | null;
   };
 };
 
@@ -94,6 +95,7 @@ import { useAudioPlayer } from 'expo-audio';
 const MainTabs: React.FC = () => {
   const { user } = useAuth();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const messagesUnread = useMessagesStore((s) => s.threads.some((t) => t.hasUnread));
   const initNotis = useNotificationStore((s) => s.initialize);
   const resetNotis = useNotificationStore((s) => s.reset);
   const initMessages = useMessagesStore((s) => s.initialize);
@@ -144,7 +146,11 @@ const MainTabs: React.FC = () => {
               : 'construct';
           return <Ionicons name={icon as any} color={color} size={size} />;
         },
-        tabBarBadge: route.name === 'Matches' && showBadge ? '•' : undefined,
+        tabBarBadge: route.name === 'Messages' && messagesUnread ? '•' : route.name === 'Matches' && showBadge ? '•' : undefined,
+        tabBarBadgeStyle:
+          route.name === 'Messages' && messagesUnread
+            ? { backgroundColor: 'red' }
+            : undefined,
         tabBarLabel: ({ color, focused }: { color: string; focused: boolean }) => {
           const key =
             route.name === 'Explore'

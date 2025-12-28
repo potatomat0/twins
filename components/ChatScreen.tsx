@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { useTranslation } from '@context/LocaleContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMessagesStore } from '@store/messagesStore';
+import { useNotificationStore } from '@store/notificationStore';
 
 type ChatRoute = RouteProp<
   {
@@ -19,6 +20,7 @@ type ChatRoute = RouteProp<
       peerId: string;
       peerName: string | null;
       peerAvatar?: string | null;
+      notificationId?: string | null;
     };
   },
   'Chat'
@@ -35,7 +37,7 @@ type MessageRow = {
 
 const ChatScreen: React.FC = () => {
   const { params } = useRoute<ChatRoute>();
-  const { matchId, peerId, peerName: routePeerName, peerAvatar } = params;
+  const { matchId, peerId, peerName: routePeerName, peerAvatar, notificationId } = params;
   const { user } = useAuth();
   const { theme } = useTheme();
   const nav = useNavigation();
@@ -43,6 +45,8 @@ const ChatScreen: React.FC = () => {
   
   const updateThread = useMessagesStore((s) => s.updateThread);
   const markRead = useMessagesStore((s) => s.markRead);
+  const markMessageNotisRead = useNotificationStore((s) => s.markMessagesFromActorRead);
+  const markNotificationIdsRead = useNotificationStore((s) => s.markRead);
   
   const [peerName, setPeerName] = useState<string | null>(routePeerName ?? null);
   const [messages, setMessages] = useState<MessageRow[]>([]);
@@ -129,7 +133,13 @@ const ChatScreen: React.FC = () => {
       const ids = (data ?? []).map((m: any) => m.id);
       if (ids.length) {
         await supabase.from('messages').update({ status: 'seen' }).in('id', ids);
-        markRead(matchId);
+        markRead(matchId); // Update store so badges clear immediately
+        // Also clear related message notifications for this sender
+        void markMessageNotisRead(peerId);
+      }
+      // If we arrived here via a specific notification, mark it read too
+      if (notificationId) {
+        void markNotificationIdsRead([notificationId]);
       }
     })();
 
