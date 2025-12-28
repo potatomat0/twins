@@ -88,6 +88,8 @@ const Tab = createBottomTabNavigator<TabParamList>();
 import { useNotificationStore } from '@store/notificationStore';
 import { useMessagesStore } from '@store/messagesStore';
 
+import { realtimeManager } from '@services/RealtimeManager';
+
 const MainTabs: React.FC = () => {
   const { user } = useAuth();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -101,7 +103,9 @@ const MainTabs: React.FC = () => {
     if (user?.id) {
       void initNotis(user.id);
       void initMessages(user.id);
+      realtimeManager.connect(user.id);
     } else {
+      realtimeManager.disconnect();
       resetNotis();
       resetMessages();
     }

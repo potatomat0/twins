@@ -23,9 +23,6 @@ type NotificationState = {
   addNotification: (notification: NotificationRecord) => void;
 };
 
-// Global subscription reference to prevent duplicates
-let subscription: ReturnType<typeof supabase.channel> | null = null;
-
 export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: [],
   unreadCount: 0,
@@ -35,12 +32,6 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   initialize: async (userId: string) => {
     if (get().initialized) return;
     set({ loading: true });
-
-    // Cleanup existing subscription if any
-    if (subscription) {
-      subscription.unsubscribe();
-      subscription = null;
-    }
 
     try {
       // Initial fetch
@@ -61,18 +52,6 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         initialized: true,
       });
 
-      // Subscribe to realtime updates
-      subscription = supabase
-        .channel(`notifications:${userId}`)
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId}` },
-          (payload) => {
-            get().addNotification(payload.new as NotificationRecord);
-          }
-        )
-        .subscribe();
-
     } catch (err) {
       console.warn('[notificationStore] init error', err);
       set({ loading: false });
@@ -80,10 +59,6 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   reset: () => {
-    if (subscription) {
-      subscription.unsubscribe();
-      subscription = null;
-    }
     set({ notifications: [], unreadCount: 0, initialized: false });
   },
 

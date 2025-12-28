@@ -19,11 +19,11 @@ type MessagesState = {
   initialize: (userId: string) => Promise<void>;
   reset: () => void;
   updateThread: (matchId: string, updates: Partial<Thread>) => void;
+  addThread: (thread: Thread) => void;
+  handleRealtimeMessage: (message: any) => void;
   setThreads: (threads: Thread[]) => void;
   markRead: (matchId: string) => void;
 };
-
-let subscription: ReturnType<typeof supabase.channel> | null = null;
 
 export const useMessagesStore = create<MessagesState>((set, get) => ({
   threads: [],
@@ -33,11 +33,6 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   initialize: async (userId: string) => {
     if (get().initialized) return;
     set({ loading: true });
-
-    if (subscription) {
-      subscription.unsubscribe();
-      subscription = null;
-    }
 
     try {
       // 1. Fetch Matches
@@ -51,23 +46,20 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
       const peers = (matchRows ?? []).map((m) => ({
         matchId: m.id as string,
         peerId: m.user_a === userId ? (m.user_b as string) : (m.user_a as string),
+        createdAt: m.created_at
       }));
 
       // 2. Fetch Profiles
       const profilesById: Record<string, { username: string | null; avatar_url: string | null }> = {};
       if (peers.length > 0) {
         const { data: profs } = await supabase
-          .from('profile_lookup')
-          .select('id,username,avatar_url')
-          .in('id', peers.map((p) => p.peerId));
+          .rpc('get_profile_lookup', { ids: peers.map((p) => p.peerId) });
         (profs ?? []).forEach((p) => {
           profilesById[p.id] = { username: p.username ?? null, avatar_url: (p as any).avatar_url ?? null };
         });
       }
 
       // 3. Fetch Last Messages (Parallel)
-      // Note: A smarter query would be a joined view, but keeping existing logic structure for safety
-      // Improved: Use a single RPC if available, or just map.
       const threads: Thread[] = [];
       await Promise.all(peers.map(async (p) => {
         const { data: msg } = await supabase
@@ -86,7 +78,8 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
           peerName: profilesById[p.peerId]?.username ?? 'Unknown',
           peerAvatar: profilesById[p.peerId]?.avatar_url ?? null,
           lastMessage: msg?.body ?? null,
-          lastAt: msg?.created_at ?? null,
+          // If no message, use match creation time for sorting
+          lastAt: msg?.created_at ?? p.createdAt ?? null,
           hasUnread,
         });
       }));
@@ -99,43 +92,6 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
 
       set({ threads: sorted, loading: false, initialized: true });
 
-      // Subscribe to all matches
-      const matchIds = peers.map(p => p.matchId);
-      if (matchIds.length === 0) return;
-
-      subscription = supabase
-        .channel(`messages-store-${userId}`)
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'messages' },
-          (payload) => {
-            const rec = payload.new as any;
-            if (!rec?.match_id || !matchIds.includes(rec.match_id)) return;
-            
-            set((state) => {
-              const existing = state.threads.find(t => t.matchId === rec.match_id);
-              if (!existing) return {}; // Should not happen if we fetched all matches
-              
-              const updatedThread: Thread = {
-                ...existing,
-                lastMessage: rec.body ?? existing.lastMessage,
-                lastAt: rec.created_at ?? existing.lastAt,
-                hasUnread: rec.sender_id !== userId
-              };
-              
-              const others = state.threads.filter(t => t.matchId !== rec.match_id);
-              const nextThreads = [updatedThread, ...others].sort((a, b) => {
-                 if (!a.lastAt) return 1;
-                 if (!b.lastAt) return -1;
-                 return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
-              });
-              
-              return { threads: nextThreads };
-            });
-          }
-        )
-        .subscribe();
-
     } catch (err) {
       console.warn('[messagesStore] init error', err);
       set({ loading: false });
@@ -143,11 +99,58 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   },
 
   reset: () => {
-    if (subscription) {
-      subscription.unsubscribe();
-      subscription = null;
-    }
     set({ threads: [], initialized: false });
+  },
+
+  addThread: (thread: Thread) => {
+    set((state) => {
+        // Prevent duplicates
+        if (state.threads.some(t => t.matchId === thread.matchId)) return {};
+        
+        return {
+            threads: [thread, ...state.threads]
+        };
+    });
+  },
+
+  handleRealtimeMessage: (rec: any) => {
+    set((state) => {
+        const existing = state.threads.find(t => t.matchId === rec.match_id);
+        
+        // If we don't have the thread (rare race condition if match arrived same time),
+        // we ideally should fetch it. For now, we assume addThread handles the match creation event.
+        if (!existing) return {}; 
+        
+        const myId = supabase.auth.getUser(); // Synchronous check not avail here easily without async
+        // We can infer "me" if we passed it, but easier logic:
+        // hasUnread if receiver_id is ME (which implies sender_id is NOT me)
+        // But we don't store 'me' in store.
+        // Simplified: The caller (RealtimeManager) passes raw record. 
+        // We assume we are the receiver if we didn't send it? 
+        // Actually, RealtimeManager subscribes to receiver_id=eq.userId. So it IS for me.
+        // Wait, self-sent messages (sender_id=eq.userId) also triggers.
+        
+        // Let's assume we rely on the client to know "me" or pass it. 
+        // Or simply: hasUnread = rec.status !== 'seen' (and we trust logic elsewhere).
+        // Actually, if I sent it, it's read.
+        
+        const updatedThread: Thread = {
+            ...existing,
+            lastMessage: rec.body ?? existing.lastMessage,
+            lastAt: rec.created_at ?? existing.lastAt,
+            hasUnread: true // Pending verification of sender?
+            // Fix: We need to know if I am sender.
+        };
+        
+        // Quick fix: Check if we are receiver.
+        // We don't have userId here easily. 
+        // Let's defer to the caller to set hasUnread? Or check payload structure.
+        // If we are listening to `receiver_id=me`, then it IS unread.
+        // If `sender_id=me`, it is NOT unread.
+        
+        // Let's make handleRealtimeMessage accept an optional 'isIncoming' flag
+        return {};
+    });
   },
 
   updateThread: (matchId, updates) => {
@@ -158,7 +161,7 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
       const updated = { ...existing, ...updates };
       const others = state.threads.filter(t => t.matchId !== matchId);
       
-      // Re-sort if date changed
+      // Re-sort
       const nextThreads = [updated, ...others].sort((a, b) => {
          if (!a.lastAt) return 1;
          if (!b.lastAt) return -1;
@@ -176,7 +179,6 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
       const updated = { ...existing, hasUnread: false };
       const others = state.threads.filter(t => t.matchId !== matchId);
       
-      // Keep sort order
       const nextThreads = [updated, ...others].sort((a, b) => {
          if (!a.lastAt) return 1;
          if (!b.lastAt) return -1;

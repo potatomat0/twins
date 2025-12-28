@@ -12,6 +12,12 @@
   - **Privacy First**: Never store sensitive user traits (Big 5 scores, hobbies) in plaintext. Always encrypt via `score-crypto` before saving to `public.profiles`.
   - **Hobbies**: Use `hobbies_cipher` for storage and `hobby_embedding` for matching. Do not use the deprecated `hobbies` plaintext column.
   - **Vectors**: Use the `embed` edge function to generate vectors.
+  - **Data Integrity**: When updating profiles, always strip `undefined` keys from the payload to prevent overwriting existing DB columns with `NULL`. Use the utility in `UserSettingsScreen.tsx` as a reference.
+- **Real-time & Global State**:
+  - **Zustand**: Use centralized stores (`store/`) for highly dynamic data (Messages, Notifications). Avoid local `useState` for data that needs to sync across tabs.
+  - **Realtime Manager**: All Supabase subscriptions MUST be managed by the `RealtimeManager` singleton. Screens should not subscribe to channels directly.
+  - **Optimistic Updates**: UI should update instantly upon user action (e.g., sending a message, marking read). Sync with the backend in the background and handle errors gracefully by updating the store state.
+  - **Cleanup**: Always call `reset()` on all stores and `disconnect()` on `RealtimeManager` when the user logs out to prevent cross-account data leakage.
 - **Package Management**:
   - Use Yarn.
   - Do not run `npm start` or app builds during coding tasks unless explicitly requested.
