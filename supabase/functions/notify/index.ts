@@ -60,13 +60,34 @@ serve(async (req) => {
     }
   }
 
+  // Ensure payload has full actor details if actorId is present
+  // Always fetch fresh profile to ensure accuracy
+  let finalPayload = payload ?? {};
+  if (actorId) {
+      // Fetch actor profile
+      const { data: actorProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, age_group, gender, character_group')
+        .eq('id', actorId)
+        .maybeSingle();
+      
+      if (!profileError && actorProfile) {
+          finalPayload = {
+              ...finalPayload,
+              actor: actorProfile
+          };
+      } else {
+          console.warn('[notify] failed to fetch actor profile', profileError);
+      }
+  }
+
   const { data, error } = await supabase
     .from('notifications')
     .insert({
       recipient_id: recipientId,
       actor_id: actorId,
       type,
-      payload: payload ?? {},
+      payload: finalPayload,
     })
     .select('id, created_at')
     .single();

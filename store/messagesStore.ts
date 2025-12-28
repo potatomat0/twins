@@ -15,6 +15,7 @@ type MessagesState = {
   threads: Thread[];
   loading: boolean;
   initialized: boolean;
+  currentUserId: string | null;
   
   initialize: (userId: string) => Promise<void>;
   reset: () => void;
@@ -25,14 +26,22 @@ type MessagesState = {
   markRead: (matchId: string) => void;
 };
 
+let subscription: ReturnType<typeof supabase.channel> | null = null;
+
 export const useMessagesStore = create<MessagesState>((set, get) => ({
   threads: [],
   loading: false,
   initialized: false,
+  currentUserId: null,
 
   initialize: async (userId: string) => {
-    if (get().initialized) return;
-    set({ loading: true });
+    if (get().initialized && get().currentUserId === userId) return;
+    set({ loading: true, currentUserId: userId });
+
+    if (subscription) {
+      subscription.unsubscribe();
+      subscription = null;
+    }
 
     try {
       // 1. Fetch Matches
@@ -99,17 +108,33 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   },
 
   reset: () => {
-    set({ threads: [], initialized: false });
+    if (subscription) {
+      subscription.unsubscribe();
+      subscription = null;
+    }
+    set({ threads: [], initialized: false, currentUserId: null });
   },
 
-  addThread: async (thread: Thread) => {
-    // Note: thread passed here usually has null name/avatar if coming from RealtimeManager
-    // We should fetch profile here if missing, or ensure caller did.
-    // The RealtimeManager fetches profile before calling this.
+  updateThread: (matchId, updates) => {
     set((state) => {
-        // Prevent duplicates
+      const existing = state.threads.find(t => t.matchId === matchId);
+      if (!existing) return {};
+      
+      const updated = { ...existing, ...updates };
+      const others = state.threads.filter(t => t.matchId !== matchId);
+      
+      const nextThreads = [updated, ...others].sort((a, b) => {
+         if (!a.lastAt) return 1;
+         if (!b.lastAt) return -1;
+         return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+      });
+      return { threads: nextThreads };
+    });
+  },
+  
+  addThread: (thread: Thread) => {
+    set((state) => {
         if (state.threads.some(t => t.matchId === thread.matchId)) return {};
-        
         return {
             threads: [thread, ...state.threads]
         };
@@ -121,17 +146,10 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
     const existing = state.threads.find(t => t.matchId === rec.match_id);
     
     if (!existing) {
-        // Thread missing (rare race condition or match synced later). 
-        // Force refresh to pull it in.
-        // We can't easily construct it without profile fetch, so re-init is safest.
-        // But re-init is heavy. 
-        // Let's assume RealtimeManager's handleNewMatch will fire soon or has fired.
-        // If not, we might be out of sync.
-        // A simple fetch of this single match would be better, but for now:
         console.warn('[messagesStore] Received message for unknown thread, refreshing...', rec.match_id);
-        const currentUser = supabase.auth.getUser().then(({ data }) => {
-             if (data.user?.id) get().initialize(data.user.id);
-        });
+        if (state.currentUserId) {
+             void state.initialize(state.currentUserId);
+        }
         return;
     }
     
@@ -139,26 +157,15 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
         const existing = state.threads.find(t => t.matchId === rec.match_id);
         if (!existing) return {}; 
         
+        const isMyMessage = rec.sender_id === state.currentUserId;
+        const hasUnread = !isMyMessage; 
+
         const updatedThread: Thread = {
             ...existing,
             lastMessage: rec.body ?? existing.lastMessage,
             lastAt: rec.created_at ?? existing.lastAt,
-            hasUnread: rec.sender_id !== existing.peerId // If I am sender, it is read? No, sender_id IS peerId if incoming.
-            // Wait, if I receive a message, sender_id IS the peer.
-            // If sender_id === peerId, it is UNREAD (unless I am looking at it).
-            // Logic: hasUnread = (rec.sender_id === peerId)
+            hasUnread: hasUnread
         };
-        
-        // Correct unread logic:
-        // If the message sender is the peer, then I have an unread message.
-        // If the message sender is ME, I do not have an unread message.
-        // We don't have 'myId' easily here.
-        // But we know 'peerId'.
-        if (rec.sender_id === existing.peerId) {
-            updatedThread.hasUnread = true;
-        } else {
-            updatedThread.hasUnread = false;
-        }
         
         const others = state.threads.filter(t => t.matchId !== rec.match_id);
         const nextThreads = [updatedThread, ...others].sort((a, b) => {
@@ -168,24 +175,6 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
         });
         
         return { threads: nextThreads };
-    });
-  },
-
-  updateThread: (matchId, updates) => {
-    set((state) => {
-      const existing = state.threads.find(t => t.matchId === matchId);
-      if (!existing) return {};
-      
-      const updated = { ...existing, ...updates };
-      const others = state.threads.filter(t => t.matchId !== matchId);
-      
-      // Re-sort
-      const nextThreads = [updated, ...others].sort((a, b) => {
-         if (!a.lastAt) return 1;
-         if (!b.lastAt) return -1;
-         return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
-      });
-      return { threads: nextThreads };
     });
   },
   
