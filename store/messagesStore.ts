@@ -102,7 +102,10 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
     set({ threads: [], initialized: false });
   },
 
-  addThread: (thread: Thread) => {
+  addThread: async (thread: Thread) => {
+    // Note: thread passed here usually has null name/avatar if coming from RealtimeManager
+    // We should fetch profile here if missing, or ensure caller did.
+    // The RealtimeManager fetches profile before calling this.
     set((state) => {
         // Prevent duplicates
         if (state.threads.some(t => t.matchId === thread.matchId)) return {};
