@@ -215,7 +215,14 @@ const ChatScreen: React.FC = () => {
               recipientId: peerId,
               actorId: user.id,
               type: 'message',
-              payload: { message: input.trim(), actor: { id: user.id, username: peerName ?? null } },
+              payload: { 
+                message: input.trim(), 
+                actor: { 
+                  id: user.id, 
+                  username: profile?.username ?? 'Someone', 
+                  avatar_url: profile?.avatar_url 
+                } 
+              },
             },
           })
           .catch(() => {});

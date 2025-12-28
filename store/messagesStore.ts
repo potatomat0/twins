@@ -117,42 +117,57 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   },
 
   handleRealtimeMessage: (rec: any) => {
+    const state = get();
+    const existing = state.threads.find(t => t.matchId === rec.match_id);
+    
+    if (!existing) {
+        // Thread missing (rare race condition or match synced later). 
+        // Force refresh to pull it in.
+        // We can't easily construct it without profile fetch, so re-init is safest.
+        // But re-init is heavy. 
+        // Let's assume RealtimeManager's handleNewMatch will fire soon or has fired.
+        // If not, we might be out of sync.
+        // A simple fetch of this single match would be better, but for now:
+        console.warn('[messagesStore] Received message for unknown thread, refreshing...', rec.match_id);
+        const currentUser = supabase.auth.getUser().then(({ data }) => {
+             if (data.user?.id) get().initialize(data.user.id);
+        });
+        return;
+    }
+    
     set((state) => {
         const existing = state.threads.find(t => t.matchId === rec.match_id);
-        
-        // If we don't have the thread (rare race condition if match arrived same time),
-        // we ideally should fetch it. For now, we assume addThread handles the match creation event.
         if (!existing) return {}; 
-        
-        const myId = supabase.auth.getUser(); // Synchronous check not avail here easily without async
-        // We can infer "me" if we passed it, but easier logic:
-        // hasUnread if receiver_id is ME (which implies sender_id is NOT me)
-        // But we don't store 'me' in store.
-        // Simplified: The caller (RealtimeManager) passes raw record. 
-        // We assume we are the receiver if we didn't send it? 
-        // Actually, RealtimeManager subscribes to receiver_id=eq.userId. So it IS for me.
-        // Wait, self-sent messages (sender_id=eq.userId) also triggers.
-        
-        // Let's assume we rely on the client to know "me" or pass it. 
-        // Or simply: hasUnread = rec.status !== 'seen' (and we trust logic elsewhere).
-        // Actually, if I sent it, it's read.
         
         const updatedThread: Thread = {
             ...existing,
             lastMessage: rec.body ?? existing.lastMessage,
             lastAt: rec.created_at ?? existing.lastAt,
-            hasUnread: true // Pending verification of sender?
-            // Fix: We need to know if I am sender.
+            hasUnread: rec.sender_id !== existing.peerId // If I am sender, it is read? No, sender_id IS peerId if incoming.
+            // Wait, if I receive a message, sender_id IS the peer.
+            // If sender_id === peerId, it is UNREAD (unless I am looking at it).
+            // Logic: hasUnread = (rec.sender_id === peerId)
         };
         
-        // Quick fix: Check if we are receiver.
-        // We don't have userId here easily. 
-        // Let's defer to the caller to set hasUnread? Or check payload structure.
-        // If we are listening to `receiver_id=me`, then it IS unread.
-        // If `sender_id=me`, it is NOT unread.
+        // Correct unread logic:
+        // If the message sender is the peer, then I have an unread message.
+        // If the message sender is ME, I do not have an unread message.
+        // We don't have 'myId' easily here.
+        // But we know 'peerId'.
+        if (rec.sender_id === existing.peerId) {
+            updatedThread.hasUnread = true;
+        } else {
+            updatedThread.hasUnread = false;
+        }
         
-        // Let's make handleRealtimeMessage accept an optional 'isIncoming' flag
-        return {};
+        const others = state.threads.filter(t => t.matchId !== rec.match_id);
+        const nextThreads = [updatedThread, ...others].sort((a, b) => {
+            if (!a.lastAt) return 1;
+            if (!b.lastAt) return -1;
+            return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+        });
+        
+        return { threads: nextThreads };
     });
   },
 
