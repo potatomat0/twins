@@ -1,3 +1,4 @@
+**Notes**: These rules below are important rules for anyone who participate in writing/reviewing/testing this app
 - Append `./progress.md` upon noticeable changes.
 - **UI & Layout**:
   - Always use `SafeAreaView` for components at the bottom of the screen to accommodate Android navigation bars.
@@ -26,3 +27,6 @@
   - Use `npx supabase` CLI for migrations.
   - **Edge Functions**: Deploy functions individually (`npx supabase functions deploy <name>`).
 - **Haptics**: Add snappy haptics for navigation buttons.
+- **After Adding feature**: 
+    - Run yarn tsc --noEmit for type checking 
+    - Use gitlog to apply correct commit format, one implementation at a time, if functional request is too big, split it in smaller tasks, do one at a time, wait for manual testing/give instructions if there are manual deployment or migration that you cannot directly do (ideally you should also do the database actions in psql or npx supabase cli) until they all work before commiting and moving on to the next task, if tasks are not done, keep reminding un-finished tasks if there are more requests ushing in.

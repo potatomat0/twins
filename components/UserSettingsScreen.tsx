@@ -47,9 +47,9 @@ const UserSettingsScreen: React.FC = () => {
   // Sync state when profile loads
   useEffect(() => {
     if (profile) {
-      setUsername((prev) => (prev ? prev : profile.username ?? user?.user_metadata?.username ?? ''));
-      setAgeGroup((prev) => (prev ? prev : profile.age_group ?? user?.user_metadata?.age_group ?? ''));
-      setGender((prev) => (prev ? prev : profile.gender ?? user?.user_metadata?.gender ?? ''));
+      setUsername((prev: string) => (prev ? prev : profile.username ?? user?.user_metadata?.username ?? ''));
+      setAgeGroup((prev: string) => (prev ? prev : profile.age_group ?? user?.user_metadata?.age_group ?? ''));
+      setGender((prev: string) => (prev ? prev : profile.gender ?? user?.user_metadata?.gender ?? ''));
       // Hobbies logic handles decrypting, so we don't force overwrite here if already set or decrypting
     }
   }, [profile, user?.user_metadata]);

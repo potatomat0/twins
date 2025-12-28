@@ -52,3 +52,4 @@ High-level overview of the directories and core files you will touch most often.
 ## Documentation pointers
 - `Documents/coding-Convention.md`: House rules for contributing code.
 - `Documents/progress.md`: Chronological change log.
+- Documents/i18-guide.md: Translation rule and detail 

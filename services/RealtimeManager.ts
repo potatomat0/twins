@@ -66,13 +66,13 @@ class RealtimeManager {
     // Optimistically add empty thread to message store
     // We need profile info for the thread list
     try {
-        const { data } = await supabase.rpc('get_profile_lookup', { ids: [peerId] }).maybeSingle();
+        const { data } = await supabase.rpc('get_profile_lookup', { ids: [peerId] }).maybeSingle<{ id: string; username: string | null; avatar_url: string | null }>();
         if (data) {
             useMessagesStore.getState().addThread({
                 matchId: matchRecord.id,
                 peerId: peerId,
                 peerName: data.username,
-                peerAvatar: (data as any).avatar_url,
+                peerAvatar: data.avatar_url,
                 lastMessage: null,
                 lastAt: matchRecord.created_at, // Use match creation time for sort
                 hasUnread: false

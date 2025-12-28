@@ -54,8 +54,8 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
       if (peers.length > 0) {
         const { data: profs } = await supabase
           .rpc('get_profile_lookup', { ids: peers.map((p) => p.peerId) });
-        (profs ?? []).forEach((p) => {
-          profilesById[p.id] = { username: p.username ?? null, avatar_url: (p as any).avatar_url ?? null };
+        (profs as any[] ?? []).forEach((p: { id: string; username: string | null; avatar_url: string | null }) => {
+          profilesById[p.id] = { username: p.username ?? null, avatar_url: p.avatar_url ?? null };
         });
       }
 
