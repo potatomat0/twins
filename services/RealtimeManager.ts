@@ -7,7 +7,10 @@ class RealtimeManager {
   private userId: string | null = null;
 
   connect(userId: string) {
-    if (this.userId === userId) return; // Already connected
+    if (this.userId === userId) {
+        console.log('[RealtimeManager] Already connected for', userId);
+        return; 
+    }
     this.disconnect(); // Clean up old connections
     this.userId = userId;
 
@@ -64,10 +67,10 @@ class RealtimeManager {
 
   private async handleNewMatch(matchRecord: any, userId: string) {
     console.log('[RealtimeManager] Handling new match for user:', userId, matchRecord);
+    // Determine peer ID
     const peerId = matchRecord.user_a === userId ? matchRecord.user_b : matchRecord.user_a;
     
     // Optimistically add empty thread to message store
-    // We need profile info for the thread list
     try {
         // Use the secure RPC to get basic info
         const { data, error } = await supabase.rpc('get_profile_lookup', { ids: [peerId] }).maybeSingle<{ id: string; username: string | null; avatar_url: string | null }>();
@@ -76,19 +79,28 @@ class RealtimeManager {
              console.error('[RealtimeManager] Profile lookup failed', error);
         }
 
+        const threadBase = {
+            matchId: matchRecord.id,
+            peerId: peerId,
+            lastMessage: null,
+            lastAt: matchRecord.created_at, // Use match creation time for sort
+            hasUnread: false
+        };
+
         if (data) {
             useMessagesStore.getState().addThread({
-                matchId: matchRecord.id,
-                peerId: peerId,
+                ...threadBase,
                 peerName: data.username,
                 peerAvatar: data.avatar_url,
-                lastMessage: null,
-                lastAt: matchRecord.created_at, // Use match creation time for sort
-                hasUnread: false
             });
             console.log('[RealtimeManager] Added new thread for', peerId);
         } else {
-             console.warn('[RealtimeManager] No profile data found for', peerId);
+             console.warn('[RealtimeManager] No profile data found for', peerId, 'Adding skeleton thread');
+             useMessagesStore.getState().addThread({
+                ...threadBase,
+                peerName: 'New Match', // Placeholder
+                peerAvatar: null
+             });
         }
     } catch (e) {
         console.error('[RealtimeManager] Failed to fetch profile for new match', e);
