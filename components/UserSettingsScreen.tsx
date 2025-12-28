@@ -37,12 +37,22 @@ const UserSettingsScreen: React.FC = () => {
   });
 
   const [username, setUsername] = useState(profile?.username ?? user?.user_metadata?.username ?? '');
-  const [ageGroup, setAgeGroup] = useState(profile?.age_group ?? '');
-  const [gender, setGender] = useState(profile?.gender ?? '');
+  const [ageGroup, setAgeGroup] = useState(profile?.age_group ?? user?.user_metadata?.age_group ?? '');
+  const [gender, setGender] = useState(profile?.gender ?? user?.user_metadata?.gender ?? '');
   const [hobbies, setHobbies] = useState<string[]>(profile?.hobbies ?? []);
   const [hobbyInput, setHobbyInput] = useState('');
   const [hobbyError, setHobbyError] = useState<string | null>(null);
   const [decryptingHobbies, setDecryptingHobbies] = useState(false);
+
+  // Sync state when profile loads
+  useEffect(() => {
+    if (profile) {
+      setUsername((prev) => (prev ? prev : profile.username ?? user?.user_metadata?.username ?? ''));
+      setAgeGroup((prev) => (prev ? prev : profile.age_group ?? user?.user_metadata?.age_group ?? ''));
+      setGender((prev) => (prev ? prev : profile.gender ?? user?.user_metadata?.gender ?? ''));
+      // Hobbies logic handles decrypting, so we don't force overwrite here if already set or decrypting
+    }
+  }, [profile, user?.user_metadata]);
 
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url ?? null);

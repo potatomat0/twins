@@ -92,15 +92,20 @@ const MainTabs: React.FC = () => {
   const { user } = useAuth();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
   const initNotis = useNotificationStore((s) => s.initialize);
+  const resetNotis = useNotificationStore((s) => s.reset);
   const initMessages = useMessagesStore((s) => s.initialize);
+  const resetMessages = useMessagesStore((s) => s.reset);
   
-  // Initialize stores on auth
+  // Initialize stores on auth, reset on logout
   React.useEffect(() => {
     if (user?.id) {
       void initNotis(user.id);
       void initMessages(user.id);
+    } else {
+      resetNotis();
+      resetMessages();
     }
-  }, [user?.id, initNotis, initMessages]);
+  }, [user?.id, initNotis, initMessages, resetNotis, resetMessages]);
 
   const { t } = useTranslation();
   const showBadge = unreadCount > 0;

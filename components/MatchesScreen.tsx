@@ -7,6 +7,7 @@ import { useTranslation } from '@context/LocaleContext';
 import { useAuth } from '@context/AuthContext';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
+import NotificationModal from '@components/common/NotificationModal';
 import supabase from '@services/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { useNotificationStore, NotificationRecord } from '@store/notificationStore';
@@ -49,6 +50,9 @@ const MatchesScreen: React.FC = () => {
   const [profileDetail, setProfileDetail] = useState<ProfileDetail | null>(null);
   const [currentNotification, setCurrentNotification] = useState<NotificationRecord | null>(null);
   const [actioning, setActioning] = useState(false);
+  
+  const [matchModalVisible, setMatchModalVisible] = useState(false);
+  const [matchData, setMatchData] = useState<{ id: string; username: string; avatar_url: string } | null>(null);
 
   const sections = useMemo(() => {
     const unread = notifications.filter((n) => !n.read);
@@ -75,6 +79,22 @@ const MatchesScreen: React.FC = () => {
 
   const openChat = async (peerId: string, peerName?: string | null, peerAvatar?: string | null, notificationId?: string) => {
     if (!user?.id) return;
+    
+    // Optimistic navigation if we already know a match was just created
+    if (!notificationId && matchData && matchData.id === peerId) {
+        // We might need the match ID. If we don't have it, we fetch it.
+        const match = await findMatch(peerId);
+        if (match) {
+            navigation.navigate('Chat', {
+              matchId: match.id,
+              peerId: peerId,
+              peerName: peerName ?? null,
+              peerAvatar: peerAvatar ?? null,
+            });
+            return;
+        }
+    }
+
     const match = await findMatch(peerId);
     if (!match) {
       if (__DEV__) console.warn('[matches] no match found for chat');
@@ -85,6 +105,7 @@ const MatchesScreen: React.FC = () => {
       void markRead([notificationId]);
     }
     setModalVisible(false);
+    setMatchModalVisible(false);
     
     navigation.navigate('Chat', {
       matchId: match.id,
@@ -114,18 +135,17 @@ const MatchesScreen: React.FC = () => {
       // Mark notification as read after successful action
       void markRead([currentNotification.id]);
 
-      // If mutual created, allow opening chat
+      // If mutual created, show match modal instead of auto-opening chat
       if (action === 'like') {
         const { mutualCreated } = (data as any) ?? {};
         if (mutualCreated) {
-           // Provide feedback or auto-open chat? 
-           // For now, let's close the modal and maybe the user sees the new match
-           // Or ideally, transition the modal to "It's a match!" state. 
-           // Currently just close and maybe navigate if we wanted.
-           // Let's just close modal for simplicity as requested "reuse components".
            setModalVisible(false);
-           // Optionally navigate to chat immediately
-           void openChat(profileDetail.id, profileDetail.username, profileDetail.avatar_url);
+           setMatchData({
+             id: profileDetail.id,
+             username: profileDetail.username ?? 'Friend',
+             avatar_url: profileDetail.avatar_url ?? '',
+           });
+           setMatchModalVisible(true);
            return;
         }
       }
@@ -313,6 +333,22 @@ const MatchesScreen: React.FC = () => {
         onMessage={notificationType === 'mutual' ? () => {
              if (profileDetail) void openChat(profileDetail.id, profileDetail.username, profileDetail.avatar_url);
         } : undefined}
+      />
+
+      <NotificationModal
+        visible={matchModalVisible}
+        title={t('notifications.matchNew')}
+        message={t('notifications.mutual')}
+        primaryText={t('common.goToChat')}
+        onPrimary={() => {
+          if (matchData) {
+            void openChat(matchData.id, matchData.username, matchData.avatar_url);
+          }
+        }}
+        secondaryText={t('common.dismiss')}
+        onSecondary={() => setMatchModalVisible(false)}
+        onRequestClose={() => setMatchModalVisible(false)}
+        primaryVariant="accent"
       />
 
       {actioning ? (

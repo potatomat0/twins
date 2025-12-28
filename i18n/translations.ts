@@ -20,6 +20,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       signInWithProvider: 'Sign in with {provider}',
       notice: 'Notice',
       loading: 'Loading...',
+      goToChat: 'Go to Chat',
       themeToggle: {
         toLight: 'Switch to light mode',
         toDark: 'Switch to dark mode',
@@ -29,6 +30,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       title: 'Notifications & Matches',
       like: 'Someone liked you',
       mutual: 'You have a mutual match',
+      matchNew: 'It\'s a Match!',
       message: 'New message',
       generic: 'Tap to view',
       empty: 'No notifications yet. Start connecting!',

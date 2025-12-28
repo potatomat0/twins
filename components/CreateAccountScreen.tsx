@@ -6,6 +6,7 @@ import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '@navigation/AppNavigator';
 import { useTheme } from '@context/ThemeContext';
 import { useTranslation } from '@context/LocaleContext';
+import { useAuth } from '@context/AuthContext';
 import { toRgb, toRgba } from '@themes/index';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
@@ -100,6 +101,7 @@ function determineCharacterGroup(scores?: Record<string, number>) {
 const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { refreshProfile } = useAuth();
   const { createAccountDraft, setCreateAccountDraft, clearCreateAccountDraft, clearAllDrafts, setResumeTarget } = useSessionStore();
   const hydratedRef = useRef(false);
   const paramsRef = useRef<RootStackParamList['CreateAccount'] | undefined>(route.params);
@@ -462,6 +464,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
           }
           return;
         }
+        await refreshProfile();
         clearAllDrafts();
         setCreated(true);
         return;
@@ -498,6 +501,7 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
         }
           return;
         }
+        await refreshProfile();
         clearAllDrafts();
         setCreated(true);
         return;
