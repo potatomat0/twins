@@ -1,44 +1,24 @@
 import supabase from '@services/supabase';
 import { useMessagesStore } from '@store/messagesStore';
 import { useNotificationStore, NotificationRecord } from '@store/notificationStore';
-import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 
 class RealtimeManager {
   private channels: Map<string, ReturnType<typeof supabase.channel>> = new Map();
   private userId: string | null = null;
-  private soundObject: Audio.Sound | null = null;
+  private onPlaySound: (() => void) | null = null;
 
   constructor() {
-    this.preloadSound();
+    // No-op
   }
 
-  private async preloadSound() {
-    try {
-        const { sound } = await Audio.Sound.createAsync(
-            require('../assets/sound/pop.mp3')
-        );
-        this.soundObject = sound;
-    } catch (e) {
-        // Ignore sound errors
-    }
+  setPlaySoundCallback(fn: () => void) {
+    this.onPlaySound = fn;
   }
 
-  private async playPop() {
-    try {
-        if (this.soundObject) {
-            await this.soundObject.replayAsync();
-        } else {
-            // Try loading on fly if failed previously
-            const { sound } = await Audio.Sound.createAsync(
-                require('../assets/sound/pop.mp3')
-            );
-            this.soundObject = sound;
-            await sound.playAsync();
-        }
-    } catch (e) {
-        // Ignore
-    }
+  private triggerFeedback() {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    this.onPlaySound?.();
   }
 
   connect(userId: string) {
@@ -74,9 +54,7 @@ class RealtimeManager {
           console.log('[RealtimeManager] New notification:', record);
           useNotificationStore.getState().addNotification(record);
           
-          // Feedback
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          void this.playPop();
+          this.triggerFeedback();
         }
       )
       .subscribe();
@@ -85,24 +63,18 @@ class RealtimeManager {
 
   private subscribeToMatches(userId: string) {
     // Listen for new matches where user is A or B
-    // Note: We use a single channel with two listeners? Or simply listen to all matches and filter client-side if row level security allows?
-    // RLS ensures we only receive rows we are allowed to see.
-    // So `filter` isn't strictly necessary for security, but good for noise reduction if RLS is open.
-    // However, Supabase Realtime sometimes misses events if filters are too complex or if `new` payload doesn't perfectly match.
-    // Let's rely on RLS-filtered stream without additional filters if possible, or keep explicit filters.
-    // We stick to explicit filters to be safe.
-    
     const channel = supabase
       .channel(`matches:${userId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'matches', filter: `user_a=eq.${userId}` },
-        (payload) => this.handleNewMatch(payload.new, userId)
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'matches', filter: `user_b=eq.${userId}` },
-        (payload) => this.handleNewMatch(payload.new, userId)
+        { event: 'INSERT', schema: 'public', table: 'matches' },
+        (payload) => {
+            const rec = payload.new as { id: string; user_a: string; user_b: string; created_at: string };
+            console.log('[RealtimeManager] Match INSERT received:', rec);
+            if (rec.user_a === userId || rec.user_b === userId) {
+                this.handleNewMatch(rec, userId);
+            }
+        }
       )
       .subscribe((status) => {
         console.log(`[RealtimeManager] Matches channel status: ${status}`);
@@ -113,9 +85,7 @@ class RealtimeManager {
   private async handleNewMatch(matchRecord: any, userId: string) {
     console.log('[RealtimeManager] Handling new match for user:', userId, matchRecord);
     
-    // Feedback for match
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    void this.playPop();
+    this.triggerFeedback();
 
     // Determine peer ID
     const peerId = matchRecord.user_a === userId ? matchRecord.user_b : matchRecord.user_a;
@@ -159,11 +129,6 @@ class RealtimeManager {
 
   private subscribeToMessages(userId: string) {
     // We can listen to ALL messages where sender or receiver is userId
-    // However, RLS usually restricts us to seeing rows we are part of.
-    // Ideally we filter by match_id, but we don't want to open 100 channels.
-    // "postgres_changes" with filter `receiver_id=eq.${userId}` is efficient for INCOMING.
-    // For outgoing (to sync multi-device), we listen to `sender_id=eq.${userId}`.
-    
     const channel = supabase
       .channel(`messages:${userId}`)
       .on(

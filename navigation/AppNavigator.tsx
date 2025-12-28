@@ -89,6 +89,7 @@ import { useNotificationStore } from '@store/notificationStore';
 import { useMessagesStore } from '@store/messagesStore';
 
 import { realtimeManager } from '@services/RealtimeManager';
+import { useAudioPlayer } from 'expo-audio';
 
 const MainTabs: React.FC = () => {
   const { user } = useAuth();
@@ -98,18 +99,30 @@ const MainTabs: React.FC = () => {
   const initMessages = useMessagesStore((s) => s.initialize);
   const resetMessages = useMessagesStore((s) => s.reset);
   
+  // Audio setup
+  const popSound = useAudioPlayer(require('../assets/sound/pop.mp3'));
+
   // Initialize stores on auth, reset on logout
   React.useEffect(() => {
     if (user?.id) {
       void initNotis(user.id);
       void initMessages(user.id);
+      
+      // Register sound callback
+      realtimeManager.setPlaySoundCallback(() => {
+        try {
+            popSound.seekTo(0);
+            popSound.play();
+        } catch {}
+      });
+      
       realtimeManager.connect(user.id);
     } else {
       realtimeManager.disconnect();
       resetNotis();
       resetMessages();
     }
-  }, [user?.id, initNotis, initMessages, resetNotis, resetMessages]);
+  }, [user?.id, initNotis, initMessages, resetNotis, resetMessages, popSound]);
 
   const { t } = useTranslation();
   const showBadge = unreadCount > 0;
