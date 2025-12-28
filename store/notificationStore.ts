@@ -21,6 +21,7 @@ type NotificationState = {
   reset: () => void;
   markRead: (ids: string[]) => Promise<void>;
   addNotification: (notification: NotificationRecord) => void;
+  removeNotification: (id: string) => void;
 };
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -83,6 +84,16 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       console.warn('[notificationStore] markRead error', err);
       // Revert if needed? Usually distinct enough not to worry for read status
     }
+  },
+
+  removeNotification: (id: string) => {
+    set((state) => {
+      const nextNotifications = state.notifications.filter((n) => n.id !== id);
+      return {
+        notifications: nextNotifications,
+        unreadCount: nextNotifications.filter((n) => !n.read).length,
+      };
+    });
   },
 
   addNotification: (notification: NotificationRecord) => {

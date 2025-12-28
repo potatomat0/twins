@@ -208,24 +208,6 @@ const ChatScreen: React.FC = () => {
         setInput('');
         // refresh last row to get real id/status
         void loadMessages();
-        // Notify peer of new message
-        supabase.functions
-          .invoke('notify', {
-            body: {
-              recipientId: peerId,
-              actorId: user.id,
-              type: 'message',
-              payload: { 
-                message: input.trim(), 
-                actor: { 
-                  id: user.id, 
-                  username: profile?.username ?? 'Someone', 
-                  avatar_url: profile?.avatar_url 
-                } 
-              },
-            },
-          })
-          .catch(() => {});
       }
     } finally {
       setSending(false);

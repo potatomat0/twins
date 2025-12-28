@@ -43,6 +43,7 @@ const MatchesScreen: React.FC = () => {
   const notifications = useNotificationStore((s) => s.notifications);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
   const markRead = useNotificationStore((s) => s.markRead);
+  const removeNotification = useNotificationStore((s) => s.removeNotification);
   const loading = useNotificationStore((s) => s.loading);
   const init = useNotificationStore((s) => s.initialize);
   
@@ -130,10 +131,12 @@ const MatchesScreen: React.FC = () => {
              avatar_url: profileDetail.avatar_url ?? '',
         });
         setMatchModalVisible(true);
+        // Optimistically remove the 'like' notification as it will be replaced by 'mutual'
+        removeNotification(currentNotification.id);
+    } else {
+        // Otherwise just mark read
+        void markRead([currentNotification.id]);
     }
-
-    // Optimistically mark notification read
-    void markRead([currentNotification.id]);
 
     setActioning(true); // Maybe not needed if UI is already closed? Keep for internal state safety.
 

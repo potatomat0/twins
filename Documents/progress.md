@@ -21,3 +21,7 @@
 - 2025-12-27: Deprecation Fix — Migrated from `expo-av` to `expo-audio` to resolve SDK 54 deprecation warning. Refactored `RealtimeManager` to delegate sound playback to `AppNavigator` via callback, leveraging React hooks for audio management. Removed `expo-av` dependency.
 - 2025-12-27: Realtime Reliability — Enabled `REPLICA IDENTITY FULL` on critical tables to ensure `INSERT` events carry full payloads. Added "Skeleton Thread" fallback in `RealtimeManager` to instantly show new matches even if profile fetching lags. Updated `notificationStore` and `messagesStore` to react to these external manager events.
 - 2025-12-27: Notification Content Fix — Updated `notify` edge function to robustly fetch sender profile details server-side if missing from client payload. This fixes the issue where notifications displayed "Unknown user" or the recipient's own name instead of the sender's.
+- 2025-12-27: Database Triggers for Consistency — Replaced manual client-side `notify` calls with robust Postgres Triggers.
+    *   `on_new_message_notify`: Automatically inserts a notification when a message is inserted into `public.messages`.
+    *   `on_new_match_notify`: Automatically inserts mutual notifications when a row is inserted into `public.matches`.
+    *   This guarantees 100% notification reliability and prevents "missing notification" issues caused by client/network failures.

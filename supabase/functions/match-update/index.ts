@@ -189,61 +189,8 @@ serve(async (req) => {
       }
 
       // Notify both for mutual
-      const { data: existingMutual, error: mutualCheckErr } = await supabase
-        .from('notifications')
-        .select('id')
-        .eq('type', 'mutual')
-        .or(`and(recipient_id.eq.${actorId},actor_id.eq.${targetId}),and(recipient_id.eq.${targetId},actor_id.eq.${actorId})`)
-        .limit(1)
-        .maybeSingle();
-      if (mutualCheckErr) console.error('[match-update] mutual lookup error', mutualCheckErr);
-
-      if (existingMutual) {
-        console.log('[match-update] mutual notifications already exist', { actorId, targetId, notificationId: existingMutual.id });
-      } else {
-        const actorProfile = actor;
-        const targetProfile = target;
-        // Recipient = actorId should see the other user (targetProfile)
-        const actorPayload = {
-          message: 'You have a mutual match',
-          actor: {
-            id: targetProfile.id,
-            username: targetProfile.username ?? null,
-            age_group: targetProfile.age_group ?? null,
-            gender: targetProfile.gender ?? null,
-            character_group: targetProfile.character_group ?? null,
-            avatar_url: targetProfile.avatar_url ?? null,
-          },
-        };
-        // Recipient = targetId should see actorProfile
-        const targetPayload = {
-          message: 'You have a mutual match',
-          actor: {
-            id: actorProfile.id,
-            username: actorProfile.username ?? null,
-            age_group: actorProfile.age_group ?? null,
-            gender: actorProfile.gender ?? null,
-            character_group: actorProfile.character_group ?? null,
-            avatar_url: actorProfile.avatar_url ?? null,
-          },
-        };
-
-        const { error: n1 } = await supabase.from('notifications').insert({
-          recipient_id: actorId,
-          actor_id: targetId,
-          type: 'mutual',
-          payload: actorPayload,
-        });
-        if (n1) console.error('[match-update] notify mutual actor error', n1);
-        const { error: n2 } = await supabase.from('notifications').insert({
-          recipient_id: targetId,
-          actor_id: actorId,
-          type: 'mutual',
-          payload: targetPayload,
-        });
-        if (n2) console.error('[match-update] notify mutual target error', n2);
-        console.log('[match-update] mutual created', { actorId, targetId, matchId: sorted.join('-') });
-      }
+      // DEPRECATED: handled by DB trigger on public.matches
+      console.log('[match-update] match created, DB trigger will send notifications', { actorId, targetId, matchId: sorted.join('-') });
     } else {
       console.log('[match-update] no mutual yet', { actorId, targetId, outcome, lastOutcome: lastEvent?.outcome });
     }
