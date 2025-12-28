@@ -117,8 +117,28 @@ const MatchesScreen: React.FC = () => {
 
   const handleAction = async (action: 'like' | 'skip') => {
     if (!user?.id || !profileDetail || !currentNotification) return;
-    setActioning(true);
+    
+    // OPTIMISTIC UPDATE: Close modal immediately
+    setModalVisible(false);
+    
+    // If it's a 'like' on a 'like' notification, it's a match!
+    // Show match modal immediately
+    if (action === 'like' && currentNotification.type === 'like') {
+        setMatchData({
+             id: profileDetail.id,
+             username: profileDetail.username ?? 'Friend',
+             avatar_url: profileDetail.avatar_url ?? '',
+        });
+        setMatchModalVisible(true);
+    }
+
+    // Optimistically mark notification read
+    void markRead([currentNotification.id]);
+
+    setActioning(true); // Maybe not needed if UI is already closed? Keep for internal state safety.
+
     try {
+      // Fire and forget (or rather, fire and log)
       const { data, error } = await supabase.functions.invoke('match-update', {
         body: {
           actorId: user.id,
@@ -128,30 +148,14 @@ const MatchesScreen: React.FC = () => {
       });
       
       if (error) {
-        if (__DEV__) console.warn('[match-update][matches] error', error);
-        return;
+        console.warn('[MatchesScreen] match-update error', error);
+        // TODO: Revert UI state if critical failure?
+      } else {
+          // If we weren't sure it was a match (e.g. from Explore), we would handle 'mutualCreated' here.
+          // But for Notifications context, we know the context.
       }
-
-      // Mark notification as read after successful action
-      void markRead([currentNotification.id]);
-
-      // If mutual created, show match modal instead of auto-opening chat
-      if (action === 'like') {
-        const { mutualCreated } = (data as any) ?? {};
-        if (mutualCreated) {
-           setModalVisible(false);
-           setMatchData({
-             id: profileDetail.id,
-             username: profileDetail.username ?? 'Friend',
-             avatar_url: profileDetail.avatar_url ?? '',
-           });
-           setMatchModalVisible(true);
-           return;
-        }
-      }
-      setModalVisible(false);
     } catch (err) {
-      if (__DEV__) console.warn('[match-update][matches] exception', err);
+      console.warn('[MatchesScreen] match-update exception', err);
     } finally {
       setActioning(false);
     }
