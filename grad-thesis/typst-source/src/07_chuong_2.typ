@@ -2,16 +2,16 @@
 
 #[
   #set heading(numbering: "Chương 1.1")
-  = Tổng quan pipeline hệ thống <chuong2>
+  = Tổng quan quy trình hệ thống <chuong2>
 ]
 
 == Mục tiêu của chương
 
-Chương này trình bày pipeline tổng thể của hệ thống Twins, theo thứ tự từ thu thập dữ liệu
+Chương này trình bày quy trình (pipeline) tổng thể của hệ thống Twins, theo thứ tự từ thu thập dữ liệu
 trên thiết bị, chuyển đổi và bảo mật, đến gợi ý người dùng. Mục tiêu là mô tả rõ các tác
 nhân tham gia, dữ liệu vào ra ở mỗi bước và cách các điểm số được kết hợp thành một điểm
 xếp hạng cuối cùng. Các chương sau sẽ đi sâu vào từng thành phần.
-Trong đó, Chương 4 tập trung vào bảo mật và mã hóa dữ liệu, còn Chương 5 trình bày chi
+Trong đó, Chương 4 tập trung vào bảo mật và mã hoá dữ liệu, còn Chương 5 trình bày chi
 tiết hệ gợi ý và các công thức xếp hạng.
 
 == Các nguồn dữ liệu đầu vào
@@ -20,7 +20,7 @@ tiết hệ gợi ý và các công thức xếp hạng.
 
 Hệ thống sử dụng tập câu hỏi Big Five lớn, được tổng hợp từ các bộ câu hỏi chuẩn như IPIP
 50 và các biến thể đã được công bố rộng rãi @goldberg1992ipip. Mỗi lượt làm bài chọn ngẫu
-nhiên 25 câu từ pool 150 câu, trong đó mỗi 5 câu đại diện cho một trait. Mỗi câu hỏi có
+nhiên 25 câu từ một tập hợp (pool) 150 câu, trong đó mỗi 5 câu đại diện cho một đặc điểm (trait). Mỗi câu hỏi có
 hướng cộng hoặc trừ vào trait tương ứng, do đó mô hình không phụ thuộc nội dung câu hỏi
 mà chỉ phụ thuộc vào hướng (key) và trait của câu hỏi.
 
@@ -41,37 +41,37 @@ phù hợp cho việc ước lượng các thành phần chính. Các kết qu�
 === Dữ liệu sở thích (hobbies)
 
 Sở thích người dùng được nhập dưới dạng văn bản ngắn. Văn bản này không dùng để lưu trữ
-trực tiếp, mà được chuyển thành vector embedding 384 chiều thông qua mô hình semantic
-embedding từ Jina. Lý do dùng embedding là để so khớp nội dung sở thích theo ngữ nghĩa thay
+trực tiếp, mà được chuyển thành vector 384 chiều thông qua mô hình nhúng ngữ nghĩa (semantic
+embedding) từ Jina. Lý do dùng phương pháp nhúng là để so khớp nội dung sở thích theo ngữ nghĩa thay
 vì so khớp từ khóa đơn thuần. Cách làm này cho phép các sở thích có nghĩa gần nhau (ví dụ
-“chạy bộ” và “jogging”) vẫn được đánh giá tương đồng. Chi tiết quy trình embedding và
-luồng mã hóa dữ liệu sở thích sẽ được mô tả ở Chương 5.
+“chạy bộ” và “jogging”) vẫn được đánh giá tương đồng. Chi tiết quy trình nhúng và
+luồng mã hoá dữ liệu sở thích sẽ được mô tả ở Chương 5.
 
-== Tổng quan pipeline và tác nhân
+== Tổng quan quy trình và tác nhân
 
 Hệ thống có ba tác nhân chính: thiết bị người dùng, Edge Function và cơ sở dữ liệu. Hình
-#ref(<fig_pipeline_overview>) mô tả pipeline tổng thể từ thu thập dữ liệu đến gợi ý.
+#ref(<fig_pipeline_overview>) mô tả quy trình tổng thể từ thu thập dữ liệu đến gợi ý.
 
 #figure(
   image("/images/placeHolderImage.png", width: 90%),
-  caption: [Pipeline tổng thể của hệ thống Twins],
+  caption: [Quy trình tổng thể của hệ thống Twins],
 ) <fig_pipeline_overview>
 #text(10pt, [Gợi ý hình: fig_pipeline_overview.png])
 
 Các bước chính gồm:
 
 - Thiết bị người dùng trả lời 25 câu hỏi, chấm điểm Big Five và chuẩn hóa về thang 0-1.
-- Thiết bị chuyển đổi PCA‑4 bằng tham số đã huấn luyện sẵn.
-- Thiết bị gửi dữ liệu Big Five gốc tới Edge Function để mã hóa AES‑256‑GCM.
+- Thiết bị chuyển đổi PCA-4 bằng tham số đã huấn luyện sẵn.
+- Thiết bị gửi dữ liệu Big Five gốc tới Edge Function để mã hoá AES-256-GCM.
 - Cơ sở dữ liệu lưu trữ pca_dim1..4 và ciphertext (b5_cipher, b5_iv).
-- Dữ liệu sở thích được embedding thành vector 384 chiều, mã hóa, và lưu trữ tương tự.
-- Hệ gợi ý lấy PCA vector, ELO và embedding sở thích để tính điểm xếp hạng.
+- Dữ liệu sở thích được nhúng thành vector 384 chiều, mã hoá, và lưu trữ tương tự.
+- Hệ gợi ý lấy vector PCA, ELO và vector sở thích để tính điểm xếp hạng.
 
-== Đề xuất geosharding trong pipeline gợi ý
+== Đề xuất phân mảnh địa lý trong quy trình gợi ý
 
 Khi số lượng người dùng tăng lớn, việc so khớp theo tổ hợp từng cặp sẽ làm chi phí tính
-toán tăng nhanh. Một hướng giảm tải là geosharding, tức chia người dùng theo vùng địa lý
-hoặc cụm vị trí, sau đó ưu tiên so khớp trong cùng shard. Cách này phổ biến ở các ứng dụng
+toán tăng nhanh. Một hướng giảm tải là phân mảnh địa lý (geosharding), tức chia người dùng theo vùng địa lý
+hoặc cụm vị trí, sau đó ưu tiên so khớp trong cùng một phân mảnh (shard). Cách này phổ biến ở các ứng dụng
 hẹn hò vì nó giảm số lượng cặp cần so sánh và tăng tốc phản hồi.
 
 Trong đề tài, geosharding được xem là bước tối ưu hóa dài hạn, chưa ưu tiên ở giai đoạn
@@ -83,8 +83,8 @@ thử nghiệm. Khi lượng người dùng đủ lớn và chi phí tính toán
 
 === Điểm tương đồng tính cách (PCA)
 
-Vector PCA‑4 được dùng để đo tương đồng giữa hai người dùng bằng cosine similarity.
-Cosine similarity phù hợp vì đo góc giữa hai vector, ít bị ảnh hưởng bởi độ lớn tuyệt
+Vector PCA-4 được dùng để đo tương đồng giữa hai người dùng bằng cosine similarity.
+Phương pháp này phù hợp vì đo góc giữa hai vector, ít bị ảnh hưởng bởi độ lớn tuyệt
 đối và ổn định khi dữ liệu đã chuẩn hóa @manning2008ir. Công thức cosine similarity sẽ
 được trình bày chi tiết ở Chương 5.
 
@@ -99,7 +99,7 @@ like và skip. Điểm ELO được cập nhật theo kỳ vọng thắng thua t
 
 Điểm ELO không phải thước đo hấp dẫn tuyệt đối, mà là tín hiệu phụ để gom nhóm người dùng
 có mức tương tác tương đồng. ELO trong Twins là hệ số ẩn, được cập nhật sau mỗi lần tương
-tác và bị giới hạn trong khoảng 800 đến 2000. Lưu ý rằng cách cập nhật này tạo xu hướng
+tác và bị giới hạn (clamp) trong khoảng 800 đến 2000. Lưu ý rằng cách cập nhật này tạo xu hướng
 lạm phát điểm ELO theo thời gian, vì lượt “like” làm cả hai phía tăng điểm. Tuy vậy, mục
 đích chính không phải cạnh tranh, mà là đảm bảo người dùng có mức xã giao gần nhau được
 ưu tiên gặp nhau hơn.
@@ -111,7 +111,7 @@ Trong công thức gốc, kỳ vọng thắng được tính bởi:
 )
 Sau đó cập nhật theo $R_a' = R_a + K (S_a - E_a)$. Trong Twins, kết quả like được coi là
 một tín hiệu hợp tác nên cả hai phía tăng nhẹ, còn skip chỉ trừ phía chủ động. Cụ thể,
-với K=12 và clamp trong [800, 2000]:
+với K=12 và được giới hạn trong [800, 2000]:
 
 - Like: $R_a' = text("clamp")(R_a + K(1 - E_a))$, $R_b' = text("clamp")(R_b + K(1 - E_b))$.
 - Skip: $R_a' = text("clamp")(R_a + K(0 - E_a))$, $R_b' = R_b$.
@@ -125,7 +125,7 @@ trong đó $sigma = 400$.
 
 === Embedding sở thích và cosine similarity
 
-Sở thích người dùng được chuyển thành vector 384 chiều thông qua mô hình semantic embedding.
+Sở thích người dùng được chuyển thành vector 384 chiều thông qua mô hình nhúng ngữ nghĩa.
 Cosine similarity được dùng để đo độ gần về sở thích, thay vì so khớp từ khóa. Cách làm
 này cho phép hai người dùng dùng từ khác nhau nhưng có ý nghĩa gần nhau vẫn được đánh giá
 cao hơn.
@@ -165,25 +165,25 @@ Hình #ref(<fig_score_weights>) minh họa sơ đồ trọng số và các nhán
 Thiết bị thực hiện các bước sau:
 
 - Thu thập câu trả lời và chấm điểm Big Five.
-- Chuẩn hóa và chuyển đổi PCA‑4.
-- Gửi dữ liệu thô tới Edge Function để mã hóa.
-- Gửi văn bản sở thích để tạo embedding, rồi lưu ciphertext và vector embedding.
+- Chuẩn hóa và chuyển đổi PCA-4.
+- Gửi dữ liệu thô tới Edge Function để mã hoá.
+- Gửi văn bản sở thích để tạo vector, rồi lưu ciphertext và vector nhúng.
 
 === Edge Function
 
 Edge Function đảm nhận:
 
-- Mã hóa/giải mã Big Five bằng AES‑256‑GCM.
-- Gọi dịch vụ embedding để sinh vector sở thích.
-- Trả về ciphertext, iv và vector embedding cho thiết bị.
+- Mã hoá/giải mã Big Five bằng AES-256-GCM.
+- Gọi dịch vụ nhúng để sinh vector sở thích.
+- Trả về ciphertext, iv và vector nhúng cho thiết bị.
 
 === Cơ sở dữ liệu
 
 Cơ sở dữ liệu lưu trữ:
 
-- PCA vector (pca_dim1..4).
+- Vector PCA (pca_dim1..4).
 - Ciphertext và iv cho Big Five (b5_cipher, b5_iv).
-- Ciphertext cho hobbies và vector embedding.
+- Ciphertext cho hobbies và vector nhúng.
 
 Hình #ref(<fig_dataflow_sequence>) trình bày luồng dữ liệu theo thứ tự tác nhân.
 
@@ -192,5 +192,16 @@ Hình #ref(<fig_dataflow_sequence>) trình bày luồng dữ liệu theo thứ t
   caption: [Luồng dữ liệu giữa thiết bị, Edge Function và cơ sở dữ liệu],
 ) <fig_dataflow_sequence>
 #text(10pt, [Gợi ý hình: fig_dataflow_sequence.png])
+
+== Cấu trúc các chương tiếp theo
+
+Để đi sâu vào từng thành phần của quy trình, các chương tiếp theo của báo cáo được cấu trúc như sau, tách biệt rõ ràng các phần hiện thực và thực nghiệm để tăng tính mạch lạc:
+
+- *Chương 3: Chuyển đổi dữ liệu tính cách (PCA-4)*, tập trung vào phần lõi của việc xử lý và biểu diễn dữ liệu tính cách.
+- *Chương 4: Bảo mật và mã hoá dữ liệu*, trình bày chi tiết kiến trúc bảo mật, một thành phần quan trọng của hệ thống.
+- *Chương 5: Hệ gợi ý và cơ chế xếp hạng*, mô tả logic nghiệp vụ của việc kết hợp các tín hiệu để đưa ra gợi ý cuối cùng.
+- *Chương 6: Thực nghiệm và Đánh giá*, dành riêng cho việc kiểm chứng và đánh giá toàn bộ hệ thống dựa trên các câu hỏi nghiên cứu đã đề ra.
+
+Cách phân chia này giúp người đọc theo dõi chi tiết từng khía cạnh của việc "Hiện thực" (Chương 3, 4, 5) trước khi đi vào phần "Thực nghiệm" (Chương 6).
 
 #pagebreak()
