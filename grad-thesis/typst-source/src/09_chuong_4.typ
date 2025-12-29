@@ -15,10 +15,43 @@ luồng dữ liệu và các tác nhân, không đi sâu vào mã nguồn chi ti
 
 === Nguyên lý cơ bản
 
+
+
 AES là thuật toán mã hoá đối xứng khối, hoạt động trên các khối dữ liệu cố định và cần một khóa
+
 chung cho cả quá trình mã hoá lẫn giải mã. Chế độ GCM (Galois/Counter Mode) kết hợp
-giữa mã hoá dạng bộ đếm (counter mode) và cơ chế xác thực dữ liệu. Nhờ đó, ngoài dữ liệu đã mã hoá (ciphertext), hệ thống còn có
-thể kiểm tra tính toàn vẹn (integrity) của dữ liệu @nistel2007gcm. Trong ngữ cảnh dữ liệu tính cách,
+
+giữa mã hoá dạng bộ đếm (counter mode) và cơ chế xác thực dữ liệu.
+
+
+
+#outline_algo(
+
+  [
+
+    1.  *Khởi tạo*: Tạo khóa bí mật $K$ và vector khởi tạo ngẫu nhiên $I V$.
+
+    2.  *Mã hoá*: $C = E_K(I V, P)$, trong đó $P$ là văn bản thuần, $C$ là văn bản mã hoá.
+
+    3.  *Xác thực*: Sinh thẻ xác thực $T$ dựa trên $K, I V$ và $C$.
+
+    4.  *Lưu trữ*: Lưu cặp $(C, I V, T)$ vào cơ sở dữ liệu.
+
+    5.  *Giải mã*: Kiểm tra $T$ trước khi khôi phục $P = D_K(I V, C)$.
+
+  ],
+
+  [Quy trình mã hoá và xác thực dữ liệu bằng AES-256-GCM],
+
+  <algo_aes_gcm>
+
+)
+
+
+
+Nhờ đó, ngoài dữ liệu đã mã hoá (ciphertext), hệ thống còn có thể kiểm tra tính toàn vẹn (integrity) của dữ liệu @nistel2007gcm.
+
+ Trong ngữ cảnh dữ liệu tính cách,
 yếu tố này rất quan trọng để đảm bảo dữ liệu không bị thay đổi trái phép mà không bị phát hiện.
 
 Một phiên làm việc AES-GCM tạo ra thêm thẻ xác thực (authentication tag), giúp phát hiện bất kỳ sự thay đổi nào đối với dữ liệu
@@ -39,10 +72,9 @@ ghi nhận lỗi, ngăn chặn việc trả về dữ liệu sai. Cách lưu tr�
 đổi ngầm ở cấp độ cơ sở dữ liệu hoặc trong quá trình truyền tải.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch4_aes_io.png", width: 85%),
   caption: [Định dạng đầu vào/đầu ra của AES-GCM],
 ) <fig_aes_io>
-#text(10pt, [Gợi ý hình: fig_aes_io.png])
 
 == Dữ liệu đầu vào từ góc nhìn người dùng
 
@@ -53,14 +85,13 @@ này được xem là dữ liệu nhạy cảm vì có thể dùng để suy di�
 hệ thống chỉ lưu lại các điểm số đã được tổng hợp theo mô hình Big Five, không lưu trữ câu trả
 lời gốc cho từng câu hỏi. Việc này giúp giảm thiểu rủi ro rò rỉ dữ liệu thô và hạn chế khả năng định danh gián tiếp.
 
-Hình #ref(<fig_ui_quiz_flow>) gợi ý bố trí giao diện và vị trí bước tổng hợp điểm trong luồng
+Hình #ref(<fig_ui_quiz_flow>) minh họa bố trí giao diện và vị trí bước tổng hợp điểm trong luồng
 ứng dụng.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch4_ui_flow.png", width: 85%),
   caption: [Luồng giao diện và vị trí tổng hợp điểm Big Five],
 ) <fig_ui_quiz_flow>
-#text(10pt, [Gợi ý hình: fig_ui_quiz_flow.png])
 
 === Chuyển đổi trên thiết bị
 
@@ -98,11 +129,9 @@ Ví dụ, việc mã hoá một gói tin JSON nhỏ bằng RSA đòi hỏi nhi�
 trễ đáng kể khi người dùng cập nhật hồ sơ liên tục.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch4_rsa_alt.png", width: 85%),
   caption: [Ví dụ chi phí tính toán khi dùng RSA cho payload nhỏ],
 ) <fig_rsa_alt>
-#text(10pt, [Gợi ý hình: fig_rsa_alt.png])
-#text(10pt, [Gợi ý hình: fig_rsa_alt.png])
 
 === Lựa chọn thay thế: Bcrypt/Scrypt
 
@@ -114,17 +143,15 @@ ngược lại yêu cầu về trải nghiệm người dùng và giới hạn c
 Ví dụ, sở thích “chạy bộ” sau khi băm sẽ trở thành một chuỗi ký tự ngẫu nhiên và không thể khôi phục để hiển thị lại là “chạy bộ”.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch4_hashing.png", width: 85%),
   caption: [So sánh dữ liệu băm và dữ liệu có thể giải mã],
 ) <fig_bcrypt_alt>
-#text(10pt, [Gợi ý hình: fig_bcrypt_alt.png])
-#text(10pt, [Gợi ý hình: fig_bcrypt_alt.png])
 
 === Lựa chọn thay thế: Homomorphic encryption
 
 Mã hoá đồng hình (Homomorphic encryption) cho phép thực hiện tính toán trực tiếp trên dữ liệu đã mã hoá mà không cần giải mã @gentry2009fully.
 Đây là hướng đi rất mạnh về bảo mật, nhưng chi phí tính toán cực kỳ cao và việc triển khai rất phức tạp. Với
-bài toán gợi ý cần phản hồi nhanh, việc áp dụng mã hoá đồng hình sẽ làm tăng độ trễ hệ thống
+bài toán giới thiệu cần phản hồi nhanh, việc áp dụng mã hoá đồng hình sẽ làm tăng độ trễ hệ thống
 và đòi hỏi hạ tầng phần cứng đặc biệt. Ngoài ra, mô hình này chưa thực sự cần thiết vì đề tài không yêu cầu tính toán
 phức tạp trực tiếp trên dữ liệu mã hoá mà chỉ cần lưu trữ an toàn và giải mã khi cần thiết. Do đó, mã hoá đồng hình
 vượt quá phạm vi thực tế của khóa luận.
@@ -132,11 +159,9 @@ Ví dụ, một phép so khớp cosine trên dữ liệu mã hoá đồng hình 
 văn bản thuần, gây trải nghiệm kém mượt mà trên thiết bị di động.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch4_he.png", width: 85%),
   caption: [Minh họa độ phức tạp của mã hoá đồng hình],
 ) <fig_homomorphic_alt>
-#text(10pt, [Gợi ý hình: fig_homomorphic_alt.png])
-#text(10pt, [Gợi ý hình: fig_homomorphic_alt.png])
 
 === Lựa chọn thay thế: Differential privacy
 
@@ -146,15 +171,13 @@ liệu cho từng cá nhân cụ thể. Nếu chỉ áp dụng sự riêng tư b
 gốc của chính mình, dẫn tới vấn đề bảo mật vẫn tồn tại ở cấp độ lưu trữ. Trong hệ thống Twins, yêu cầu là bảo vệ dữ
 liệu của từng người nhưng vẫn cho phép họ xem lại nội dung đó. Vì vậy, sự riêng tư biệt lập
 được coi như một kỹ thuật bổ trợ chứ không thể thay thế cho AES-GCM.
-Ví dụ, nếu cộng thêm nhiễu vào điểm Big Five để bảo vệ tính ẩn danh trong thống kê, kết quả gợi ý cá nhân hóa cho người dùng sẽ
+Ví dụ, nếu cộng thêm nhiễu vào điểm Big Five để bảo vệ tính ẩn danh trong thống kê, kết quả giới thiệu cá nhân hóa cho người dùng sẽ
 bị giảm độ chính xác và khó giải thích.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch4_dp.png", width: 85%),
   caption: [So sánh sự riêng tư biệt lập và mã hoá dữ liệu cá nhân],
 ) <fig_dp_alt>
-#text(10pt, [Gợi ý hình: fig_dp_alt.png])
-#text(10pt, [Gợi ý hình: fig_dp_alt.png])
 
 === Vai trò của Edge Function và khóa bí mật
 
@@ -163,21 +186,13 @@ bị trích xuất từ ứng dụng. Đồng thời, cách thiết kế này ch
 khi đăng nhập lại trên một thiết bị khác. Đây là sự cân bằng hợp lý giữa bảo mật và khả năng
 khôi phục dữ liệu.
 
-Hình #ref(<fig_crypto_flow>) mô tả luồng dữ liệu trong quá trình mã hoá và giải mã.
-
-#figure(
-  image("/images/placeHolderImage.png", width: 85%),
-  caption: [Luồng mã hoá/giải mã dữ liệu Big Five qua Edge Function],
-) <fig_crypto_flow>
-#text(10pt, [Gợi ý hình: fig_crypto_flow.png])
-
 Hình #ref(<fig_edge_logs>) minh họa nhật ký (log) của Edge Function cho quá trình mã hoá và giải mã.
 
+
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch4_edge_logs.png", width: 85%),
   caption: [Nhật ký Edge Function khi mã hoá và giải mã dữ liệu], 
 ) <fig_edge_logs>
-#text(10pt, [Gợi ý hình: fig_edge_logs.png])
 
 === Lưu trữ và giới hạn truy cập
 
@@ -190,10 +205,9 @@ lại kết quả cho người dùng.
 Hình #ref(<fig_cipher_sample>) minh họa mẫu dữ liệu đã mã hoá được lưu trong cơ sở dữ liệu.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch4_db_sample.png", width: 85%),
   caption: [Ví dụ dữ liệu đã mã hoá của Big Five trong bảng profiles],
 ) <fig_cipher_sample>
-#text(10pt, [Gợi ý hình: fig_cipher_sample.png])
 
 == Dữ liệu sở thích và mã hóa
 
@@ -204,9 +218,8 @@ thể hiển thị lại sở thích sau khi giải mã, nhưng cơ sở dữ li
 Hình #ref(<fig_hobby_encrypt>) mô tả luồng dữ liệu sở thích từ nhập liệu đến lưu trữ.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch4_hobby_flow.png", width: 85%),
   caption: [Luồng mã hoá dữ liệu sở thích và lưu trữ vector nhúng],
 ) <fig_hobby_encrypt>
-#text(10pt, [Gợi ý hình: fig_hobby_encrypt.png])
 
 #pagebreak()

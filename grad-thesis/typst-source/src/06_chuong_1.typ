@@ -16,25 +16,24 @@ những nền tảng đại trà, Twins ưu tiên kết nối có chiều sâu t
 Mục tiêu này dẫn tới việc giảm bớt các tín hiệu bề mặt và tăng trọng số cho các yếu tố
 phản ánh đặc trưng cá nhân ổn định hơn. Về mặt trải nghiệm, người dùng được dẫn qua một
 chuỗi câu hỏi ngắn gọn để trích xuất tính cách, sau đó dùng kết quả này như một “dấu vân
-tính cách” phục vụ gợi ý và phân nhóm.
+tính cách” phục vụ giới thiệu và phân nhóm.
 
 Các nền tảng mạng xã hội và ứng dụng kết nối hiện nay thường tối ưu cho tốc độ ghép cặp và
 số lượt tương tác, dựa trên yếu tố vị trí, sở thích bề mặt hoặc mạng bạn bè sẵn có. Cách
 tiếp cận này tạo ra nhiều kết quả, nhưng chưa chắc dẫn tới sự tương hợp lâu dài. Trong khi
-đó, các mô hình tính cách như Năm Yếu Tố Lớn (Big Five) được xem là khung tham chiếu ổn định, có khả năng
+đó, các mô hình tính cách như Big-5 được xem là khung tham chiếu ổn định, có khả năng
 giải thích xu hướng hành vi và mức độ phù hợp giữa các cá nhân @tupes1961recurrent@john1999bigfive.
 
 Ở góc nhìn của đề tài, nhu cầu kết nối theo tính cách có ý nghĩa vì nó gắn với các đặc
-trưng ít thay đổi theo thời gian, nên phù hợp cho bài toán gợi ý dài hạn. Lựa chọn này cũng
+trưng ít thay đổi theo thời gian, nên phù hợp cho bài toán giới thiệu dài hạn. Lựa chọn này cũng
 tránh việc phụ thuộc quá nhiều vào dữ liệu tương tác ngắn hạn, vốn dễ bị ảnh hưởng bởi bối
 cảnh, tâm trạng hoặc hiệu ứng thuật toán. Hình #ref(<fig_context_social_apps>) minh họa bối
 cảnh ứng dụng và mục tiêu kết nối theo tính cách.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch1_context.png", width: 85%),
   caption: [Bối cảnh ứng dụng mạng xã hội và nhu cầu kết nối theo tính cách],
 ) <fig_context_social_apps>
-#text(10pt, [Gợi ý hình: fig_context_social_apps.png])
 
 === Rủi ro dữ liệu tính cách và yêu cầu bảo vệ
 
@@ -61,25 +60,23 @@ Hình #ref(<fig_privacy_risks>) mô tả các rủi ro chính khi xử lý dữ 
 mô hình tập trung.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch1_privacy_risk.png", width: 85%),
   caption: [Rủi ro khi xử lý dữ liệu tính cách theo mô hình tập trung],
 ) <fig_privacy_risks>
-#text(10pt, [Gợi ý hình: fig_privacy_risks.png])
 
 == Mục tiêu và phạm vi
 
 === Mục tiêu chính
 
-Mục tiêu của đề tài là xây dựng một quy trình chuyển đổi và bảo vệ dữ liệu tính cách, trong
+Mục tiêu của đề tài là xây dựng một quy trình giới thiệu và bảo vệ dữ liệu tính cách, trong
 đó dữ liệu gốc được xử lý trên thiết bị, chuyển sang biểu diễn gọn hơn, và chỉ lưu trữ
-trên máy chủ dưới dạng mã hoá. Bên cạnh đó, hệ thống vẫn phải giữ khả năng so khớp và gợi
-ý người dùng một cách hiệu quả.
+trên máy chủ dưới dạng mã hoá. Bên cạnh đó, hệ thống vẫn phải giữ khả năng so khớp và giới thiệu người dùng một cách hiệu quả.
 
 Các mục tiêu chính gồm:
 
 - Xây dựng cơ chế chuyển đổi điểm Big Five sang không gian đặc trưng nhỏ gọn bằng Phân tích Thành phần chính (Principal Component Analysis - PCA) với 4 chiều (PCA-4).
 - Thiết kế cơ chế mã hoá theo Chuẩn mã hóa tiên tiến ở chế độ Galois/Counter (AES-GCM) để bảo vệ dữ liệu tính cách khi lưu trữ.
-- Duy trì khả năng so khớp dựa trên độ tương đồng cosine (cosine similarity) để phục vụ quy trình gợi ý.
+- Duy trì khả năng so khớp dựa trên độ tương đồng cosine (cosine similarity) để phục vụ quy trình giới thiệu.
 
 === Phạm vi thực hiện
 
@@ -90,8 +87,8 @@ giao diện hay tối ưu hóa trải nghiệm người dùng. Phạm vi hệ th
 - Một hàm thực thi biên (Edge Function) chịu trách nhiệm mã hoá và giải mã bằng AES-GCM.
 - Cơ sở dữ liệu lưu trữ vector PCA và dữ liệu đã mã hoá (ciphertext) thay vì dữ liệu thô.
 
-Ngoài ra, từ các biểu diễn đã chuyển đổi này, hệ thống gợi ý sẽ khai thác thêm các nguồn
-dữ liệu đã được nhúng vector (embedding) từ sở thích và tương tác, nhằm tạo ra kết quả gợi ý có
+Ngoài ra, từ các biểu diễn đã chuyển đổi này, hệ thống giới thiệu sẽ khai thác thêm các nguồn
+dữ liệu đã được nhúng vector (embedding) từ sở thích và tương tác, nhằm tạo ra kết quả giới thiệu có
 ý nghĩa thực tế nhưng vẫn giữ được nguyên tắc bảo mật thông tin cá nhân.
 
 == Bài toán và cách tiếp cận
@@ -107,7 +104,7 @@ Trong đề tài, PCA được chọn vì Big Five là mô hình tâm lý chuẩ
 khai quy mô lớn và ổn định theo quốc gia @tupes1961recurrent@john1999bigfive. PCA cho phép
 giảm chiều mà vẫn giữ được phần lớn phương sai. Kết quả từ notebook thực nghiệm cho thấy
 PCA-4 giữ khoảng hơn 90% phương sai của dữ liệu gốc, trong khi PCA-2 hoặc PCA-3 mất đáng
-kể thông tin @automoto2023bigfive. Hình #ref(<fig_pca_pipeline>) mô tả quy trình chuyển đổi
+kể thông tin @automoto2023bigfive. Hình #ref(<fig_pca_pipeline>) mô tả quy trình giới thiệu
 Big Five sang PCA-4.
 
 Một điểm quan trọng là tính cách khác với ngôn ngữ tự nhiên. Đối với ngôn ngữ, việc nhúng
@@ -130,10 +127,9 @@ hoặc trừ tùy theo hướng câu hỏi. Mô hình không phụ thuộc nội
 thang đo trong khi giảm tải thời gian trả lời cho người dùng.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
-  caption: [Quy trình chuyển đổi Big Five sang vector PCA-4],
+  image("../images/ch1_pca_pipeline.png", width: 85%),
+  caption: [Quy trình giới thiệu Big Five sang vector PCA-4],
 ) <fig_pca_pipeline>
-#text(10pt, [Gợi ý hình: fig_pca_pipeline.png])
 
 === Bài toán bảo mật dữ liệu
 
@@ -149,10 +145,10 @@ khi đăng nhập lại trên thiết bị khác. Hình #ref(<fig_encrypt_flow>)
 lưu trữ dữ liệu tính cách.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch1_encrypt_flow.png", width: 85%),
   caption: [Luồng mã hoá AES-GCM và lưu trữ dữ liệu tính cách],
 ) <fig_encrypt_flow>
-#text(10pt, [Gợi ý hình: fig_encrypt_flow.png])
+
 
 == Đóng góp chính
 
@@ -175,10 +171,10 @@ Toàn bộ mã nguồn cốt lõi của ứng dụng, bao gồm quy trình xử 
 == Cấu trúc của báo cáo
 
 Phần còn lại của báo cáo được trình bày như sau:
-- @chuong2: Trình bày quy trình tổng thể của hệ thống Twins, từ thu thập dữ liệu đến gợi ý.
+- @chuong2: Trình bày quy trình tổng thể của hệ thống Twins, từ thu thập dữ liệu đến giới thiệu.
 - @chuong3: Phân tích chi tiết PCA-4, dữ liệu huấn luyện và cách chuyển đổi.
 - (Dự kiến) Chương 4: Trình bày cơ chế bảo mật và luồng mã hoá/giải mã.
-- (Dự kiến) Chương 5: Trình bày hệ gợi ý (PCA, ELO, hobbies) và cách tính trọng số.
+- (Dự kiến) Chương 5: Trình bày hệ giới thiệu (PCA, ELO, hobbies) và cách tính trọng số.
 - (Dự kiến) Chương 6: Thực nghiệm và đánh giá hệ thống.
 - (Dự kiến) Chương 7: Kết luận và hướng phát triển.
 

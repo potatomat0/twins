@@ -5,13 +5,13 @@
 #align(center, text(16pt, strong("LỜI CẢM ƠN")))
 #v(1em)
 
-Lời đầu tiên cho phép em bày tỏ lòng biết ơn sâu sắc đến Khoa Công nghệ
-Thông tin - Trường Đại học Công nghệ, ĐHQGHN. Đây là nơi em đã có cơ hội tiếp cận với những tri thức mới mẻ, được học hỏi từ các thầy cô xuất sắc và kết nối với những người bạn, anh chị em đầy năng động và tài năng.
+Em xin gửi lời cảm ơn chân thành đến Ban giám hiệu Trường Đại học Công nghệ Thông tin – ĐHQG-HCM cùng các Thầy Cô trong Khoa đã tạo điều kiện và truyền đạt những kiến thức quý báu trong suốt quá trình em học tập tại trường.
 
-Em cũng xin gửi lời cảm ơn chân thành đến cô Hoàng Thị Điệp, người đã luôn là nguồn cảm hứng và sự hướng dẫn quý báu trong suốt thời gian em học tập tại trường. Sự tận tâm và hỗ trợ nhiệt tình của cô đã tiếp thêm động lực để em vượt qua những thử thách trong hành trình nghiên cứu và hoàn thiện khóa luận tốt nghiệp.
+Đặc biệt, em xin bày tỏ lòng tri ân sâu sắc nhất đến thầy Ngô Khánh Khoa. Trong suốt thời gian thực hiện đề tài, thầy không chỉ hỗ trợ tận tình về mặt kiến thức chuyên môn mà còn là một người thầy tâm huyết, luôn dành thời gian sát cánh và đưa ra những lời khuyên sâu sắc giúp em hoàn thành tốt khóa luận này.
 
-Ngoài ra, em xin gửi lời cảm ơn đến gia đình, bạn bè và những người đã luôn giúp đỡ, động viên, đồng hành cùng em suốt chặng đường học tập ở trường và khoảng thời gian thực hiện khóa luận.
-
-Kính chúc tất cả mọi người luôn vui vẻ, hạnh phúc và gặt hái được nhiều thành công trong cuộc sống.
+#v(1em)
+#align(right)[
+  Hoàng Minh Nhật
+]
 
 #pagebreak()

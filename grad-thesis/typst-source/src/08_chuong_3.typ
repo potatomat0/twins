@@ -24,7 +24,7 @@ Big Five là lựa chọn thực tế nhất để làm nền cho quy trình chu
 
 MBTI phân loại người dùng theo các cặp đối lập, tạo ra 16 nhóm tính cách. Cách biểu diễn
 này dễ truyền thông nhưng thiên về phân loại rời rạc, trong khi dữ liệu thực tế thường có
-phân bố liên tục. Với bài toán gợi ý cần đo mức độ gần nhau, dạng nhãn rời rạc làm giảm
+phân bố liên tục. Với bài toán giới thiệu cần đo mức độ gần nhau, dạng nhãn rời rạc làm giảm
 khả năng xếp hạng chi tiết và khó phản ánh mức độ “gần” giữa hai cá nhân. MBTI cũng có
 vấn đề về độ ổn định theo thời gian, nhiều người thay đổi nhóm khi làm lại bài test. Điều
 này làm cho dữ liệu khó tái lập và khó dùng cho quy trình so khớp dài hạn. Ngoài ra, MBTI
@@ -34,10 +34,9 @@ hướng ngoại nhưng vẫn bị xem là hai nhãn rời rạc. Hình #ref(<fi
 cách MBTI chia nhóm tính cách.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch3_mbti.png", width: 85%),
   caption: [Minh họa mô hình MBTI và cách phân nhóm tính cách],
 ) <fig_mbti_overview>
-#text(10pt, [Gợi ý hình: fig_mbti_overview.png])
 
 === Mô hình tính cách HEXACO
 
@@ -51,10 +50,9 @@ giá, làm tăng nhiễu đo lường. Do đó HEXACO được xem là lựa ch�
 chính cho đề tài. Hình #ref(<fig_hexaco_overview>) minh họa cấu trúc HEXACO.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch3_hexaco.png", width: 85%),
   caption: [Minh họa cấu trúc 6 yếu tố của HEXACO],
 ) <fig_hexaco_overview>
-#text(10pt, [Gợi ý hình: fig_hexaco_overview.png])
 
 == Chuẩn hóa điểm Big Five
 
@@ -83,22 +81,26 @@ Chuẩn hóa đưa dữ liệu Big Five về cùng thang đo, giúp mỗi trait 
 khớp và khi học PCA. Tuy vậy, chuẩn hóa không giải quyết vấn đề dư thừa thông tin giữa các
 trait. PCA được dùng để rút gọn chiều và tách các trục phương sai lớn nhất. Trong khi PCA‑2 hoặc
 PCA‑3 làm mất đáng kể thông tin, PCA‑4 là điểm cân bằng tối ưu: giảm chiều từ 5 xuống 4 nhưng vẫn giữ phần lớn phương
-sai, giúp hệ gợi ý hoạt động ổn định khi đo độ tương đồng cosine.
+sai, giúp hệ giới thiệu hoạt động ổn định khi đo độ tương đồng cosine.
 
 == Đề xuất PCA‑4
 
-Đề tài đề xuất PCA‑4 như mức giảm chiều tối ưu cho Big Five trong bối cảnh gợi ý bạn bè.
+Đề tài đề xuất PCA‑4 như mức giảm chiều tối ưu cho Big Five trong bối cảnh giới thiệu bạn bè.
 Giảm từ 5 xuống 4 chiều giúp tiết kiệm lưu trữ mà vẫn giữ phần lớn cấu trúc dữ liệu. PCA‑4
 cũng là dạng biểu diễn dễ triển khai trên thiết bị với phép nhân ma trận thuần. Mức giảm
 nhẹ này giúp hạn chế rủi ro mất thông tin so với PCA‑2 hoặc PCA‑3. Ngoài ra, PCA‑4 giữ
 được tính diễn giải tương đối, phù hợp với việc so sánh độ tương đồng cosine ổn định. Hình
-#ref(<fig_pca_proposal>) gợi ý một minh họa quyết định chọn PCA‑4 dựa trên phương sai.
+Hình #ref(<fig_pca_proposal>) trình bày một minh họa quyết định chọn PCA‑4 dựa trên phương sai.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch3_pca_selection.png", width: 85%),
   caption: [Minh họa tiêu chí lựa chọn PCA‑4],
 ) <fig_pca_proposal>
-#text(10pt, [Gợi ý hình: fig_pca_proposal.png])
+
+Trong notebook thực nghiệm, PCA‑2 chỉ giữ khoảng 63% phương sai, PCA‑3 khoảng 80%, trong
+khi PCA‑4 giữ hơn 90% phương sai dữ liệu gốc. Sự chênh lệch này ảnh hưởng trực tiếp đến
+khả năng phân biệt giữa các người dùng khi so khớp. Vì vậy PCA‑4 được chọn để giảm mất
+thông tin mà vẫn đảm bảo kích thước nhỏ gọn.
 
 == Huấn luyện PCA
 
@@ -107,7 +109,7 @@ nhẹ này giúp hạn chế rủi ro mất thông tin so với PCA‑2 hoặc P
 PCA được huấn luyện từ tập dữ liệu Big Five công khai quy mô lớn, sử dụng tệp
 `big_five_scores.csv` (khoảng 307 nghìn bản ghi) @automoto2023bigfive@kaggle2018bigfive.
 Dữ liệu bao gồm thông tin theo quốc gia và đã chuẩn hóa điểm về thang 0–1. Trong quá trình
-thăm dò, thống kê cho thấy dữ liệu trải rộng khoảng hơn 200 quốc gia và vùng lãnh thổ,
+thăm dò, thống kê cho thấy dữ liệu trải rộng khoảng hơn 190 quốc gia và vùng lãnh thổ,
 với các phân phối điểm khá ổn định giữa các nhóm quốc gia lớn. Một số bản ghi thiếu nhãn
 quốc gia, nhưng các cột điểm số vẫn đầy đủ, vì vậy không ảnh hưởng đến việc huấn luyện PCA.
 
@@ -132,28 +134,19 @@ PCA thực hiện phép chiếu tuyến tính trên dữ liệu đã được tr
 )
 
 trong đó $mu$ là vector trung bình (mean) và $W$ là ma trận chứa các thành phần chính (components) @jolliffe2002pca. Vector $z$ là PCA‑4 và
-được lưu dưới dạng 4 chiều. Hình #ref(<fig_pca_math>) mô tả phép chiếu và định dạng đầu ra.
+được lưu dưới dạng 4 chiều. Giải thuật #ref(<algo_pca_projection>) mô tả phép chiếu và định dạng đầu ra.
 
-#figure(
-  image("/images/placeHolderImage.png", width: 85%),
-  caption: [Minh họa phép chiếu PCA và định dạng vector đầu ra],
-) <fig_pca_math>
-#text(10pt, [Gợi ý hình: fig_pca_math.png])
+#outline_algo(
+  $ z = (x - mu) times W = mat(x_1, x_2, x_3, x_4, x_5) times mat(
+    w_(1,1), w_(1,2), w_(1,3), w_(1,4);
+    w_(2,1), w_(2,2), w_(2,3), w_(2,4);
+    dots.v, dots.v, dots.v, dots.v;
+    w_(5,1), w_(5,2), w_(5,3), w_(5,4)
+  ) = mat(z_1, z_2, z_3, z_4) $,
+  [Phép chiếu PCA giảm chiều dữ liệu tính cách],
+  <algo_pca_projection>
+)
 
-=== So sánh PCA‑2, PCA‑3, PCA‑4
-
-Trong notebook thực nghiệm, PCA‑2 chỉ giữ khoảng 63% phương sai, PCA‑3 khoảng 80%, trong
-khi PCA‑4 giữ hơn 90% phương sai dữ liệu gốc. Sự chênh lệch này ảnh hưởng trực tiếp đến
-khả năng phân biệt giữa các người dùng khi so khớp. Vì vậy PCA‑4 được chọn để giảm mất
-thông tin mà vẫn đảm bảo kích thước nhỏ gọn.
-
-Hình #ref(<fig_pca_variance>) minh họa đồ thị phương sai giải thích theo số chiều.
-
-#figure(
-  image("/images/placeHolderImage.png", width: 85%),
-  caption: [Đồ thị phương sai giải thích theo số chiều PCA],
-) <fig_pca_variance>
-#text(10pt, [Gợi ý hình: fig_pca_variance.png])
 
 == Triển khai PCA trên thiết bị
 
@@ -167,7 +160,7 @@ thiết bị. Các hệ số trung bình và thành phần chính được tríc
 
 Kết quả PCA‑4 được lưu dưới dạng 4 trường số: pca_dim1..pca_dim4. Các giá trị này được
 lưu song song với ciphertext của Big Five. Việc lưu PCA dạng số thực giúp tính độ tương đồng cosine
-trực tiếp ở phía máy chủ khi gợi ý.
+trực tiếp ở phía máy chủ khi giới thiệu.
 
 == Thảo luận lựa chọn PCA
 

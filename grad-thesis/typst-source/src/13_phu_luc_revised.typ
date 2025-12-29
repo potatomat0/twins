@@ -12,7 +12,20 @@
 
 #counter(heading).update(1)
 
+== Thông tin về mã nguồn và cơ sở dữ liệu
+
+Toàn bộ hệ thống mã nguồn, quy trình hiện thực và dữ liệu thực nghiệm của đề tài được lưu trữ tại kho lưu trữ (repository) cá nhân. Để phục vụ công tác thẩm định, mã nguồn được cung cấp đính kèm cùng báo cáo hoặc có thể truy cập trực tuyến (đối với thành viên được cấp quyền) tại đường dẫn:
+
+- *Đường dẫn:* #link("https://github.com/potatomat0/twins")[https://github.com/potatomat0/twins]
+
+Cấu trúc chính của kho lưu trữ bao gồm:
+- `/components`, `/services`, `/context`: Mã nguồn ứng dụng di động (React Native).
+- `/supabase/functions`: Các hàm thực thi biên (Edge Functions) xử lý logic bảo mật và giới thiệu.
+- `/supabase/migrations`: Các bản ghi thay đổi cấu trúc cơ sở dữ liệu và chính sách bảo mật (RLS).
+- `/scripts`: Các kịch bản kiểm thử tự động và đo đạc hiệu năng được sử dụng trong Chương 6.
+
 == Bộ câu hỏi Big Five (Phiên bản Tiếng Anh)
+
 
 Dưới đây là danh sách đầy đủ 50 câu hỏi Big Five (IPIP-50) được sử dụng trong hệ thống.
 
@@ -85,6 +98,7 @@ Phần này trình bày mã nguồn của các hàm thực thi biên (Edge Funct
 
 Hàm này xử lý việc mã hoá và giải mã dữ liệu nhạy cảm sử dụng thuật toán AES-256-GCM.
 
+#outline_algo(
 ```ts
 import { serve } from 'https://deno.land/std@0.192.0/http/server.ts';
 type Scores = Record<string, number>;
@@ -124,12 +138,16 @@ async function decrypt(cipherText: string, ivB64: string, reqId: string) {
 serve(async (req) => {
   // ... (Request handling logic omitted)
 });
-```
+```,
+[Hiện thực hàm mã hoá và giải mã điểm tính cách],
+<algo_score_crypto_code>
+)
 
-=== Thuật toán Gợi ý người dùng (recommend-users)
+=== Thuật toán Giới thiệu người dùng (recommend-users)
 
-Hàm này tính toán độ tương đồng cosine trên không gian PCA-4 và vector sở thích, kết hợp điểm ELO.
+Hàm này thực hiện tính toán độ tương đồng cosine trên không gian Big-5 PCA-4 và vector sở thích, kết hợp với điểm ELO để xếp hạng ứng viên.
 
+#outline_algo(
 ```ts
 // ... imports
 function cosine(a: number[], b: number[]) {
@@ -162,12 +180,16 @@ serve(async (req) => {
   */
   // ... (Sorting and pagination)
 });
-```
+```,
+[Hiện thực hàm giới thiệu người dùng lai],
+<algo_recommend_users_code>
+)
 
 === Cập nhật ELO và Tương tác (match-update)
 
 Hàm xử lý like/skip, cập nhật ELO và tạo match.
 
+#outline_algo(
 ```ts
 const K_FACTOR = 12;
 function expectedScore(rA: number, rB: number) {
@@ -190,7 +212,10 @@ function updateRatings(rA: number, rB: number, outcome: 'like' | 'skip', k = K_F
   return { newA, newB: rB };
 }
 // ... (Database transaction handling)
-```
+```,
+[Hiện thực hàm cập nhật điểm ELO và tương tác],
+<algo_match_update_code>
+)
 
 === Chính sách bảo mật cơ sở dữ liệu (RLS Policies)
 
@@ -214,6 +239,7 @@ create policy match_insert on public.matches
 
 === Script tạo dữ liệu mẫu và đo hiệu năng Upsert (seedMockProfiles.ts)
 
+#outline_algo(
 ```ts
 import { createClient } from '@supabase/supabase-js';
 
@@ -252,10 +278,14 @@ async function seed() {
     console.log('--- STARTING PERFORMANCE SEED ---');
     // ... (Loop to create users)
 }
-```
+```,
+[Script tạo dữ liệu mẫu và đo hiệu năng],
+<algo_seed_script>
+)
 
 === Script kiểm thử kịch bản Viewer (benchmark_scenarios.ts)
 
+#outline_algo(
 ```ts
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
@@ -299,12 +329,16 @@ async function benchmark() {
 }
 
 benchmark();
-```
+```,
+[Script kiểm thử kịch bản giới thiệu],
+<algo_benchmark_script>
+)
 
 == Kỹ thuật tối ưu hóa cơ sở dữ liệu
 
 Dưới đây là mã nguồn SQL được sử dụng để tối ưu hoá hiệu năng cho các chính sách bảo mật hàng (RLS) và tăng tốc độ truy vấn thông qua chỉ mục (Index).
 
+#outline_algo(
 ```sql
 -- 1. Tối ưu hoá RLS bằng cách sử dụng subquery để cache auth.uid()
 DROP POLICY IF EXISTS "profiles_is_owner" ON public.profiles;
@@ -326,4 +360,7 @@ CREATE INDEX IF NOT EXISTS idx_matches_user_a ON public.matches(user_a);
 CREATE INDEX IF NOT EXISTS idx_matches_user_b ON public.matches(user_b);
 CREATE INDEX IF NOT EXISTS idx_profiles_gender ON public.profiles(gender);
 CREATE INDEX IF NOT EXISTS idx_profiles_age_group ON public.profiles(age_group);
-```
+```,
+[Mã nguồn SQL tối ưu hoá cơ sở dữ liệu],
+<algo_sql_optimization>
+)

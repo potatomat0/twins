@@ -8,11 +8,11 @@
 == Mục tiêu của chương
 
 Chương này trình bày quy trình (pipeline) tổng thể của hệ thống Twins, theo thứ tự từ thu thập dữ liệu
-trên thiết bị, chuyển đổi và bảo mật, đến gợi ý người dùng. Mục tiêu là mô tả rõ các tác
-nhân tham gia, dữ liệu vào ra ở mỗi bước và cách các điểm số được kết hợp thành một điểm
+trên thiết bị, chuyển đổi và bảo mật, đến giới thiệu người dùng. Mục tiêu là mô tả rõ các tác
+nhân tham gia, dữ liệu vào ra ở mỗi bước và cách các điểm số được kết hợp thành một giới thiệu
 xếp hạng cuối cùng. Các chương sau sẽ đi sâu vào từng thành phần.
 Trong đó, Chương 4 tập trung vào bảo mật và mã hoá dữ liệu, còn Chương 5 trình bày chi
-tiết hệ gợi ý và các công thức xếp hạng.
+tiết hệ giới thiệu và các công thức xếp hạng.
 
 == Các nguồn dữ liệu đầu vào
 
@@ -50,13 +50,12 @@ luồng mã hoá dữ liệu sở thích sẽ được mô tả ở Chương 5.
 == Tổng quan quy trình và tác nhân
 
 Hệ thống có ba tác nhân chính: thiết bị người dùng, Edge Function và cơ sở dữ liệu. Hình
-#ref(<fig_pipeline_overview>) mô tả quy trình tổng thể từ thu thập dữ liệu đến gợi ý.
+#ref(<fig_pipeline_overview>) mô tả quy trình tổng thể từ thu thập dữ liệu đến giới thiệu.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 90%),
+  image("../images/ch2_pipeline_overview.png", width: 90%),
   caption: [Quy trình tổng thể của hệ thống Twins],
 ) <fig_pipeline_overview>
-#text(10pt, [Gợi ý hình: fig_pipeline_overview.png])
 
 Các bước chính gồm:
 
@@ -65,9 +64,9 @@ Các bước chính gồm:
 - Thiết bị gửi dữ liệu Big Five gốc tới Edge Function để mã hoá AES-256-GCM.
 - Cơ sở dữ liệu lưu trữ pca_dim1..4 và ciphertext (b5_cipher, b5_iv).
 - Dữ liệu sở thích được nhúng thành vector 384 chiều, mã hoá, và lưu trữ tương tự.
-- Hệ gợi ý lấy vector PCA, ELO và vector sở thích để tính điểm xếp hạng.
+- Hệ giới thiệu lấy vector PCA, ELO và vector sở thích để tính giới thiệu xếp hạng.
 
-== Đề xuất phân mảnh địa lý trong quy trình gợi ý
+== Đề xuất phân mảnh địa lý trong quy trình giới thiệu
 
 Khi số lượng người dùng tăng lớn, việc so khớp theo tổ hợp từng cặp sẽ làm chi phí tính
 toán tăng nhanh. Một hướng giảm tải là phân mảnh địa lý (geosharding), tức chia người dùng theo vùng địa lý
@@ -77,9 +76,9 @@ hẹn hò vì nó giảm số lượng cặp cần so sánh và tăng tốc ph�
 Trong đề tài, geosharding được xem là bước tối ưu hóa dài hạn, chưa ưu tiên ở giai đoạn
 thử nghiệm. Khi lượng người dùng đủ lớn và chi phí tính toán trở thành nút thắt, hệ thống
 đề xuất bổ sung tầng shard theo vùng để giới hạn không gian tìm kiếm. Điều này không thay
-đổi công thức điểm, nhưng làm giảm khối lượng tính toán cho mỗi lượt gợi ý.
+đổi công thức giới thiệu, nhưng làm giảm khối lượng tính toán cho mỗi lượt giới thiệu.
 
-== Mô hình điểm và trọng số trong gợi ý
+== Mô hình giới thiệu và trọng số trong giới thiệu
 
 === Điểm tương đồng tính cách (PCA)
 
@@ -105,21 +104,28 @@ lạm phát điểm ELO theo thời gian, vì lượt “like” làm cả hai p
 ưu tiên gặp nhau hơn.
 
 Trong công thức gốc, kỳ vọng thắng được tính bởi:
-#numbered_equation(
+#outline_algo(
   $ E_a = 1 / (1 + 10^((R_b - R_a) / 400)) $,
-  <elo_expect>,
+  [Tính toán kỳ vọng thắng trong mô hình Elo],
+  <algo_elo_expect>
 )
 Sau đó cập nhật theo $R_a' = R_a + K (S_a - E_a)$. Trong Twins, kết quả like được coi là
 một tín hiệu hợp tác nên cả hai phía tăng nhẹ, còn skip chỉ trừ phía chủ động. Cụ thể,
 với K=12 và được giới hạn trong [800, 2000]:
 
-- Like: $R_a' = text("clamp")(R_a + K(1 - E_a))$, $R_b' = text("clamp")(R_b + K(1 - E_b))$.
-- Skip: $R_a' = text("clamp")(R_a + K(0 - E_a))$, $R_b' = R_b$.
-
-Bên cạnh đó, hệ gợi ý sử dụng hệ số gần nhau ELO để ưu tiên mức xã giao tương đồng:
-#numbered_equation(
+#outline_algo(
+  [
+    - Like: $R_a' = text("clamp")(R_a + K(1 - E_a))$, $R_b' = text("clamp")(R_b + K(1 - E_b))$
+    - Skip: $R_a' = text("clamp")(R_a + K(0 - E_a))$, $R_b' = R_b$
+  ],
+  [Quy tắc cập nhật điểm ELO hợp tác],
+  <algo_elo_update>
+)
+Bên cạnh đó, hệ giới thiệu sử dụng hệ số gần nhau ELO để ưu tiên mức xã giao tương đồng:
+#outline_algo(
   $ p = exp(-|Delta R| / sigma) $,
-  <elo_prox>,
+  [Tính toán độ gần (proximity) ELO],
+  <algo_elo_prox>
 )
 trong đó $sigma = 400$.
 
@@ -132,31 +138,32 @@ cao hơn.
 
 === Trọng số tổng hợp
 
-Điểm xếp hạng cuối cùng được tính theo trọng số của PCA, ELO và hobbies. Trong phiên bản
-hiện tại:
+Giới thiệu xếp hạng cuối cùng được tính theo trọng số của PCA, ELO và hobbies dựa trên cấu hình hệ thống:
 
-- Khi không dùng hobbies:
-  - Nếu ELO bật: score = 0.8 * PCA + 0.2 * ELO proximity.
-  - Nếu ELO tắt: score = PCA.
+#outline_algo(
+  [
+    - *Trường hợp không sử dụng sở thích*:
+      - Nếu ELO bật: $S = 0.8 dot P + 0.2 dot p$
+      - Nếu ELO tắt: $S = P$
+    - *Trường hợp sử dụng sở thích*:
+      - Nếu ELO bật: $S = 0.5 dot P + 0.2 dot p + 0.3 dot H$
+      - Nếu ELO tắt: $S = 0.55 dot P + 0.45 dot H$
+    Trong đó: $P$ là độ tương đồng PCA, $p$ là hệ số gần nhau ELO, $H$ là độ tương đồng sở thích.
+  ],
+  [Thuật toán tính điểm giới thiệu tổng hợp],
+  <algo_hybrid_score>
+)
 
-- Khi dùng hobbies:
-  - Nếu ELO bật: `score = 0.5 * PCA + 0.2 * ELO + 0.3 * Hobbies`.
-  - Nếu ELO tắt: `score = 0.55 * PCA + 0.45 * Hobbies`.
-
-Để minh họa, xét ba người dùng A, B, C khi A đang tìm gợi ý. Giả sử A có PCA tương đồng
+Để minh họa, xét ba người dùng A, B, C khi A đang tìm giới thiệu. Giả sử A có PCA tương đồng
 với B và C gần bằng nhau (ví dụ 0.90), nhưng B có sở thích gần hơn (hobbies 0.85) trong khi
-C có ELO gần hơn (proximity 1.0 so với 0.7). Trong cấu hình có ELO và hobbies, điểm cuối
+C có ELO gần hơn (proximity 1.0 so với 0.7). Trong cấu hình có ELO và hobbies, giới thiệu cuối
 có thể làm B đứng trước nếu lợi thế sở thích lớn hơn lợi thế ELO. Trường hợp ngược lại,
-nếu B và C ngang nhau về hobbies, thì C sẽ được ưu tiên do proximity cao hơn. Ví dụ này
-thể hiện vai trò của từng trọng số trong việc phá vỡ tình huống hòa điểm.
-
-Hình #ref(<fig_score_weights>) minh họa sơ đồ trọng số và các nhánh tính điểm.
+nếu B và C ngang nhau về hobbies, thì C sẽ được ưu tiên do proximity cao hơn.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 90%),
-  caption: [Sơ đồ trọng số tính điểm gợi ý],
+  image("../images/ch2_score_logic.png", width: 90%),
+  caption: [Sơ đồ trọng số tính giới thiệu xếp hạng],
 ) <fig_score_weights>
-#text(10pt, [Gợi ý hình: fig_score_weights.png])
 
 == Luồng dữ liệu chi tiết theo tác nhân
 
@@ -185,13 +192,10 @@ Cơ sở dữ liệu lưu trữ:
 - Ciphertext và iv cho Big Five (b5_cipher, b5_iv).
 - Ciphertext cho hobbies và vector nhúng.
 
-Hình #ref(<fig_dataflow_sequence>) trình bày luồng dữ liệu theo thứ tự tác nhân.
-
 #figure(
-  image("/images/placeHolderImage.png", width: 90%),
-  caption: [Luồng dữ liệu giữa thiết bị, Edge Function và cơ sở dữ liệu],
+  image("../images/ch4_edge_logs.png", width: 90%),
+  caption: [Đoạn log tại edge function thể hiện quá trình mã hoá dữ liệu được gửi từ người dùng.],
 ) <fig_dataflow_sequence>
-#text(10pt, [Gợi ý hình: fig_dataflow_sequence.png])
 
 == Cấu trúc các chương tiếp theo
 
@@ -199,7 +203,7 @@ Hình #ref(<fig_dataflow_sequence>) trình bày luồng dữ liệu theo thứ t
 
 - *Chương 3: Chuyển đổi dữ liệu tính cách (PCA-4)*, tập trung vào phần lõi của việc xử lý và biểu diễn dữ liệu tính cách.
 - *Chương 4: Bảo mật và mã hoá dữ liệu*, trình bày chi tiết kiến trúc bảo mật, một thành phần quan trọng của hệ thống.
-- *Chương 5: Hệ gợi ý và cơ chế xếp hạng*, mô tả logic nghiệp vụ của việc kết hợp các tín hiệu để đưa ra gợi ý cuối cùng.
+- *Chương 5: Hệ giới thiệu và cơ chế xếp hạng*, mô tả logic nghiệp vụ của việc kết hợp các tín hiệu để đưa ra giới thiệu cuối cùng.
 - *Chương 6: Thực nghiệm và Đánh giá*, dành riêng cho việc kiểm chứng và đánh giá toàn bộ hệ thống dựa trên các câu hỏi nghiên cứu đã đề ra.
 
 Cách phân chia này giúp người đọc theo dõi chi tiết từng khía cạnh của việc "Hiện thực" (Chương 3, 4, 5) trước khi đi vào phần "Thực nghiệm" (Chương 6).

@@ -2,12 +2,12 @@
 
 #[
   #set heading(numbering: "Chương 1.1")
-  = Hệ gợi ý và cơ chế xếp hạng <chuong5>
+  = Hệ giới thiệu và cơ chế xếp hạng <chuong5>
 ]
 
 == Mục tiêu của chương
 
-Chương này mô tả cách hệ gợi ý kết hợp ba nguồn tín hiệu: tính cách (PCA), hành vi xã giao
+Chương này mô tả cách hệ giới thiệu kết hợp ba nguồn tín hiệu: tính cách (PCA), hành vi xã giao
 (ELO) và sở thích được nhúng vector (embedding hobbies). Đồng thời, chương giải thích vì sao từng tín hiệu
 vẫn cần thiết, ngay cả khi người dùng đã khai báo sở thích, và đi sâu vào các luận điểm
 thiết kế đằng sau mỗi thành phần.
@@ -21,7 +21,7 @@ biệt này thường quan trọng hơn sở thích bề mặt. Hơn nữa, sở
 hoặc thay đổi theo xu hướng, trong khi các đặc điểm tính cách cốt lõi theo mô hình Big Five
 có xu hướng ổn định hơn nhiều trong suốt cuộc đời của một người trưởng thành.
 
-Vì vậy, tính cách được xác định là *trục ổn định* (stable axis) của hệ gợi ý, đảm bảo các
+Vì vậy, tính cách được xác định là *trục ổn định* (stable axis) của hệ giới thiệu, đảm bảo các
 kết nối có nền tảng vững chắc và chiều sâu. Sở thích đóng vai trò *trục ngữ cảnh*
 (contextual axis), giúp bổ trợ, phá vỡ các trường hợp hòa điểm và tìm ra các điểm chung
 tức thời. Việc kết hợp cả hai giúp hệ thống vừa ổn định trong dài hạn, vừa linh hoạt
@@ -33,24 +33,23 @@ Trong hệ thống, ELO được dùng như một tín hiệu hành vi ẩn. ELO
 hơn hay “xấu” hơn, mà phản ánh mức độ xã giao thể hiện qua lượt like/skip. Công thức cập
 nhật dựa trên kỳ vọng thắng thua gốc của Elo @elo1978rating, được điều chỉnh để phù hợp
 với bối cảnh kết nối, nơi lượt like là một tín hiệu hợp tác. Cách cập nhật chi tiết đã
-được mô tả ở @elo_expect và @elo_prox. Việc giới hạn điểm trong khoảng 800–2000 giúp tránh
+được mô tả ở Giải thuật #ref(<algo_elo_expect>) và Giải thuật #ref(<algo_elo_prox>). Việc giới hạn điểm trong khoảng 800–2000 giúp tránh
 việc điểm bị trôi quá xa và làm giảm tác dụng phân nhóm hành vi.
 
 Hình #ref(<fig_elo_behavior>) minh họa trực quan cách ELO phản ánh hành vi xã giao qua các
 chuỗi like/skip khác nhau.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
+  image("../images/ch5_elo_chart.png", width: 85%),
   caption: [Ví dụ ELO phản ánh hành vi xã giao qua chuỗi tương tác],
 ) <fig_elo_behavior>
-#text(10pt, [Gợi ý hình: fig_elo_behavior.png])
 
 === Vai trò của ELO trong hành vi xã giao
 
 Điểm ELO phản ánh mức độ like/skip trong thực tế. Đây là tín hiệu hành vi, không phải kết
 quả tự khai báo. Nó đóng vai trò là một cơ chế hiệu chỉnh, giúp giảm sai lệch giữa những gì
 người dùng *nói* họ là (qua bài trắc nghiệm) và những gì họ *làm* (qua hành vi lướt).
-Khi người dùng thường xuyên skip, điểm ELO giảm và hệ thống ưu tiên gợi ý
+Khi người dùng thường xuyên skip, điểm ELO giảm và hệ thống ưu tiên giới thiệu
 những người có mức xã giao tương đồng.
 
 ELO trong hệ thống là hệ số ẩn, được cập nhật sau mỗi tương tác và giới hạn trong khoảng
@@ -87,10 +86,17 @@ khai báo đầy đủ sở thích, tạo ra một sân chơi công bằng hơn.
 
 Đề tài sử dụng mô hình ngữ nghĩa của Jina (semantic model) để chuyển đổi văn bản sở thích
 thành vector 384 chiều. Lý do chính là khả năng nắm bắt tương đồng ngữ nghĩa thay vì trùng
-từ khóa, phù hợp với cách người dùng mô tả sở thích bằng nhiều cách khác nhau. Mô hình kiểu
-nhúng câu (sentence embedding) cũng ổn định khi so khớp độ tương đồng cosine, dễ triển khai và ít tốn tài
+từ khóa, phù hợp với cách người dùng mô tả sở thích bằng nhiều cách khác nhau.
+
+#outline_algo(
+  $ text("sim")(A, B) = cos(theta) = (A dot B) / (||A|| times ||B||) = (sum_(i=1)^n A_i B_i) / (sqrt(sum_(i=1)^n A_i^2) times sqrt(sum_(i=1)^n B_i^2)) $,
+  [Công thức tính độ tương đồng cosine (Cosine Similarity)],
+  <algo_cosine_similarity>
+)
+
+Mô hình kiểu nhúng câu (sentence embedding) cũng ổn định khi so khớp độ tương đồng cosine, dễ triển khai và ít tốn tài
 nguyên hơn so với các mô hình sinh lớn @reimers2019sbert. Hình #ref(<fig_semantic_model>)
-mô tả luồng chuyển đổi từ văn bản sang vector và cách dùng độ tương đồng cosine trong gợi ý.
+mô tả luồng chuyển đổi từ văn bản sang vector và cách dùng độ tương đồng cosine trong giới thiệu.
 
 Trong triển khai hiện tại, hệ thống ghép sở thích thành một chuỗi ngắn theo mẫu
 `interests: ...` rồi sinh một vector duy nhất. Cách làm này là một sự đánh đổi có chủ đích
@@ -100,10 +106,9 @@ so sánh xuống O(N), thay vì O(N*k^2) nếu mỗi người có k sở thích 
 định và khả năng mở rộng, và chỉ xem xét mô hình đa vector khi có hạ tầng đủ mạnh.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
-  caption: [Luồng tạo vector nhúng sở thích bằng mô hình ngữ nghĩa],
+  image("../images/ch5_semantic.png", width: 85%),
+  caption: [Mức độ tương đồng ngữ nghĩa của hai từ được so sánh bằng cosine similarity.],
 ) <fig_semantic_model>
-#text(10pt, [Gợi ý hình: fig_semantic_model.png])
 
 === Lựa chọn thay thế: TF‑IDF
 
@@ -112,13 +117,12 @@ là đơn giản, dễ giải thích, và chạy nhanh trên thiết bị. Tuy n
 nghĩa nên khó nhận biết các từ đồng nghĩa như “jogging” và “chạy bộ”. Ngoài ra, TF‑IDF tạo
 vector thưa và kích thước lớn, làm tăng chi phí lưu trữ và so khớp khi số lượng từ vựng
 tăng. Trong bối cảnh sở thích ngắn và đa dạng, TF‑IDF dễ bị nhiễu bởi các từ hiếm. Vì vậy,
-TF‑IDF được coi là lựa chọn thay thế tham khảo chứ không phù hợp làm lõi gợi ý.
+TF‑IDF được coi là lựa chọn thay thế tham khảo chứ không phù hợp làm lõi giới thiệu.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
-  caption: [Ví dụ hạn chế của TF‑IDF khi so khớp sở thích],
+  image("../images/ch5_TF‑IDF.png", width: 85%),
+  caption: [TF-IDF vượt trội ở khả năng tìm kiếm từ khoá quan trọng.],
 ) <fig_tfidf_alt>
-#text(10pt, [Gợi ý hình: fig_tfidf_alt.png])
 
 === Lựa chọn thay thế: Word2Vec
 
@@ -131,55 +135,39 @@ Do đó, các mô hình nhúng câu được ưu tiên vì xử lý trực tiế
 ổn định hơn trong so khớp.
 
 #figure(
-  image("/images/placeHolderImage.png", width: 85%),
-  caption: [So sánh Word2Vec và mô hình nhúng câu trên cụm sở thích],
+  image("../images/ch5_word2vec.png", width: 85%),
+  caption: [Word2Vec vượt trội trong việc tìm quan hệ ngữ nghĩa giữa các từ.],
 ) <fig_word2vec_alt>
-#text(10pt, [Gợi ý hình: fig_word2vec_alt.png])
 
 == Công thức xếp hạng tổng hợp
 
 Hệ thống tính điểm theo các trọng số đã nêu ở Chương 2. Về bản chất, PCA là trục chính,
-ELO là trục hành vi, và hobbies là trục ngữ nghĩa. Hình #ref(<fig_rank_flow>) mô tả cây
-quyết định tính điểm và cách nhánh ELO/hobbies được bật tắt.
+ELO là trục hành vi, và hobbies là trục ngữ nghĩa.
 
 Việc đặt PCA làm trục chính giúp kết quả ổn định hơn theo thời gian, vì tính cách thay
 đổi chậm và ít bị ảnh hưởng bởi các biến động ngắn hạn. ELO chỉ đóng vai trò điều chỉnh,
 tránh trường hợp hai người có tính cách gần nhau nhưng hành vi xã giao quá khác biệt.
-Hobbies được dùng như một tín hiệu làm mượt, giúp hệ gợi ý nhận ra các chủ đề tương đồng
+Hobbies được dùng như một tín hiệu làm mượt, giúp hệ giới thiệu nhận ra các chủ đề tương đồng
 mà tính cách không nắm bắt được. Cấu trúc này giảm rủi ro hệ thống chỉ dựa vào một nguồn
 dữ liệu duy nhất, vốn dễ gây thiên lệch hoặc thiếu đa dạng.
 
-#figure(
-  image("/images/placeHolderImage.png", width: 90%),
-  caption: [Cây quyết định tính điểm gợi ý],
-) <fig_rank_flow>
-#text(10pt, [Gợi ý hình: fig_rank_flow.png])
-
 === Bàn luận về trọng số
 
-Các trọng số trong công thức tổng hợp (ví dụ: 60% PCA, 15% ELO, 25% Hobbies) được lựa chọn
-dựa trên các nguyên tắc sau:
-- *Tính cách là cốt lõi*: PCA luôn chiếm trọng số cao nhất (trên 50%) để đảm bảo sự tương
-  hợp về tính cách là yếu tố quyết định.
-- *Hành vi là yếu tố điều chỉnh*: ELO có trọng số thấp nhất, vì nó chỉ đóng vai trò là một
-  bộ lọc hành vi, tránh các gợi ý "lệch pha" về mức độ tương tác, chứ không phải là yếu tố
-  đo lường sự tương hợp.
-- *Sở thích là cầu nối*: Sở thích có trọng số đáng kể nhưng thấp hơn PCA, đóng vai trò là
-  chất xúc tác, tạo ra những điểm chung cụ thể để bắt đầu một mối quan hệ.
+Việc lựa chọn và phân bổ các trọng số trong công thức giới thiệu tổng hợp (ví dụ: 60% PCA, 15% ELO, 25% Hobbies) là một quy trình cân nhắc kỹ lưỡng nhằm đạt được sự cân bằng giữa tính ổn định dài hạn và các yếu tố ngữ cảnh tức thời. *Xác định tính cách là nền tảng cốt lõi* đóng vai trò quyết định trong việc duy trì một mối quan hệ bền vững, do đó trọng số cho sự tương đồng PCA luôn được thiết lập ở mức ưu tiên cao nhất, thường chiếm trên 50% tổng điểm giới thiệu. Việc đặt trọng số này ở mức chủ đạo giúp hệ thống lọc ra những người dùng có "sóng não" và xu hướng tâm lý tương hợp dựa trên mô hình Big-5, từ đó giảm thiểu rủi ro của các kết nối bề mặt vốn dễ dẫn đến sự ngắt quãng sau một thời gian ngắn tương tác.
 
-Các trọng số này có thể được hiệu chỉnh trong tương lai thông qua các thử nghiệm A/B
-testing hoặc thậm chí được cá nhân hóa cho từng người dùng, nhưng bộ trọng số hiện tại
-được xem là một điểm khởi đầu cân bằng và hợp lý.
+*Sử dụng hành vi xã giao làm yếu tố hiệu chỉnh* thông qua điểm số ELO nhằm tinh chỉnh danh sách giới thiệu sao cho phù hợp với mức độ năng động của từng cá nhân trong thực tế. Trọng số ELO được giữ ở mức thấp nhất trong bộ quy tắc vì nó không phản ánh sự tương hợp về bản chất con người mà chỉ đóng vai trò như một bộ lọc hành vi. Cơ chế này giúp tránh tình trạng giới thiệu "lệch pha" giữa một người dùng quá năng nổ với một người dùng có xu hướng khắt khe hoặc thụ động hơn, từ đó làm mượt trải nghiệm lướt và tăng tỷ lệ phản hồi tích cực dựa trên sự tương đồng về phong cách giao tiếp.
+
+*Coi sở thích cá nhân là chất xúc tác và cầu nối ngữ cảnh* để tạo ra những chủ đề trò chuyện cụ thể ngay từ giai đoạn đầu của việc kết nối. Với trọng số đáng kể nhưng thấp hơn tính cách, thành phần nhúng ngữ nghĩa của sở thích giúp phá vỡ thế hòa điểm giữa các ứng viên có độ tương đồng PCA ngang nhau, đồng thời cung cấp những giới thiệu mang tính thời điểm và thực tế cao hơn. Điều này cho phép người dùng dễ dàng tìm thấy tiếng nói chung thông qua các hoạt động hoặc đam mê cụ thể, từ đó tạo tiền đề cho việc khám phá sâu hơn về tính cách trong tương lai. Các trọng số này có thể được hiệu chỉnh linh hoạt thông qua các thử nghiệm thực tế hoặc cá nhân hóa cho từng nhóm người dùng, nhưng cấu hình hiện tại được xem là một điểm khởi đầu cân bằng, đảm bảo tính khoa học và hiệu quả của hệ thống giới thiệu.
 
 === Ví dụ minh họa xếp hạng
 
-Xét người dùng A đang xem gợi ý, với ba ứng viên B và C. Giả sử:
+Xét người dùng A đang xem giới thiệu, với ba ứng viên B và C. Giả sử:
 
 - PCA similarity: A‑B = 0.90, A‑C = 0.90 (hòa nhau).
 - Hobbies similarity: A‑B = 0.85, A‑C = 0.55.
 - ELO proximity: A‑B = 0.70, A‑C = 1.00.
 
-Trong cấu hình bật cả ELO và hobbies, điểm cuối của B sẽ tăng nhờ hobbies, còn C tăng nhờ
+Trong cấu hình bật cả ELO và hobbies, giới thiệu cuối của B sẽ tăng nhờ hobbies, còn C tăng nhờ
 ELO. Nếu trọng số hobbies lớn hơn phần chênh lệch ELO, B sẽ đứng trước. Nếu ngược lại,
 C sẽ đứng trước. Ví dụ này cho thấy các nguồn tín hiệu có thể phá vỡ thế hòa PCA theo các
 hướng khác nhau.

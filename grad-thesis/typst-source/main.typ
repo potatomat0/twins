@@ -1,7 +1,7 @@
 #import "template.typ": *
 
 #show: project.with(
-  title: "Hệ thống gợi ý kết bạn dựa trên tính cách, xử lý trực tiếp trên thiết bị để bảo vệ quyền riêng tư",
+  title: "Hệ thống giới thiệu kết bạn dựa trên tính cách, xử lý trực tiếp trên thiết bị để bảo vệ quyền riêng tư",
   authors: ((name: "Hoàng Minh Nhật"),),
 )
 

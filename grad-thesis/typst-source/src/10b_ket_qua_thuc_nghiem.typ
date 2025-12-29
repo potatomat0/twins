@@ -21,7 +21,7 @@ Kịch bản kiểm thử đo độ trễ toàn trình cho việc tạo hồ sơ
   caption: [Hiệu năng quy trình tạo tài khoản],
 )
 
-=== 2. Phân tích kết quả gợi ý và Hiệu quả tối ưu hoá
+=== 2. Phân tích kết quả giới thiệu và Hiệu quả tối ưu hoá
 
 Kịch bản kiểm thử sự thay đổi hiệu năng của hàm `recommend-users` sau khi tối ưu hoá chính sách bảo mật hàng (RLS) và bổ sung chỉ mục (Index).
 
@@ -35,7 +35,7 @@ Kịch bản kiểm thử sự thay đổi hiệu năng của hàm `recommend-us
     [Sau tối ưu (Warm)], [2343.39], [2175],
     [*Cải thiện*], [*~11.2%*], [*~11.3%*],
   ),
-  caption: [So sánh hiệu năng gợi ý trước và sau tối ưu hoá],
+  caption: [So sánh hiệu năng giới thiệu trước và sau tối ưu hoá],
 )
 
 *Nhận xét*: Việc chuyển đổi các chính sách RLS sang dạng truy vấn con (subquery) để tận dụng bộ nhớ đệm của PostgreSQL đã mang lại sự cải thiện rõ rệt (~300ms). Mặc dù con số tuyệt đối vẫn trên 2 giây do đặc thù của hạ tầng Serverless (Free Tier), xu hướng giảm độ trễ khẳng định tính đúng đắn của phương pháp tối ưu.

@@ -1,9 +1,8 @@
-#import "@preview/showybox:2.0.1" : showybox
 #import "src/00_trang_bia.typ": trang_bia
 #import "src/01_trang_phu_bia.typ": trang_phu_bia
 #import "@preview/codly:1.3.0": *
 
-#let heading_numbering(..nums) = {
+#let heading_numbering(..nums) = {
   return str(counter(heading).get().first()) + "." + nums
   .pos()
   .map(str)
@@ -32,14 +31,21 @@
   ]
 }
 #let output_box(content) = {
-  showybox(
-    breakable: true,
-    frame: (border-color: gray, title-color: gray.lighten(80%), radius: 0pt),
-    title-style: (color: black, boxed-style: (anchor: (x: left, y: horizon), radius: 0pt)),
-    title: "Output",
-    content,
+  block(
+    width: 100%,
+    stroke: 0.5pt + gray,
+    fill: luma(250),
+    inset: 10pt,
+    radius: 2pt,
+    [
+      #set par(first-line-indent: 0pt)
+      #text(size: 9pt, weight: "bold", fill: gray, "CONSOLE OUTPUT") \
+      #v(0.5em)
+      #content
+    ]
   )
 }
+
 // Project part
 #let project(title: "", authors: (), body) = {
   // Set the document's basic properties.
