@@ -9,6 +9,7 @@
 #set page(numbering: "1")
 #set heading(numbering: "1.1.", supplement: "Chương")
 
+#include "src/05_bang_thuat_ngu.typ"
 #include "src/06_chuong_1.typ"
 #include "src/07_chuong_2.typ"
 #include "src/08_chuong_3.typ"

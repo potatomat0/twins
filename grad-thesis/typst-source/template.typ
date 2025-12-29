@@ -2,6 +2,8 @@
 #import "src/01_trang_phu_bia.typ": trang_phu_bia
 #import "@preview/codly:1.3.0": *
 
+#set text(font: "Times New Roman", lang: "vi")
+
 #let heading_numbering(..nums) = {
   return str(counter(heading).get().first()) + "." + nums
   .pos()
@@ -158,7 +160,8 @@
     set footnote.entry(separator: none)
     show footnote.entry: hide
     show ref: none
-    show footnote: none
+    show footnote: none
+
     {
       show heading: none
       heading(numbering: none)[Danh mục hình ảnh]
