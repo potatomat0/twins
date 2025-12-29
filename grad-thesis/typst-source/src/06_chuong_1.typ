@@ -27,7 +27,7 @@ giải thích xu hướng hành vi và mức độ phù hợp giữa các cá nh
 Ở góc nhìn của đề tài, nhu cầu kết nối theo tính cách có ý nghĩa vì nó gắn với các đặc
 trưng ít thay đổi theo thời gian, nên phù hợp cho bài toán giới thiệu dài hạn. Lựa chọn này cũng
 tránh việc phụ thuộc quá nhiều vào dữ liệu tương tác ngắn hạn, vốn dễ bị ảnh hưởng bởi bối
-cảnh, tâm trạng hoặc hiệu ứng thuật toán. Hình #ref(<fig_context_social_apps>) minh họa bối
+cảnh, tâm trạng hoặc hiệu ứng thuật toán. #ref(<fig_context_social_apps>) minh họa bối
 cảnh ứng dụng và mục tiêu kết nối theo tính cách.
 
 #figure(
@@ -56,7 +56,7 @@ từ đầu là nhu cầu thực tế, không chỉ là lựa chọn kỹ thuậ
 Trong bối cảnh đó, đề tài đặt ra yêu cầu bảo vệ dữ liệu tính cách ở mức tương tự như các
 loại dữ liệu nhạy cảm khác (tin nhắn, mật khẩu). Thay vì để dữ liệu gốc tồn tại dạng
 văn bản thuần (plaintext) trên máy chủ, hệ thống cần có cơ chế chuyển đổi và mã hoá để giảm thiểu rủi ro rò rỉ.
-Hình #ref(<fig_privacy_risks>) mô tả các rủi ro chính khi xử lý dữ liệu tính cách theo
+#ref(<fig_privacy_risks>) mô tả các rủi ro chính khi xử lý dữ liệu tính cách theo
 mô hình tập trung.
 
 #figure(
@@ -104,7 +104,7 @@ Trong đề tài, PCA được chọn vì Big Five là mô hình tâm lý chuẩ
 khai quy mô lớn và ổn định theo quốc gia @tupes1961recurrent@john1999bigfive. PCA cho phép
 giảm chiều mà vẫn giữ được phần lớn phương sai. Kết quả từ notebook thực nghiệm cho thấy
 PCA-4 giữ khoảng hơn 90% phương sai của dữ liệu gốc, trong khi PCA-2 hoặc PCA-3 mất đáng
-kể thông tin @automoto2023bigfive. Hình #ref(<fig_pca_pipeline>) mô tả quy trình giới thiệu
+kể thông tin @automoto2023bigfive. #ref(<fig_pca_pipeline>) mô tả quy trình giới thiệu
 Big Five sang PCA-4.
 
 Một điểm quan trọng là tính cách khác với ngôn ngữ tự nhiên. Đối với ngôn ngữ, việc nhúng
@@ -141,7 +141,7 @@ dạng JSON, và phù hợp với mô hình hàm thực thi biên.
 
 Trong hệ thống, khóa AES chỉ nằm ở phía máy chủ (Edge Function). Thiết bị người dùng không
 giữ khóa, nhằm tránh nguy cơ bị trích xuất từ ứng dụng và vẫn cho phép khôi phục dữ liệu
-khi đăng nhập lại trên thiết bị khác. Hình #ref(<fig_encrypt_flow>) mô tả luồng mã hoá và
+khi đăng nhập lại trên thiết bị khác. #ref(<fig_encrypt_flow>) mô tả luồng mã hoá và
 lưu trữ dữ liệu tính cách.
 
 #figure(
@@ -173,9 +173,9 @@ Toàn bộ mã nguồn cốt lõi của ứng dụng, bao gồm quy trình xử 
 Phần còn lại của báo cáo được trình bày như sau:
 - @chuong2: Trình bày quy trình tổng thể của hệ thống Twins, từ thu thập dữ liệu đến giới thiệu.
 - @chuong3: Phân tích chi tiết PCA-4, dữ liệu huấn luyện và cách chuyển đổi.
-- (Dự kiến) Chương 4: Trình bày cơ chế bảo mật và luồng mã hoá/giải mã.
-- (Dự kiến) Chương 5: Trình bày hệ giới thiệu (PCA, ELO, hobbies) và cách tính trọng số.
-- (Dự kiến) Chương 6: Thực nghiệm và đánh giá hệ thống.
-- (Dự kiến) Chương 7: Kết luận và hướng phát triển.
+- @chuong4: Trình bày cơ chế bảo mật và luồng mã hoá/giải mã.
+- @chuong5: Trình bày hệ giới thiệu (PCA, ELO, hobbies) và cách tính trọng số.
+- @chuong6: Thực nghiệm và đánh giá hệ thống.
+- @ketluan: Kết luận và hướng phát triển.
 
 #pagebreak()

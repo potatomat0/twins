@@ -64,7 +64,7 @@ mật. Vì vậy, AES-GCM phù hợp hơn các chế độ chỉ mã hoá mà kh
 
 Đầu vào bao gồm dữ liệu gốc (dưới dạng JSON chứa điểm Big Five hoặc danh sách sở thích), khóa bí mật, và một IV
 ngẫu nhiên. Đầu ra bao gồm dữ liệu đã mã hoá (ciphertext) và IV tương ứng. Trong triển khai của đề tài, IV được lưu trữ riêng
-trong cơ sở dữ liệu để phục vụ quá trình giải mã sau này. Hình #ref(<fig_aes_io>) mô tả cấu trúc đầu vào và
+trong cơ sở dữ liệu để phục vụ quá trình giải mã sau này. #ref(<fig_aes_io>) mô tả cấu trúc đầu vào và
 đầu ra của quy trình này.
 
 Việc lưu trữ thẻ xác thực đi kèm ciphertext cho phép hệ thống kiểm tra tính toàn vẹn ngay tại thời điểm giải mã. Nếu phát hiện sai lệch, hệ thống sẽ từ chối giải mã và
@@ -85,7 +85,7 @@ này được xem là dữ liệu nhạy cảm vì có thể dùng để suy di�
 hệ thống chỉ lưu lại các điểm số đã được tổng hợp theo mô hình Big Five, không lưu trữ câu trả
 lời gốc cho từng câu hỏi. Việc này giúp giảm thiểu rủi ro rò rỉ dữ liệu thô và hạn chế khả năng định danh gián tiếp.
 
-Hình #ref(<fig_ui_quiz_flow>) minh họa bố trí giao diện và vị trí bước tổng hợp điểm trong luồng
+#ref(<fig_ui_quiz_flow>) minh họa bố trí giao diện và vị trí bước tổng hợp điểm trong luồng
 ứng dụng.
 
 #figure(
@@ -124,7 +124,7 @@ Trong bối cảnh dữ liệu tính cách, RSA không phù hợp để mã hoá
 tính toán lớn và giới hạn về kích thước dữ liệu đầu vào. Nếu sử dụng RSA cho mỗi lần cập nhật hồ sơ, hệ thống
 sẽ gặp vấn đề về độ trễ và khó mở rộng trên thiết bị di động. Ngoài ra, RSA thường đi
 kèm các cơ chế đệm (padding) phức tạp, dễ phát sinh lỗi nếu không được triển khai cẩn trọng. Vì vậy, RSA
-được xem là phương án thay thế nhưng không phù hợp làm cơ chế mã hoá chính cho dữ liệu người dùng.
+được xem là phương án thay thế nhưng không phù hợp làm cơ chế mã hoá chính cho dữ liệu người dùng, như minh họa tại #ref(<fig_rsa_alt>).
 Ví dụ, việc mã hoá một gói tin JSON nhỏ bằng RSA đòi hỏi nhiều bước xử lý đệm và tách khối, gây chậm
 trễ đáng kể khi người dùng cập nhật hồ sơ liên tục.
 
@@ -138,7 +138,7 @@ trễ đáng kể khi người dùng cập nhật hồ sơ liên tục.
 Bcrypt và Scrypt là các hàm băm mật khẩu (password hashing function) @provos1999bcrypt. Ưu điểm của chúng
 là làm chậm các cuộc tấn công dò khóa (brute-force), nhưng nhược điểm là dữ liệu sau khi băm không thể giải mã để lấy lại nội dung gốc. Trong hệ thống Twins,
 người dùng cần xem lại kết quả tính cách và sở thích của mình, do đó yêu cầu bắt buộc là phải giải mã được dữ liệu. Nếu dùng
-bcrypt, hệ thống chỉ có thể so khớp chuỗi băm mà không thể trả lại dữ liệu gốc cho giao diện. Điều này đi
+bcrypt, hệ thống chỉ có thể so khớp chuỗi băm mà không thể trả lại dữ liệu gốc cho giao diện (#ref(<fig_bcrypt_alt>)). Điều này đi
 ngược lại yêu cầu về trải nghiệm người dùng và giới hạn chức năng của ứng dụng. Vì vậy, các hàm băm này không phù hợp.
 Ví dụ, sở thích “chạy bộ” sau khi băm sẽ trở thành một chuỗi ký tự ngẫu nhiên và không thể khôi phục để hiển thị lại là “chạy bộ”.
 
@@ -152,7 +152,7 @@ Ví dụ, sở thích “chạy bộ” sau khi băm sẽ trở thành một chu
 Mã hoá đồng hình (Homomorphic encryption) cho phép thực hiện tính toán trực tiếp trên dữ liệu đã mã hoá mà không cần giải mã @gentry2009fully.
 Đây là hướng đi rất mạnh về bảo mật, nhưng chi phí tính toán cực kỳ cao và việc triển khai rất phức tạp. Với
 bài toán giới thiệu cần phản hồi nhanh, việc áp dụng mã hoá đồng hình sẽ làm tăng độ trễ hệ thống
-và đòi hỏi hạ tầng phần cứng đặc biệt. Ngoài ra, mô hình này chưa thực sự cần thiết vì đề tài không yêu cầu tính toán
+và đòi hỏi hạ tầng phần cứng đặc biệt (#ref(<fig_homomorphic_alt>)). Ngoài ra, mô hình này chưa thực sự cần thiết vì đề tài không yêu cầu tính toán
 phức tạp trực tiếp trên dữ liệu mã hoá mà chỉ cần lưu trữ an toàn và giải mã khi cần thiết. Do đó, mã hoá đồng hình
 vượt quá phạm vi thực tế của khóa luận.
 Ví dụ, một phép so khớp cosine trên dữ liệu mã hoá đồng hình có thể chậm hơn nhiều lần so với trên dữ liệu
@@ -168,7 +168,7 @@ văn bản thuần, gây trải nghiệm kém mượt mà trên thiết bị di 
 Sự riêng tư biệt lập (Differential privacy) tập trung vào việc ẩn danh hóa khi công bố các số liệu thống kê @dwork2006dp. Phương pháp
 này phù hợp cho dữ liệu tổng hợp, nhưng không giải quyết được bài toán lưu trữ và giải mã dữ
 liệu cho từng cá nhân cụ thể. Nếu chỉ áp dụng sự riêng tư biệt lập, người dùng vẫn cần truy cập vào dữ liệu
-gốc của chính mình, dẫn tới vấn đề bảo mật vẫn tồn tại ở cấp độ lưu trữ. Trong hệ thống Twins, yêu cầu là bảo vệ dữ
+gốc của chính mình, dẫn tới vấn đề bảo mật vẫn tồn tại ở cấp độ lưu trữ (#ref(<fig_dp_alt>)). Trong hệ thống Twins, yêu cầu là bảo vệ dữ
 liệu của từng người nhưng vẫn cho phép họ xem lại nội dung đó. Vì vậy, sự riêng tư biệt lập
 được coi như một kỹ thuật bổ trợ chứ không thể thay thế cho AES-GCM.
 Ví dụ, nếu cộng thêm nhiễu vào điểm Big Five để bảo vệ tính ẩn danh trong thống kê, kết quả giới thiệu cá nhân hóa cho người dùng sẽ
@@ -186,7 +186,7 @@ bị trích xuất từ ứng dụng. Đồng thời, cách thiết kế này ch
 khi đăng nhập lại trên một thiết bị khác. Đây là sự cân bằng hợp lý giữa bảo mật và khả năng
 khôi phục dữ liệu.
 
-Hình #ref(<fig_edge_logs>) minh họa nhật ký (log) của Edge Function cho quá trình mã hoá và giải mã.
+#ref(<fig_edge_logs>) minh họa nhật ký (log) của Edge Function cho quá trình mã hoá và giải mã.
 
 
 #figure(
@@ -202,7 +202,7 @@ chỉ được giải mã khi người dùng đã xác thực thành công và g
 nguy cơ giám sát hàng loạt (mass surveillance) từ bảng dữ liệu chưa mã hoá, đồng thời vẫn đảm bảo tính năng xem
 lại kết quả cho người dùng.
 
-Hình #ref(<fig_cipher_sample>) minh họa mẫu dữ liệu đã mã hoá được lưu trong cơ sở dữ liệu.
+#ref(<fig_cipher_sample>) minh họa mẫu dữ liệu đã mã hoá được lưu trong cơ sở dữ liệu.
 
 #figure(
   image("../images/ch4_db_sample.png", width: 85%),
@@ -215,7 +215,7 @@ Sở thích người dùng được nhập dưới dạng văn bản tự do, sa
 chiều. Dữ liệu văn bản này cũng được mã hoá theo cơ chế AES-GCM tương tự như Big Five. Do đó, giao diện ứng dụng có
 thể hiển thị lại sở thích sau khi giải mã, nhưng cơ sở dữ liệu hoàn toàn không lưu trữ văn bản thuần.
 
-Hình #ref(<fig_hobby_encrypt>) mô tả luồng dữ liệu sở thích từ nhập liệu đến lưu trữ.
+#ref(<fig_hobby_encrypt>) mô tả luồng dữ liệu sở thích từ nhập liệu đến lưu trữ.
 
 #figure(
   image("../images/ch4_hobby_flow.png", width: 85%),

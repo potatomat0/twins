@@ -33,10 +33,10 @@ Trong hệ thống, ELO được dùng như một tín hiệu hành vi ẩn. ELO
 hơn hay “xấu” hơn, mà phản ánh mức độ xã giao thể hiện qua lượt like/skip. Công thức cập
 nhật dựa trên kỳ vọng thắng thua gốc của Elo @elo1978rating, được điều chỉnh để phù hợp
 với bối cảnh kết nối, nơi lượt like là một tín hiệu hợp tác. Cách cập nhật chi tiết đã
-được mô tả ở Giải thuật #ref(<algo_elo_expect>) và Giải thuật #ref(<algo_elo_prox>). Việc giới hạn điểm trong khoảng 800–2000 giúp tránh
+được mô tả ở #ref(<algo_elo_expect>) và #ref(<algo_elo_prox>). Việc giới hạn điểm trong khoảng 800–2000 giúp tránh
 việc điểm bị trôi quá xa và làm giảm tác dụng phân nhóm hành vi.
 
-Hình #ref(<fig_elo_behavior>) minh họa trực quan cách ELO phản ánh hành vi xã giao qua các
+#ref(<fig_elo_behavior>) minh họa trực quan cách ELO phản ánh hành vi xã giao qua các
 chuỗi like/skip khác nhau.
 
 #figure(
@@ -86,7 +86,7 @@ khai báo đầy đủ sở thích, tạo ra một sân chơi công bằng hơn.
 
 Đề tài sử dụng mô hình ngữ nghĩa của Jina (semantic model) để chuyển đổi văn bản sở thích
 thành vector 384 chiều. Lý do chính là khả năng nắm bắt tương đồng ngữ nghĩa thay vì trùng
-từ khóa, phù hợp với cách người dùng mô tả sở thích bằng nhiều cách khác nhau.
+từ khóa, phù hợp với cách người dùng mô tả sở thích bằng nhiều cách khác nhau. Công thức tính độ tương đồng cosine được trình bày tại #ref(<algo_cosine_similarity>):
 
 #outline_algo(
   $ text("sim")(A, B) = cos(theta) = (A dot B) / (||A|| times ||B||) = (sum_(i=1)^n A_i B_i) / (sqrt(sum_(i=1)^n A_i^2) times sqrt(sum_(i=1)^n B_i^2)) $,
@@ -95,7 +95,7 @@ từ khóa, phù hợp với cách người dùng mô tả sở thích bằng nh
 )
 
 Mô hình kiểu nhúng câu (sentence embedding) cũng ổn định khi so khớp độ tương đồng cosine, dễ triển khai và ít tốn tài
-nguyên hơn so với các mô hình sinh lớn @reimers2019sbert. Hình #ref(<fig_semantic_model>)
+nguyên hơn so với các mô hình sinh lớn @reimers2019sbert. #ref(<fig_semantic_model>)
 mô tả luồng chuyển đổi từ văn bản sang vector và cách dùng độ tương đồng cosine trong giới thiệu.
 
 Trong triển khai hiện tại, hệ thống ghép sở thích thành một chuỗi ngắn theo mẫu
@@ -116,7 +116,7 @@ TF‑IDF là cách biểu diễn văn bản theo trọng số từ khóa @mannin
 là đơn giản, dễ giải thích, và chạy nhanh trên thiết bị. Tuy nhiên, TF‑IDF không hiểu ngữ
 nghĩa nên khó nhận biết các từ đồng nghĩa như “jogging” và “chạy bộ”. Ngoài ra, TF‑IDF tạo
 vector thưa và kích thước lớn, làm tăng chi phí lưu trữ và so khớp khi số lượng từ vựng
-tăng. Trong bối cảnh sở thích ngắn và đa dạng, TF‑IDF dễ bị nhiễu bởi các từ hiếm. Vì vậy,
+tăng. Trong bối cảnh sở thích ngắn và đa dạng, TF‑IDF dễ bị nhiễu bởi các từ hiếm (#ref(<fig_tfidf_alt>)). Vì vậy,
 TF‑IDF được coi là lựa chọn thay thế tham khảo chứ không phù hợp làm lõi giới thiệu.
 
 #figure(
@@ -130,7 +130,7 @@ Word2Vec tạo vector cho từng từ dựa trên ngữ cảnh @mikolov2013effic
 được một phần quan hệ ngữ nghĩa, nhưng vẫn gặp khó khi chuyển sang mức câu hoặc cụm sở
 thích ngắn. Người dùng thường nhập cụm như “đi phượt cuối tuần” hoặc “nấu ăn healthy”,
 trong khi Word2Vec cần thêm bước gộp nhiều vector (ví dụ: lấy trung bình) để đại diện
-cho cả cụm. Việc gộp thủ công làm mất sắc thái và không ổn định giữa các mẫu khác nhau.
+cho cả cụm. Việc gộp thủ công làm mất sắc thái và không ổn định giữa các mẫu khác nhau (#ref(<fig_word2vec_alt>)).
 Do đó, các mô hình nhúng câu được ưu tiên vì xử lý trực tiếp cụm sở thích,
 ổn định hơn trong so khớp.
 
@@ -161,16 +161,17 @@ Việc lựa chọn và phân bổ các trọng số trong công thức giới t
 
 === Ví dụ minh họa xếp hạng
 
-Xét người dùng A đang xem giới thiệu, với ba ứng viên B và C. Giả sử:
+Xét người dùng A đang xem giới thiệu, với ba ứng viên B và C. Giả sử hệ thống đang áp dụng trọng số: 50% PCA, 20% ELO proximity, và 30% Hobbies. Các chỉ số tương đồng thành phần như sau:
 
-- PCA similarity: A‑B = 0.90, A‑C = 0.90 (hòa nhau).
-- Hobbies similarity: A‑B = 0.85, A‑C = 0.55.
-- ELO proximity: A‑B = 0.70, A‑C = 1.00.
+- *PCA Similarity*: $text("sim")_P(A, B) = 0.90$, $text("sim")_P(A, C) = 0.90$ (hòa nhau).
+- *Hobbies Similarity*: $text("sim")_H(A, B) = 0.85$, $text("sim")_H(A, C) = 0.55$.
+- *ELO Proximity*: $p(A, B) = 0.70$, $p(A, C) = 1.00$.
 
-Trong cấu hình bật cả ELO và hobbies, giới thiệu cuối của B sẽ tăng nhờ hobbies, còn C tăng nhờ
-ELO. Nếu trọng số hobbies lớn hơn phần chênh lệch ELO, B sẽ đứng trước. Nếu ngược lại,
-C sẽ đứng trước. Ví dụ này cho thấy các nguồn tín hiệu có thể phá vỡ thế hòa PCA theo các
-hướng khác nhau.
+Điểm tổng hợp được tính toán:
+$ S_B = 0.5 dot 0.90 + 0.2 dot 0.70 + 0.3 dot 0.85 = 0.845 $
+$ S_C = 0.5 dot 0.90 + 0.2 dot 1.00 + 0.3 dot 0.55 = 0.815 $
+
+Trong kịch bản này, mặc dù C có mức độ xã giao (ELO) tương đồng tuyệt đối với A, nhưng lợi thế về sở thích của B đủ lớn để đẩy B lên vị trí cao hơn trong danh sách giới thiệu. Ví dụ này cho thấy các nguồn tín hiệu có thể phá vỡ thế hòa PCA theo các hướng khác nhau, tạo ra kết quả giới thiệu đa chiều và phù hợp với thực tế tương tác.
 
 == Bảo vệ dữ liệu sở thích và quyền riêng tư
 

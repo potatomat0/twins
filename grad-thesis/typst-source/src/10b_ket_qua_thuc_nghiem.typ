@@ -6,7 +6,7 @@ Phần này trình bày các số liệu định lượng thu được từ các
 
 === 1. Hiệu năng quy trình tạo tài khoản (Upsert Pipeline)
 
-Kịch bản kiểm thử đo độ trễ toàn trình cho việc tạo hồ sơ người dùng mới (bao gồm xác thực, mã hoá 2 lớp và lưu trữ).
+Kịch bản kiểm thử đo độ trễ toàn trình cho việc tạo hồ sơ người dùng mới (bao gồm xác thực, mã hoá 2 lớp và lưu trữ), kết quả được ghi nhận tại #ref(<tab_upsert_latency>):
 
 #figure(
   table(
@@ -19,11 +19,11 @@ Kịch bản kiểm thử đo độ trễ toàn trình cho việc tạo hồ sơ
     [Thời gian cao nhất (Cold)], [3.78 giây],
   ),
   caption: [Hiệu năng quy trình tạo tài khoản],
-)
+) <tab_upsert_latency>
 
 === 2. Phân tích kết quả giới thiệu và Hiệu quả tối ưu hoá
 
-Kịch bản kiểm thử sự thay đổi hiệu năng của hàm `recommend-users` sau khi tối ưu hoá chính sách bảo mật hàng (RLS) và bổ sung chỉ mục (Index).
+Kịch bản kiểm thử sự thay đổi hiệu năng của hàm `recommend-users` sau khi tối ưu hoá chính sách bảo mật hàng (RLS) và bổ sung chỉ mục (Index) như mô tả tại #ref(<tab_optimize_performance>):
 
 #figure(
   table(
@@ -36,11 +36,11 @@ Kịch bản kiểm thử sự thay đổi hiệu năng của hàm `recommend-us
     [*Cải thiện*], [*~11.2%*], [*~11.3%*],
   ),
   caption: [So sánh hiệu năng giới thiệu trước và sau tối ưu hoá],
-)
+) <tab_optimize_performance>
 
 *Nhận xét*: Việc chuyển đổi các chính sách RLS sang dạng truy vấn con (subquery) để tận dụng bộ nhớ đệm của PostgreSQL đã mang lại sự cải thiện rõ rệt (~300ms). Mặc dù con số tuyệt đối vẫn trên 2 giây do đặc thù của hạ tầng Serverless (Free Tier), xu hướng giảm độ trễ khẳng định tính đúng đắn của phương pháp tối ưu.
 
-*Bảng xếp hạng Top 5 kết quả (Sau tối ưu):*
+Danh sách 5 người dùng được gợi ý hàng đầu sau tối ưu hoá được trình bày tại #ref(<tab_top5_results>):
 
 #figure(
   table(
@@ -55,13 +55,27 @@ Kịch bản kiểm thử sự thay đổi hiệu năng của hàm `recommend-us
     [5], [MockUser04], [0.408], [0.408], [1474.0], [0.071],
   ),
   caption: [Kết quả xếp hạng thực tế sau khi tối ưu hoá],
-)
+) <tab_top5_results>
 
 === 3. Logic cập nhật ELO thực tế
 
-Dựa trên dữ liệu từ script benchmark, sự thay đổi điểm ELO của Viewer (Actor) và đối tượng tương tác (Target) được ghi nhận như sau:
+Dựa trên dữ liệu từ script benchmark, sự thay đổi điểm ELO của Viewer (Actor) và đối tượng tương tác (Target) được ghi nhận như sau. Giả sử $R_A = 1500$ (Viewer) và $R_B = 1230$ (Match_PCA), với hệ số $K = 12$:
 
-- *Hành động Like*: Actor tăng nhẹ (~1.8 điểm), Target tăng mạnh (~10 điểm). Điều này minh chứng cho cơ chế khuyến khích tương tác hai chiều.
-- *Hành động Skip*: Actor bị trừ điểm (~10 điểm), Target không bị ảnh hưởng. Đây là cơ chế phạt hành vi lựa chọn khắt khe để cân bằng hệ sinh thái.
+*Trường hợp hành động Like (Hợp tác)*:
+Kỳ vọng thắng được tính toán:
+$ E_A = 1 / (1 + 10^((1230 - 1500) / 400)) approx 0.825 $
+$ E_B = 1 - E_A approx 0.175 $
+
+Điểm số mới sau khi tương tác:
+$ R_A' = 1500 + 12 dot (1 - 0.825) = 1502.1 $
+$ R_B' = 1230 + 12 dot (1 - 0.175) = 1239.9 $
+
+*Nhận xét*: Actor tăng nhẹ (~2.1 điểm), trong khi Target tăng mạnh hơn (~9.9 điểm). Điều này minh chứng cho cơ chế khuyến khích tương tác hai chiều và ưu tiên bảo vệ điểm số cho người được yêu thích.
+
+*Trường hợp hành động Skip*:
+$ R_A'' = 1500 + 12 dot (0 - 0.825) = 1490.1 $
+$ R_B'' = 1230 $
+
+*Nhận xét*: Actor bị trừ điểm (~9.9 điểm), Target không bị ảnh hưởng. Đây là cơ chế phạt hành vi lựa chọn khắt khe để cân bằng hệ sinh thái.
 
 *Độ trễ hành động (Warm)*: ~1.0 - 1.7 giây.

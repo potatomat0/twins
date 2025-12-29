@@ -44,6 +44,23 @@ async function benchmark() {
     }
     console.log(`[Recommend] Latency: ${(tRecEnd - tRecStart).toFixed(2)}ms`);
     console.log(`[Recommend] Server-reported elapsed: ${recData.elapsedMs}ms`);
+
+    // 2.1 Latency of score-crypto
+    console.log('\n--- EDGE FUNCTION LATENCY ---');
+    const tCryptoStart = performance.now();
+    await supabase.functions.invoke('score-crypto', {
+        body: { mode: 'encrypt', scores: { Extraversion: 0.5, Agreeableness: 0.5, Conscientiousness: 0.5, 'Emotional Stability': 0.5, 'Intellect/Imagination': 0.5 } }
+    });
+    const tCryptoEnd = performance.now();
+    console.log(`[score-crypto] Latency: ${(tCryptoEnd - tCryptoStart).toFixed(2)}ms`);
+
+    // 2.2 Latency of embed
+    const tEmbedStart = performance.now();
+    await supabase.functions.invoke('embed', {
+        body: { text: 'Hiking, Anime, Coding' }
+    });
+    const tEmbedEnd = performance.now();
+    console.log(`[embed] Latency: ${(tEmbedEnd - tEmbedStart).toFixed(2)}ms`);
     
     // Analyze Top 5
     console.log('\n--- TOP 5 RECOMMENDATIONS ---');

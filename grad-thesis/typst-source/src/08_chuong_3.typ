@@ -30,7 +30,7 @@ vấn đề về độ ổn định theo thời gian, nhiều người thay đ�
 này làm cho dữ liệu khó tái lập và khó dùng cho quy trình so khớp dài hạn. Ngoài ra, MBTI
 ít có dữ liệu mở quy mô lớn theo chuẩn hóa số điểm, nên khó dùng cho chuyển đổi PCA và
 huấn luyện ổn định. Ví dụ, hai người thuộc nhóm INFP và ENFP có thể khác nhau mạnh về
-hướng ngoại nhưng vẫn bị xem là hai nhãn rời rạc. Hình #ref(<fig_mbti_overview>) minh họa
+hướng ngoại nhưng vẫn bị xem là hai nhãn rời rạc. #ref(<fig_mbti_overview>) minh họa
 cách MBTI chia nhóm tính cách.
 
 #figure(
@@ -47,7 +47,7 @@ gây áp lực lên trải nghiệm người dùng di động, vì thời gian t
 chuyển đổi từ HEXACO sang dạng PCA sẽ cần dữ liệu huấn luyện riêng, trong khi dữ liệu chuẩn
 không nhiều bằng Big Five. Ví dụ, nếu chỉ dùng 25 câu, mỗi trait sẽ bị giảm số câu đánh
 giá, làm tăng nhiễu đo lường. Do đó HEXACO được xem là lựa chọn tham khảo hơn là lựa chọn
-chính cho đề tài. Hình #ref(<fig_hexaco_overview>) minh họa cấu trúc HEXACO.
+chính cho đề tài. #ref(<fig_hexaco_overview>) minh họa cấu trúc HEXACO.
 
 #figure(
   image("../images/ch3_hexaco.png", width: 85%),
@@ -89,8 +89,8 @@ sai, giúp hệ giới thiệu hoạt động ổn định khi đo độ tương
 Giảm từ 5 xuống 4 chiều giúp tiết kiệm lưu trữ mà vẫn giữ phần lớn cấu trúc dữ liệu. PCA‑4
 cũng là dạng biểu diễn dễ triển khai trên thiết bị với phép nhân ma trận thuần. Mức giảm
 nhẹ này giúp hạn chế rủi ro mất thông tin so với PCA‑2 hoặc PCA‑3. Ngoài ra, PCA‑4 giữ
-được tính diễn giải tương đối, phù hợp với việc so sánh độ tương đồng cosine ổn định. Hình
-Hình #ref(<fig_pca_proposal>) trình bày một minh họa quyết định chọn PCA‑4 dựa trên phương sai.
+được tính diễn giải tương đối, phù hợp với việc so sánh độ tương đồng cosine ổn định.
+#ref(<fig_pca_proposal>) trình bày một minh họa quyết định chọn PCA‑4 dựa trên phương sai.
 
 #figure(
   image("../images/ch3_pca_selection.png", width: 85%),
@@ -113,10 +113,10 @@ thăm dò, thống kê cho thấy dữ liệu trải rộng khoảng hơn 190 qu
 với các phân phối điểm khá ổn định giữa các nhóm quốc gia lớn. Một số bản ghi thiếu nhãn
 quốc gia, nhưng các cột điểm số vẫn đầy đủ, vì vậy không ảnh hưởng đến việc huấn luyện PCA.
 
-Phân tích Dữ liệu Khám phá (Exploratory Data Analysis - EDA) trong notebook cho thấy chênh lệch trung bình giữa các quốc gia tồn tại nhưng
+Phân tích Dữ liệu Khám phá (Exploratory Data Analysis - EDA) trong notebook `model/pca_evaluator.ipynb` cho thấy chênh lệch trung bình giữa các quốc gia tồn tại nhưng
 không đủ lớn để cần một mô hình riêng theo vùng. Do đó, PCA được huấn luyện trên toàn bộ
 tập dữ liệu để nắm bắt phương sai tổng thể. Đây là quyết định thực tế giúp mô hình ổn định
-và tái lập, đồng thời tránh việc phải duy trì nhiều mô hình theo vùng.
+và tái lập, đồng thời tránh việc phải duy trì nhiều mô hình theo vùng. Notebook này đóng vai trò quan trọng trong việc trích xuất các hằng số toán học (Mean và ma trận Components) thay vì huấn luyện một mô hình học máy phức tạp, từ đó cho phép hệ thống triển khai logic biến đổi trực tiếp dưới dạng code thuần (hard-coded) trên thiết bị.
 
 Đề tài không huấn luyện mô hình học sâu cho tính cách vì mục tiêu chính là biến đổi và nén
 dữ liệu đã có cấu trúc. PCA cho phép giữ tính giải thích, dễ triển khai trên thiết bị và
@@ -134,7 +134,7 @@ PCA thực hiện phép chiếu tuyến tính trên dữ liệu đã được tr
 )
 
 trong đó $mu$ là vector trung bình (mean) và $W$ là ma trận chứa các thành phần chính (components) @jolliffe2002pca. Vector $z$ là PCA‑4 và
-được lưu dưới dạng 4 chiều. Giải thuật #ref(<algo_pca_projection>) mô tả phép chiếu và định dạng đầu ra.
+được lưu dưới dạng 4 chiều. #ref(<algo_pca_projection>) mô tả phép chiếu và định dạng đầu ra.
 
 #outline_algo(
   $ z = (x - mu) times W = mat(x_1, x_2, x_3, x_4, x_5) times mat(

@@ -49,8 +49,7 @@ luồng mã hoá dữ liệu sở thích sẽ được mô tả ở Chương 5.
 
 == Tổng quan quy trình và tác nhân
 
-Hệ thống có ba tác nhân chính: thiết bị người dùng, Edge Function và cơ sở dữ liệu. Hình
-#ref(<fig_pipeline_overview>) mô tả quy trình tổng thể từ thu thập dữ liệu đến giới thiệu.
+Hệ thống có ba tác nhân chính: thiết bị người dùng, Edge Function và cơ sở dữ liệu. #ref(<fig_pipeline_overview>) mô tả quy trình tổng thể từ thu thập dữ liệu đến giới thiệu.
 
 #figure(
   image("../images/ch2_pipeline_overview.png", width: 90%),
@@ -91,7 +90,7 @@ Phương pháp này phù hợp vì đo góc giữa hai vector, ít bị ảnh h�
 
 Hệ thống dùng điểm ELO như một thước đo xã giao, phản ánh mức độ tương tác qua hành vi
 like và skip. Điểm ELO được cập nhật theo kỳ vọng thắng thua trong mô hình Elo gốc, nhưng
-được điều chỉnh để phù hợp với ngữ cảnh kết nối xã hội @elo1978rating. Trong hệ thống:
+được điều chỉnh để phù hợp với ngữ cảnh kết nối xã hội @elo1978rating. Quy trình tính toán kỳ vọng và cập nhật điểm số được trình bày tại #ref(<algo_elo_expect>) và #ref(<algo_elo_update>). Trong hệ thống:
 
 - Like: cả hai phía tăng nhẹ.
 - Skip: chỉ người chủ động skip bị trừ.
@@ -111,7 +110,7 @@ Trong công thức gốc, kỳ vọng thắng được tính bởi:
 )
 Sau đó cập nhật theo $R_a' = R_a + K (S_a - E_a)$. Trong Twins, kết quả like được coi là
 một tín hiệu hợp tác nên cả hai phía tăng nhẹ, còn skip chỉ trừ phía chủ động. Cụ thể,
-với K=12 và được giới hạn trong [800, 2000]:
+với K=12 và được giới hạn trong [800, 2000], quy tắc cập nhật được chi tiết tại #ref(<algo_elo_update>):
 
 #outline_algo(
   [
@@ -121,7 +120,7 @@ với K=12 và được giới hạn trong [800, 2000]:
   [Quy tắc cập nhật điểm ELO hợp tác],
   <algo_elo_update>
 )
-Bên cạnh đó, hệ giới thiệu sử dụng hệ số gần nhau ELO để ưu tiên mức xã giao tương đồng:
+Bên cạnh đó, hệ giới thiệu sử dụng hệ số gần nhau ELO để ưu tiên mức xã giao tương đồng, được tính theo công thức tại #ref(<algo_elo_prox>):
 #outline_algo(
   $ p = exp(-|Delta R| / sigma) $,
   [Tính toán độ gần (proximity) ELO],
@@ -138,7 +137,7 @@ cao hơn.
 
 === Trọng số tổng hợp
 
-Giới thiệu xếp hạng cuối cùng được tính theo trọng số của PCA, ELO và hobbies dựa trên cấu hình hệ thống:
+Giới thiệu xếp hạng cuối cùng được tính theo trọng số của PCA, ELO và hobbies dựa trên cấu hình hệ thống, chi tiết tại #ref(<algo_hybrid_score>):
 
 #outline_algo(
   [
@@ -156,9 +155,11 @@ Giới thiệu xếp hạng cuối cùng được tính theo trọng số của 
 
 Để minh họa, xét ba người dùng A, B, C khi A đang tìm giới thiệu. Giả sử A có PCA tương đồng
 với B và C gần bằng nhau (ví dụ 0.90), nhưng B có sở thích gần hơn (hobbies 0.85) trong khi
-C có ELO gần hơn (proximity 1.0 so với 0.7). Trong cấu hình có ELO và hobbies, giới thiệu cuối
-có thể làm B đứng trước nếu lợi thế sở thích lớn hơn lợi thế ELO. Trường hợp ngược lại,
-nếu B và C ngang nhau về hobbies, thì C sẽ được ưu tiên do proximity cao hơn.
+C có ELO gần hơn (proximity 1.0 so với 0.7). Trong cấu hình có ELO và hobbies, điểm giới thiệu cuối của B được tính như sau:
+$ S_B = 0.5 dot 0.90 + 0.2 dot 0.70 + 0.3 dot 0.85 = 0.845 $
+và của C:
+$ S_C = 0.5 dot 0.90 + 0.2 dot 1.00 + 0.3 dot 0.55 = 0.815 $
+Kết quả là B sẽ đứng trước C trong danh sách giới thiệu. Sơ đồ trọng số tổng hợp được mô tả tại #ref(<fig_score_weights>):
 
 #figure(
   image("../images/ch2_score_logic.png", width: 90%),
@@ -191,6 +192,8 @@ Cơ sở dữ liệu lưu trữ:
 - Vector PCA (pca_dim1..4).
 - Ciphertext và iv cho Big Five (b5_cipher, b5_iv).
 - Ciphertext cho hobbies và vector nhúng.
+
+Luồng dữ liệu được ghi nhận qua nhật ký hệ thống tại #ref(<fig_dataflow_sequence>):
 
 #figure(
   image("../images/ch4_edge_logs.png", width: 90%),
