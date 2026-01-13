@@ -2,3 +2,4 @@ node_modules
 .expo/
 ./documents/supabase.md
 .env.local
+.env
