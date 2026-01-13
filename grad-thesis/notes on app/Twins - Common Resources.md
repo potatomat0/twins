@@ -183,4 +183,44 @@ ___
 hugging face feature extract hf api (READ) also named : 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
 HF_EMBED_MODEL (used for extracting user's plain hobby to comparable vectors): thenlper/gte-small
 
-free alternative that allows embedding is Jina, API key is: jina_51ccfa74cc3b4ee28483869bb0f6afb3NfcEoEQuk760jMi3T-PlXAyA_PhN
+## reference
+
+1. @youyou2015computer (Được trích dẫn ở Chương 1)
+   * Tiêu đề: Computer-based personality judgments are more accurate than those made by humans
+   * Trích dẫn tại: Chương 1 - Chứng minh tính cách kỹ thuật số (digital phenotype) ổn định và chính xác.
+   * Link: PNAS Full Text (https://www.pnas.org/doi/10.1073/pnas.1418680112)
+
+2. @john1999bigfive (Được trích dẫn ở Chương 1, 3)
+   * Tiêu đề: The Big Five trait taxonomy: History, measurement, and theoretical perspectives
+   * Trích dẫn tại: Chương 3 - Cơ sở lý thuyết chọn mô hình Big Five.
+   * Link: PDF - Berkeley (https://jenni.uchicago.edu/econ-psych-traits/John_Srivastava_1995_big5.pdf)
+
+3. @goldberg1992ipip (Được trích dẫn ở Chương 2, Phụ lục)
+   * Tiêu đề: The development of markers for the Big-Five factor structure
+   * Trích dẫn tại: Chương 2 (Nguồn bộ câu hỏi), Phụ lục (Danh sách IPIP-50).
+   * Link: PDF - ORI (https://projects.ori.org/lrg/PDFs_papers/Goldberg.Psych.Assess.1992.pdf)
+
+4. @nistel2007gcm (Được trích dẫn ở Chương 1, 4)
+   * Tiêu đề: Galois/Counter Mode of Operation (GCM)
+   * Trích dẫn tại: Chương 4 - Giải thích tại sao chọn AES-GCM (tính toàn vẹn dữ liệu).
+   * Link: PDF - NIST (https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf)
+
+5. @manning2008ir (Được trích dẫn ở Chương 2, 5)
+   * Tiêu đề: Introduction to Information Retrieval
+   * Trích dẫn tại: Chương 5 - Cơ sở toán học của Cosine Similarity và so sánh với TF-IDF.
+   * Link: HTML Book (https://nlp.stanford.edu/IR-book/html/htmledition/scoring-term-weighting-and-the-vector-space-model-1.html)
+
+6. @elo1978rating (Được trích dẫn ở Chương 2, 5)
+   * Tiêu đề: The Rating of Chessplayers, Past and Present
+   * Trích dẫn tại: Chương 5 - Công thức gốc tính kỳ vọng $E_a$ cho thuật toán ELO.
+   * Link: Google Books (https://books.google.com.vn/books/about/The_Rating_of_Chessplayers_Past_and_Pres.html?id=b49RAQAAIAAJ)
+
+7. @jolliffe2002pca (Được trích dẫn ở Chương 3)
+   * Tiêu đề: Principal Component Analysis
+   * Trích dẫn tại: Chương 3 - Công thức chiếu PCA: $z = (x - \mu) \times W^T$.
+   * Link: Springer (https://link.springer.com/book/10.1007/b98835)
+
+8. @reimers2019sbert (Được trích dẫn ở Chương 5)
+   * Tiêu đề: Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks
+   * Trích dẫn tại: Chương 5 - Biện luận chọn mô hình nhúng câu thay vì Word2Vec.
+   * Link: PDF - ArXiv (https://arxiv.org/pdf/1908.10084.pdf)
