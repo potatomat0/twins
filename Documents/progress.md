@@ -25,3 +25,4 @@
     *   `on_new_message_notify`: Automatically inserts a notification when a message is inserted into `public.messages`.
     *   `on_new_match_notify`: Automatically inserts mutual notifications when a row is inserted into `public.matches`.
     *   This guarantees 100% notification reliability and prevents "missing notification" issues caused by client/network failures.
+- 2026-01-08: Swipe Performance — Implemented image preloading in `RecommendationContext` to fetch the next 5 user avatars in advance. This eliminates loading spinners on swipe, providing a much smoother user experience in the Explore deck.

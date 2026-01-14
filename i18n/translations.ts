@@ -39,6 +39,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       unreadCount: '{count} unread',
       markAll: 'Mark all read',
       read: 'Read',
+      unread: 'Unread',
     },
     messages: {
       title: 'Messages',
@@ -470,6 +471,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       unreadCount: '未読 {count}件',
       markAll: 'すべて既読にする',
       read: '既読',
+      unread: '未読',
     },
     messages: {
       title: 'メッセージ',
@@ -901,6 +903,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       unreadCount: '{count} chưa đọc',
       markAll: 'Đánh dấu đã đọc tất cả',
       read: 'Đã đọc',
+      unread: 'Chưa đọc',
     },
     messages: {
       title: 'Tin nhắn',

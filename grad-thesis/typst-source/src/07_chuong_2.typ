@@ -200,15 +200,4 @@ Luồng dữ liệu được ghi nhận qua nhật ký hệ thống tại #ref(<
   caption: [Đoạn log tại edge function thể hiện quá trình mã hoá dữ liệu được gửi từ người dùng.],
 ) <fig_dataflow_sequence>
 
-== Cấu trúc các chương tiếp theo
-
-Để đi sâu vào từng thành phần của quy trình, các chương tiếp theo của báo cáo được cấu trúc như sau, tách biệt rõ ràng các phần hiện thực và thực nghiệm để tăng tính mạch lạc:
-
-- *Chương 3: Chuyển đổi dữ liệu tính cách (PCA-4)*, tập trung vào phần lõi của việc xử lý và biểu diễn dữ liệu tính cách.
-- *Chương 4: Bảo mật và mã hoá dữ liệu*, trình bày chi tiết kiến trúc bảo mật, một thành phần quan trọng của hệ thống.
-- *Chương 5: Hệ giới thiệu và cơ chế xếp hạng*, mô tả logic nghiệp vụ của việc kết hợp các tín hiệu để đưa ra giới thiệu cuối cùng.
-- *Chương 6: Thực nghiệm và Đánh giá*, dành riêng cho việc kiểm chứng và đánh giá toàn bộ hệ thống dựa trên các câu hỏi nghiên cứu đã đề ra.
-
-Cách phân chia này giúp người đọc theo dõi chi tiết từng khía cạnh của việc "Hiện thực" (Chương 3, 4, 5) trước khi đi vào phần "Thực nghiệm" (Chương 6).
-
 #pagebreak()

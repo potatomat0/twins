@@ -6,6 +6,8 @@
   - Use preset colors defined in `themes/index.ts`. Use `toRgb()`/`toRgba()` helpers.
   - **New Colors**: Added `--accent-pink` and `--accent-orange` for hobby tags and highlights.
   - **Images**: Use `expo-image` (`<Image>`) instead of React Native's Image for caching and performance.
+- **Performance**:
+  - **Image Preloading**: For feed or swipe interfaces (e.g., `ExploreSwipeScreen`), preload images in advance using `Image.prefetch()`. This is critical for a smooth UX and is managed centrally in `RecommendationContext`.
 - **Internationalization (i18n)**:
   - All text must be in `i18n/translations.ts` (English, Japanese, Vietnamese).
   - Group keys logically (e.g., `settings.hobbies`, `explore.filters`).

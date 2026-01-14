@@ -17,6 +17,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { placeholderAvatarUrl, uploadAvatar, getOptimizedImageUrl } from '@services/storage';
 import ProfileDetailModal, { ProfileDetail } from '@components/ProfileDetailModal';
+import haptics from '@services/haptics';
 
 const AGE_VALUES = ['<18', '18-24', '25-35', '35-44', '45+'] as const;
 const AGE_KEYS = ['under18', 'range18_24', 'range25_35', 'range35_44', 'range45_plus'] as const;
@@ -405,14 +406,34 @@ const UserSettingsScreen: React.FC = () => {
           icon="person-circle-outline"
         >
           <Pressable
-            style={{ alignItems: 'center', marginBottom: 12, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: toRgba(theme.colors['--border'], 0.2) }}
-            onPress={() => setShowPublicProfile(true)}
+            style={({ pressed }) => [
+              styles.popButton,
+              {
+                backgroundColor: toRgba(theme.colors['--brand-primary'], pressed ? 0.2 : 0.12),
+                borderColor: toRgb(theme.colors['--brand-primary']),
+              },
+            ]}
+            onPress={() => {
+              haptics.light();
+              setShowPublicProfile(true);
+            }}
           >
-            <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '700' }}>{t('settings.viewPublicProfile') ?? 'View public profile'}</Text>
-            <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 4 }}>
-              {t('settings.viewPublicProfileHint') ?? 'See how others see your card'}
+            <Ionicons name="eye-outline" size={16} color={toRgb(theme.colors['--brand-primary'])} />
+            <Text style={[styles.popButtonText, { color: toRgb(theme.colors['--brand-primary']) }]}>
+              {t('settings.viewPublicProfile') ?? 'View public profile'}
             </Text>
           </Pressable>
+          <Text
+            style={{
+              color: toRgb(theme.colors['--text-secondary']),
+              marginTop: 4,
+              marginBottom: 12,
+              textAlign: 'center',
+              fontSize: 12,
+            }}
+          >
+            {t('settings.viewPublicProfileHint') ?? 'See how others see your card'}
+          </Text>
           <View style={{ alignItems: 'center', marginBottom: 12 }}>
             <Image
               source={{ uri: getOptimizedImageUrl(avatarUrl || placeholderAvatarUrl, 320) }}
@@ -636,6 +657,20 @@ const styles = StyleSheet.create({
   avatarActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
   progressBar: { height: 6, width: '100%', borderRadius: 6, overflow: 'hidden', marginTop: 8 },
   progressFill: { height: '100%', borderRadius: 6 },
+  popButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  popButtonText: {
+    fontWeight: '700',
+    fontSize: 16,
+  },
 });
 
 const Accordion: React.FC<{

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, ScrollView, Switch, Pressable, ActivityIndicator, Image } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
@@ -7,7 +7,10 @@ import { useTranslation } from '@context/LocaleContext';
 import Button from '@components/common/Button';
 import { useAuth } from '@context/AuthContext';
 import { placeholderAvatarUrl } from '@services/storage';
-import { useRecommendations } from '@context/RecommendationContext';
+import { useRecommendations, SimilarUser } from '@context/RecommendationContext';
+import ProfileDetailModal from './ProfileDetailModal';
+import haptics from '@services/haptics';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const ExploreScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -15,6 +18,15 @@ const ExploreScreen: React.FC = () => {
   const { user, profile } = useAuth();
   const { deck, loading, initialLoading, filters, useHobbies, setFilters, setUseHobbies, reset } = useRecommendations();
   const hasEnoughHobbies = !!profile?.hobbies_cipher;
+
+  const [selectedUser, setSelectedUser] = useState<SimilarUser | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const openProfileModal = useCallback((u: SimilarUser) => {
+    haptics.light();
+    setSelectedUser(u);
+    setModalVisible(true);
+  }, []);
 
   const genderOptions = ['All', 'Male', 'Female', 'Non-Binary'] as const;
   const ageOptions = ['18-24', '25-35', '36-45', '46-60', '60+'] as const;
@@ -53,8 +65,6 @@ const ExploreScreen: React.FC = () => {
   const applyArchetype = (val: 'most' | 'least') => {
     setFilters({ ...filters, archetype: val });
   };
-
-  const topPreview = useMemo(() => deck.slice(0, 5), [deck]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: toRgb(theme.colors['--bg']) }]}>
@@ -188,7 +198,7 @@ const ExploreScreen: React.FC = () => {
             <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']) }]}>
               {t('explore.topMatches', { count: deck.length })}
             </Text>
-            {topPreview.map((u) => (
+            {deck.map((u) => (
               <View
                 key={u.id}
                 style={[
@@ -210,9 +220,9 @@ const ExploreScreen: React.FC = () => {
                 </View>
                 <Pressable
                   style={[styles.actionBtn, { borderColor: toRgba(theme.colors['--border'], 0.2) }]}
-                  onPress={() => {}}
+                  onPress={() => openProfileModal(u)}
                 >
-                  <Text style={{ color: toRgb(theme.colors['--text-primary']) }}>{t('common.notice')}</Text>
+                  <Ionicons name="eye-outline" size={20} color={toRgb(theme.colors['--text-primary'])} />
                 </Pressable>
               </View>
             ))}
@@ -223,6 +233,13 @@ const ExploreScreen: React.FC = () => {
           <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('explore.noListMatches')}</Text>
         ) : null}
       </ScrollView>
+
+      <ProfileDetailModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        profile={selectedUser ? { ...selectedUser, match_percentage: selectedUser.similarity * 100 } : null}
+        currentUserHobbies={profile?.hobbies ?? []}
+      />
     </SafeAreaView>
   );
 };
