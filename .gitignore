@@ -3,3 +3,4 @@ node_modules
 ./documents/supabase.md
 .env.local
 .env
+.idea

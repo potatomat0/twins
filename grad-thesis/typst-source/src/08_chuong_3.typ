@@ -17,7 +17,7 @@ Trong tâm lý học có nhiều khung mô tả tính cách, không có mô hìn
 Big Five được sử dụng vì đã có lịch sử nghiên cứu dài, hệ thống câu hỏi chuẩn hóa và dữ
 liệu công khai phong phú. So với các mô hình khác như MBTI hoặc HEXACO, Big Five có ưu thế
 về tính tái lập và độ phủ dữ liệu, phù hợp cho bài toán chuyển đổi số liệu quy mô lớn
-@john1999bigfive@ashton2007hexaco. Do đó, đề tài chấp nhận giới hạn của mô hình nhưng coi
+@john1999bigfive@ashton2007hexaco. Do đó, đồ án chấp nhận giới hạn của mô hình nhưng coi
 Big Five là lựa chọn thực tế nhất để làm nền cho quy trình chuyển đổi dữ liệu.
 
 === Mô hình Chỉ báo Phân loại Myers-Briggs (MBTI)
@@ -47,7 +47,7 @@ gây áp lực lên trải nghiệm người dùng di động, vì thời gian t
 chuyển đổi từ HEXACO sang dạng PCA sẽ cần dữ liệu huấn luyện riêng, trong khi dữ liệu chuẩn
 không nhiều bằng Big Five. Ví dụ, nếu chỉ dùng 25 câu, mỗi trait sẽ bị giảm số câu đánh
 giá, làm tăng nhiễu đo lường. Do đó HEXACO được xem là lựa chọn tham khảo hơn là lựa chọn
-chính cho đề tài. #ref(<fig_hexaco_overview>) minh họa cấu trúc HEXACO.
+chính cho đồ án. #ref(<fig_hexaco_overview>) minh họa cấu trúc HEXACO.
 
 #figure(
   image("../images/ch3_hexaco.png", width: 85%),
@@ -85,7 +85,7 @@ sai, giúp hệ giới thiệu hoạt động ổn định khi đo độ tương
 
 == Đề xuất PCA‑4
 
-Đề tài đề xuất PCA‑4 như mức giảm chiều tối ưu cho Big Five trong bối cảnh giới thiệu bạn bè.
+Đồ án đề xuất PCA‑4 như mức giảm chiều tối ưu cho Big Five trong bối cảnh giới thiệu bạn bè.
 Giảm từ 5 xuống 4 chiều giúp tiết kiệm lưu trữ mà vẫn giữ phần lớn cấu trúc dữ liệu. PCA‑4
 cũng là dạng biểu diễn dễ triển khai trên thiết bị với phép nhân ma trận thuần. Mức giảm
 nhẹ này giúp hạn chế rủi ro mất thông tin so với PCA‑2 hoặc PCA‑3. Ngoài ra, PCA‑4 giữ
@@ -102,26 +102,24 @@ khi PCA‑4 giữ hơn 90% phương sai dữ liệu gốc. Sự chênh lệch n�
 khả năng phân biệt giữa các người dùng khi so khớp. Vì vậy PCA‑4 được chọn để giảm mất
 thông tin mà vẫn đảm bảo kích thước nhỏ gọn.
 
-== Huấn luyện PCA
+== Huấn luyện và Trích xuất tham số PCA
 
-=== Nguồn dữ liệu và quy mô
+=== Nguồn dữ liệu và Thư viện
+Quá trình huấn luyện được thực hiện trong môi trường Jupyter Notebook (`model/pca_evaluator.ipynb`) sử dụng thư viện `scikit-learn` của Python. Cụ thể, lớp `sklearn.decomposition.PCA` được dùng để thực hiện các phép tính. Dữ liệu đầu vào là bộ `big_five_scores.csv` với 300,313 mẫu @automoto2023bigfive, đảm bảo số lượng mẫu đủ lớn để các thành phần chính được tính toán một cách ổn định và đáng tin cậy.
 
-PCA được huấn luyện từ tập dữ liệu Big Five công khai quy mô lớn, sử dụng tệp
-`big_five_scores.csv` (khoảng 307 nghìn bản ghi) @automoto2023bigfive@kaggle2018bigfive.
-Dữ liệu bao gồm thông tin theo quốc gia và đã chuẩn hóa điểm về thang 0–1. Trong quá trình
-thăm dò, thống kê cho thấy dữ liệu trải rộng khoảng hơn 190 quốc gia và vùng lãnh thổ,
-với các phân phối điểm khá ổn định giữa các nhóm quốc gia lớn. Một số bản ghi thiếu nhãn
-quốc gia, nhưng các cột điểm số vẫn đầy đủ, vì vậy không ảnh hưởng đến việc huấn luyện PCA.
+Phân tích Dữ liệu Khám phá (EDA) trong notebook cho thấy chênh lệch trung bình giữa các quốc gia tồn tại nhưng không đủ lớn để cần một mô hình riêng theo vùng. Do đó, PCA được huấn luyện trên toàn bộ tập dữ liệu để nắm bắt phương sai tổng thể.
 
-Phân tích Dữ liệu Khám phá (Exploratory Data Analysis - EDA) trong notebook `model/pca_evaluator.ipynb` cho thấy chênh lệch trung bình giữa các quốc gia tồn tại nhưng
-không đủ lớn để cần một mô hình riêng theo vùng. Do đó, PCA được huấn luyện trên toàn bộ
-tập dữ liệu để nắm bắt phương sai tổng thể. Đây là quyết định thực tế giúp mô hình ổn định
-và tái lập, đồng thời tránh việc phải duy trì nhiều mô hình theo vùng. Notebook này đóng vai trò quan trọng trong việc trích xuất các hằng số toán học (Mean và ma trận Components) thay vì huấn luyện một mô hình học máy phức tạp, từ đó cho phép hệ thống triển khai logic biến đổi trực tiếp dưới dạng code thuần (hard-coded) trên thiết bị.
+=== Phương pháp luận: Học không giám sát và Lý do không chia tập Train/Test
+Một điểm quan trọng cần lưu ý là trong quy trình này, toàn bộ dữ liệu đã được sử dụng để huấn luyện mô hình PCA mà không cần phân chia thành tập huấn luyện (train) và tập kiểm thử (test). Lý do là vì bài toán của đồ án không phải là một bài toán dự đoán (học có giám sát) mà là một bài toán biến đổi dữ liệu (học không giám sát).
 
-Đề tài không huấn luyện mô hình học sâu cho tính cách vì mục tiêu chính là biến đổi và nén
-dữ liệu đã có cấu trúc. PCA cho phép giữ tính giải thích, dễ triển khai trên thiết bị và
-không cần dữ liệu nhãn bổ sung. Nếu dùng mô hình phức tạp hơn, chi phí huấn luyện và suy
-diễn sẽ tăng, trong khi lợi ích bổ sung không rõ ràng vì dữ liệu đã được chuẩn hóa.
+Mục tiêu của PCA là tìm ra cấu trúc tiềm ẩn và các hướng phương sai lớn nhất của *toàn bộ* phân bố dữ liệu. Việc chia nhỏ dữ liệu sẽ khiến PCA chỉ học được cấu trúc của một phần dữ liệu, dẫn đến các vector thành phần chính được tạo ra có thể không đại diện chính xác cho toàn bộ không gian dữ liệu. Vì vậy, để có được một phép biến đổi ổn định và tổng quát nhất, việc `fit` PCA trên toàn bộ tập dữ liệu là phương pháp luận chính xác cho bài toán này.
+
+=== Trích xuất tham số từ đối tượng PCA
+Sau khi quá trình huấn luyện hoàn tất bằng phương thức `.fit()`, đối tượng PCA từ `scikit-learn` sẽ chứa các tham số toán học cần thiết cho việc biến đổi. Hai thuộc tính quan trọng nhất được trích xuất là:
+- `pca.mean_`: Đây là một vector chứa giá trị trung bình của mỗi chiều (mỗi đặc trưng tính cách) trên toàn bộ tập dữ liệu. Về mặt hình học, nó đại diện cho "tâm" của đám mây dữ liệu. Phép biến đổi PCA bắt đầu bằng việc dịch chuyển toàn bộ dữ liệu sao cho tâm này trở thành gốc tọa độ mới.
+- `pca.components_`: Đây là một ma trận chứa các vector thành phần chính. Mỗi vector là một *unit vector* (đã được chuẩn hóa với độ dài bằng 1) và chỉ ra một hướng trong không gian dữ liệu. Các vector này trực giao với nhau và được sắp xếp theo thứ tự giảm dần của lượng phương sai mà chúng nắm giữ. Đây chính là các "trục" của hệ tọa độ mới sau khi giảm chiều.
+
+Các giá trị này sau đó được sử dụng để triển khai lại logic biến đổi trên thiết bị di động.
 
 === Công thức chiếu PCA
 
@@ -150,17 +148,18 @@ trong đó $mu$ là vector trung bình (mean) và $W$ là ma trận chứa các 
 
 == Triển khai PCA trên thiết bị
 
-=== Cách triển khai
+=== Quyết định không sử dụng trực tiếp mô hình TFLite
+Mặc dù notebook đã xuất ra một mô hình `pca_evaluator_4d.tflite`, việc tích hợp trực tiếp một mô hình TensorFlow Lite vào ứng dụng React Native (sử dụng Expo) có thể gặp một số thách thức về thư viện và khả năng tương thích, đòi hỏi các thành phần native phức tạp.
 
-Thay vì chạy mô hình học sâu, PCA‑4 được triển khai bằng phép nhân ma trận thuần trên
-thiết bị. Các hệ số trung bình và thành phần chính được trích từ notebook huấn luyện và lưu cố định trong
-ứng dụng. Cách này giảm phụ thuộc vào các thư viện học máy (Machine Learning - ML) và hạn chế kích thước gói ứng dụng (bundle).
+Để đảm bảo hiệu suất, giảm sự phụ thuộc vào các thư viện native và tăng tính linh hoạt, đồ án đã chọn một phương pháp hiệu quả hơn: trích xuất trực tiếp các tham số toán học (`mean_` và `components_`) từ đối tượng PCA đã huấn luyện. Các giá trị này sau đó được lưu trữ cố định trong mã nguồn TypeScript của ứng dụng. Một hàm riêng sẽ thực hiện lại phép biến đổi PCA bằng các phép toán cơ bản. Cách tiếp cận này hoàn toàn tương đương về mặt toán học với việc chạy model TFLite nhưng lại đơn giản, minh bạch và dễ bảo trì hơn trong môi trường Expo.
 
 === Định dạng lưu trữ
+Kết quả PCA‑4 được lưu dưới dạng 4 trường số trong cơ sở dữ liệu: `pca_dim1` đến `pca_dim4`. Việc lưu trữ các giá trị này dưới dạng số thực cho phép máy chủ thực hiện các phép tính tương đồng cosine một cách hiệu quả trong quá trình gợi ý người dùng.
 
-Kết quả PCA‑4 được lưu dưới dạng 4 trường số: pca_dim1..pca_dim4. Các giá trị này được
-lưu song song với ciphertext của Big Five. Việc lưu PCA dạng số thực giúp tính độ tương đồng cosine
-trực tiếp ở phía máy chủ khi giới thiệu.
+=== Kiểm chứng logic tính điểm trên thiết bị
+Do logic tính điểm Big Five (chuyển đổi 50 câu trả lời thành 5 điểm số) được triển khai lại bằng TypeScript trên ứng dụng, một bước kiểm chứng là tối quan trọng để đảm bảo tính nhất quán với logic gốc trong notebook Python. Vì lý do này, một script kiểm tra tự động (`scripts/score_verifier.ts`) đã được xây dựng.
+
+Script này thực thi một loạt các kịch bản kiểm thử được định nghĩa trước, bao gồm các trường hợp biên (ví dụ: tất cả câu trả lời là "trung lập") và một kịch bản sử dụng dữ liệu giả lập giống hệt trong notebook. Nó so sánh kết quả tính toán của logic TypeScript với kết quả kỳ vọng. Bằng cách này, đồ án đảm bảo rằng dữ liệu đầu vào cho bước chiếu PCA trên thiết bị luôn chính xác và tương đương với môi trường huấn luyện, giúp toàn bộ quy trình có thể tái lập và đáng tin cậy. Một minh họa về cấu trúc của các kịch bản kiểm thử này được trình bày trong Phụ lục.
 
 == Thảo luận lựa chọn PCA
 

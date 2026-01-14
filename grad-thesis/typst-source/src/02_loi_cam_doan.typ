@@ -15,7 +15,7 @@ Khóa luận tốt nghiệp này được thực hiện trực tiếp bởi em v
     inset: 2em,
     [
       #align(center, [
-        TpHCM, ngày 26 tháng 12 năm 2024
+        TpHCM, ngày 15 tháng 1 năm 2026
     \ \
     Sinh viên
     \ \ \ \ \

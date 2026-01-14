@@ -12,9 +12,7 @@
         #text(12pt, strong("ĐẠI HỌC QUỐC GIA TP. HỒ CHÍ MINH")) \
         #text(13pt, strong("TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN")) \
         #text(13pt, strong("KHOA KHOA HỌC VÀ KỸ THUẬT THÔNG TIN"))
-        
-        #v(0.6cm)
-        #image("/images/UIT.png", width: 25%)
+
         
         #v(1cm)
         #text(14pt, strong("HOÀNG MINH NHẬT - 24550031"))

@@ -1,4 +1,4 @@
-#import "/template.typ": *
+#import "/template.typ" : *
 
 #[
   #set heading(numbering: none, supplement: [Phụ lục])
@@ -278,5 +278,43 @@ CREATE INDEX IF NOT EXISTS idx_matches_user_b ON public.matches(user_b);
 ```,
 [Mã nguồn SQL tối ưu hoá cơ sở dữ liệu],
 <algo_sql_optimization>
+)
+
+== Minh họa kịch bản kiểm thử logic tính điểm
+
+Để đảm bảo logic tính điểm Big Five trên client (TypeScript) hoạt động chính xác như logic gốc (Python), các kịch bản kiểm thử đã được thiết lập. Cấu trúc các kịch bản trong `scripts/score_verifier.ts` được tóm tắt trong thuật toán #ref(<algo_score_verifier_appendix>).
+
+#outline_algo(
+```ts
+// Cấu trúc một kịch bản kiểm thử trong `score_verifier.ts`
+const scenarios = [
+  {
+    label: 'Dữ liệu giả lập từ notebook',
+    responses: [3, 5, 1, 4, ...], // Mảng gồm 50 câu trả lời
+    expectedScaled: {
+      Extraversion: 0.425,
+      Agreeableness: 0.275,
+      Conscientiousness: 0.575,
+      'Emotional Stability': 0.525,
+      'Intellect/Imagination': 0.475,
+    },
+  },
+  {
+    label: 'Trường hợp biên: Tất cả trả lời trung lập',
+    responses: Array(50).fill(3),
+    expectedScaled: {
+      Extraversion: 0.5,
+      Agreeableness: 0.5,
+      Conscientiousness: 0.5,
+      'Emotional Stability': 0.5,
+      'Intellect/Imagination': 0.5,
+    },
+  },
+  // ... các kịch bản khác cho trường hợp "hoàn toàn đồng ý" và "không đồng ý"
+];
+
+```,
+[Minh họa các kịch bản kiểm thử trong `score_verifier.ts`],
+<algo_score_verifier_appendix>
 )
 

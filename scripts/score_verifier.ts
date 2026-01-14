@@ -66,45 +66,60 @@ const BASE_QUESTION_SET = QUESTIONS.slice(0, 50);
 
 function assertClose(label: string, actual: number, expected: number) {
   if (Math.abs(actual - expected) > TOLERANCE) {
-    throw new Error(`${label}: expected ${expected}, got ${actual}`);
+    throw new Error(`[FAIL] ${label}: expected ${expected}, got ${actual}`);
   }
 }
 
 function verifyScenario(label: string, responses: number[], expectedScaled: FactorScores) {
+  console.log(`\n--- Verifying scenario: "${label}" ---`);
   if (responses.length !== 50) {
-    throw new Error(`${label}: expected 50 responses, received ${responses.length}`);
+    throw new Error(`[FAIL] ${label}: expected 50 responses, received ${responses.length}`);
   }
 
-  const { sums: raw, counts } = computeBigFiveScores(
-    responses.reduce<Record<number, 1 | 2 | 3 | 4 | 5>>((acc, value, idx) => {
-      if (value < 1 || value > 5) {
-        throw new Error(`${label}: response at index ${idx} is out of range: ${value}`);
-      }
-      acc[idx + 1] = value as 1 | 2 | 3 | 4 | 5;
-      return acc;
-    }, {}),
-    BASE_QUESTION_SET,
-  );
-  const scaled = normalizeScoresToUnitRange(raw, counts);
+  const responseMap = responses.reduce<Record<number, 1 | 2 | 3 | 4 | 5>>((acc, value, idx) => {
+    if (value < 1 || value > 5) {
+      throw new Error(`[FAIL] ${label}: response at index ${idx} is out of range: ${value}`);
+    }
+    acc[idx + 1] = value as 1 | 2 | 3 | 4 | 5;
+    return acc;
+  }, {});
 
+  console.log('Step 1: Computing raw scores...');
+  const { sums: raw, counts } = computeBigFiveScores(responseMap, BASE_QUESTION_SET);
+  console.log('  Raw scores:', raw);
+  console.log('  Item counts:', counts);
+
+  console.log('Step 2: Normalizing scores to unit range...');
+  const scaled = normalizeScoresToUnitRange(raw, counts);
+  console.log('  Scaled scores:', scaled);
+
+
+  console.log('Step 3: Comparing calculated scores to expected scores...');
   FACTORS.forEach((factor) => {
     const expected = expectedScaled[factor];
     if (expected === undefined) {
-      throw new Error(`${label}: missing expected value for ${factor}`);
+      throw new Error(`[FAIL] ${label}: missing expected value for ${factor}`);
     }
     const actual = Number(scaled[factor].toFixed(6));
+    
+    console.log(`  - [${factor}]`);
+    console.log(`    - Comparing scaled: Actual=${actual}, Expected=${expected}`);
     assertClose(`${label} (${factor})`, actual, expected);
+
     const totalItems = counts[factor].total;
     const derivedRaw = expected * (totalItems * 4) + totalItems;
+    console.log(`    - Comparing raw: Actual=${raw[factor]}, DerivedFromExpected=${derivedRaw}`);
     assertClose(`${label} raw (${factor})`, raw[factor], derivedRaw);
   });
+
+  console.log(`--- [PASS] Scenario: "${label}" ---`);
 }
 
 function main() {
   scenarios.forEach(({ label, responses, expectedScaled }) => {
     verifyScenario(label, responses, expectedScaled);
   });
-  console.log('All scoring scenarios passed.');
+  console.log('\n✅ All scoring scenarios passed.');
 }
 
 main();
