@@ -6,6 +6,7 @@ import { View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { DefaultTheme, NavigationContainer, Theme as NavTheme, createNavigationContainerRef } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from '@navigation/AppNavigator';
 import { ThemeProvider, useTheme } from '@context/ThemeContext';
 import { LocaleProvider } from '@context/LocaleContext';
@@ -98,12 +99,14 @@ function AppShell() {
 
 export default function App() {
   return (
-    <LocaleProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <AppShell />
-        </AuthProvider>
-      </ThemeProvider>
-    </LocaleProvider>
+    <SafeAreaProvider>
+      <LocaleProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppShell />
+          </AuthProvider>
+        </ThemeProvider>
+      </LocaleProvider>
+    </SafeAreaProvider>
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import RegistrationScreen from '@components/RegistrationScreen';
 import QuestionnaireScreen from '@components/QuestionnaireScreen';
 import ResultsScreen from '@components/ResultsScreen';
@@ -92,6 +93,12 @@ import { useMessagesStore } from '@store/messagesStore';
 import { realtimeManager } from '@services/RealtimeManager';
 import { useAudioPlayer } from 'expo-audio';
 
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+});
+
 const MainTabs: React.FC = () => {
   const { user } = useAuth();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -129,53 +136,55 @@ const MainTabs: React.FC = () => {
   const { t } = useTranslation();
   const showBadge = unreadCount > 0;
   return (
-    <Tab.Navigator
-      screenOptions={({ route }: any) => ({
-        headerShown: false,
-        tabBarStyle: { paddingBottom: 6, paddingTop: 6, height: 60 },
-        tabBarIcon: ({ color, size }: { color: string; size: number }) => {
-          const icon =
-            route.name === 'Explore'
-              ? 'compass'
-              : route.name === 'Settings'
-              ? 'settings'
-              : route.name === 'Messages'
-              ? 'chatbox'
-              : route.name === 'Matches'
-              ? 'notifications'
-              : 'construct';
-          return <Ionicons name={icon as any} color={color} size={size} />;
-        },
-        tabBarBadge: route.name === 'Messages' && messagesUnread ? '•' : route.name === 'Matches' && showBadge ? '•' : undefined,
-        tabBarBadgeStyle:
-          route.name === 'Messages' && messagesUnread
-            ? { backgroundColor: 'red' }
-            : undefined,
-        tabBarLabel: ({ color, focused }: { color: string; focused: boolean }) => {
-          const key =
-            route.name === 'Explore'
-              ? 'explore.title'
-              : route.name === 'Matches'
-              ? 'notifications.title'
-              : route.name === 'Messages'
-              ? 'messages.title'
-              : route.name === 'Settings'
-              ? 'settings.accordion.profile'
-              : route.name;
-          return (
-            <Text style={{ color, fontSize: 11, fontWeight: focused ? '700' : '500' }}>
-              {t(key)}
-            </Text>
-          );
-        },
-      })}
-    >
-      <Tab.Screen name="Explore" component={ExploreSwipeScreen as any} />
-      <Tab.Screen name="Matches" component={MatchesScreen as any} />
-      <Tab.Screen name="Messages" component={MessagesScreen as any} />
-      <Tab.Screen name="Settings" component={UserSettingsScreen as any} />
-      <Tab.Screen name="Test" component={ExploreScreen as any} />
-    </Tab.Navigator>
+    <SafeAreaView style={styles.safeArea}>
+      <Tab.Navigator
+        screenOptions={({ route }: any) => ({
+          headerShown: false,
+          tabBarStyle: { paddingBottom: 6, paddingTop: 6, height: 60 },
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => {
+            const icon =
+              route.name === 'Explore'
+                ? 'compass'
+                : route.name === 'Settings'
+                ? 'settings'
+                : route.name === 'Messages'
+                ? 'chatbox'
+                : route.name === 'Matches'
+                ? 'notifications'
+                : 'construct';
+            return <Ionicons name={icon as any} color={color} size={size} />;
+          },
+          tabBarBadge: route.name === 'Messages' && messagesUnread ? '•' : route.name === 'Matches' && showBadge ? '•' : undefined,
+          tabBarBadgeStyle:
+            route.name === 'Messages' && messagesUnread
+              ? { backgroundColor: 'red' }
+              : undefined,
+          tabBarLabel: ({ color, focused }: { color: string; focused: boolean }) => {
+            const key =
+              route.name === 'Explore'
+                ? 'explore.title'
+                : route.name === 'Matches'
+                ? 'notifications.title'
+                : route.name === 'Messages'
+                ? 'messages.title'
+                : route.name === 'Settings'
+                ? 'settings.accordion.profile'
+                : route.name;
+            return (
+              <Text style={{ color, fontSize: 11, fontWeight: focused ? '700' : '500' }}>
+                {t(key)}
+              </Text>
+            );
+          },
+        })}
+      >
+        <Tab.Screen name="Explore" component={ExploreSwipeScreen as any} />
+        <Tab.Screen name="Matches" component={MatchesScreen as any} />
+        <Tab.Screen name="Messages" component={MessagesScreen as any} />
+        <Tab.Screen name="Settings" component={UserSettingsScreen as any} />
+        <Tab.Screen name="Test" component={ExploreScreen as any} />
+      </Tab.Navigator>
+    </SafeAreaView>
   );
 };
 
