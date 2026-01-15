@@ -114,47 +114,43 @@ Danh sách đầy đủ 50 câu hỏi Big Five được trích xuất từ bộ 
 
 Phần này trình bày mã nguồn của các kịch bản thực nghiệm và hàm thực thi biên (Edge Functions) quan trọng. Toàn bộ các hình khối mã nguồn dưới đây đã được cấu hình để có thể ngắt trang tự động nhằm đảm bảo tính toàn vẹn của dữ liệu.
 
-=== Kịch bản kiểm chứng độ tương đồng PCA toàn trình
-
-Kịch bản `scripts/verify_similarity_pipeline.ts` được sử dụng để kiểm chứng giả thuyết RQ1 tại Chương 6. Script thực hiện luồng từ điểm Big Five thô -> Chuyển đổi PCA -> Mã hoá -> Lưu trữ DB -> Tính toán tương đồng.
+=== Kịch bản kiểm chứng độ tương đồng PCA (`pca_worst_best_case.ts`)
+Kịch bản này được sử dụng để kiểm chứng giả thuyết RQ1 tại Chương 6. Script tạo ra các cặp dữ liệu trả lời mẫu để mô phỏng các kịch bản từ tương đồng tuyệt đối, đối lập hoàn toàn, đến gần giống nhau, sau đó tính toán và in ra kết quả tương đồng.
 
 #outline_algo(
 ```ts
-import { createClient } from '@supabase/supabase-js';
-// ... (Hằng số MEAN và COMPONENTS trích từ pcaEvaluator.ts)
+// Cấu trúc một kịch bản kiểm thử trong `pca_worst_best_case.ts`
+const scenarios = [
+  {
+    name: 'Same pattern (5,4,3,2) vs (5,4,3,2)',
+    answersA: patternA,
+    answersB: patternB,
+  },
+  {
+    name: 'Opposite pattern (A vs 6-A by item)',
+    answersA: patternA,
+    answersB: oppositePatternB,
+  },
+  {
+    name: 'Shifted pattern (5,4,3,2) vs (4,3,2,1)',
+    answersA: patternA,
+    answersB: shiftedPatternB,
+  },
+  // ... các kịch bản khác
+];
 
-function projectToPca(scores: Record<Factor, number>): number[] {
-  const centered = FACTORS.map((f) => scores[f] - MEAN[f]);
-  return COMPONENTS.map((comp) => comp.reduce((sum, w, i) => sum + w * centered[i], 0));
-}
-
-async function verify() {
-    const userA_Scores = { Extraversion: 0.5, Agreeableness: 0.5, Conscientiousness: 0.5, 'Emotional Stability': 0.5, 'Intellect/Imagination': 0.5 };
-    const userB_Scores = { Extraversion: 0.51, Agreeableness: 0.49, Conscientiousness: 0.5, 'Emotional Stability': 0.5, 'Intellect/Imagination': 0.5 };
-
-    const pcaA = projectToPca(userA_Scores);
-    const pcaB = projectToPca(userB_Scores);
-
-    // Mã hoá User A qua Edge Function
-    const { data: cryptoA } = await supabase.functions.invoke('score-crypto', {
-        body: { mode: 'encrypt', scores: userA_Scores }
-    });
-
-    // Upsert User A vào database để mô phỏng đăng ký
-    await supabase.from('profiles').upsert({
-        id: userIdA, username: 'Sim_User_A',
-        pca_dim1: pcaA[0], pca_dim2: pcaA[1], pca_dim3: pcaA[2], pca_dim4: pcaA[3],
-        b5_cipher: cryptoA.cipher, b5_iv: cryptoA.iv,
-        elo_rating: 1500
-    });
-
-    // Truy vấn độ tương đồng (Sử dụng manual calculation để kiểm chứng logic DB)
-    const similarity = calculateCosine(pcaA, pcaB);
-    console.log(`Resulting Similarity: ${similarity.toFixed(6)}`);
+// Vòng lặp thực thi
+for (const scenario of scenarios) {
+  await evaluateScenario(
+    scenario.name, 
+    questionSet, 
+    scenario.answersA, 
+    scenario.answersB
+  );
 }
 ```,
-[Kịch bản kiểm chứng độ tương đồng PCA toàn trình],
-<algo_verify_pipeline_code>
+[Minh họa các kịch bản kiểm thử trong `pca_worst_best_case.ts`],
+<algo_pca_worst_best_code>
 )
 
 === Mã hóa và Giải mã dữ liệu (score-crypto)
@@ -221,7 +217,7 @@ serve(async (req) => {
 <algo_recommend_users_code>
 )
 
-== Kịch bản đo hiệu năng hệ thống (Benchmarks)
+=== Kịch bản đo hiệu năng hệ thống (Benchmarks)
 
 Kịch bản `scripts/benchmark_scenarios.ts` đã được cập nhật để đo lường chi tiết độ trễ của các thành phần Edge Functions riêng lẻ, phục vụ dữ liệu cho RQ3.
 
@@ -252,7 +248,7 @@ async function benchmark() {
 <algo_benchmark_script_appendix>
 )
 
-== Kỹ thuật tối ưu hóa cơ sở dữ liệu
+=== Kỹ thuật tối ưu hóa cơ sở dữ liệu
 
 Mã nguồn SQL được sử dụng để tối ưu hoá hiệu năng cho các chính sách bảo mật hàng (RLS) và tăng tốc độ truy vấn thông qua chỉ mục (Index) được trình bày tại #ref(<algo_sql_optimization>):
 
@@ -280,7 +276,7 @@ CREATE INDEX IF NOT EXISTS idx_matches_user_b ON public.matches(user_b);
 <algo_sql_optimization>
 )
 
-== Minh họa kịch bản kiểm thử logic tính điểm
+=== Minh họa kịch bản kiểm thử logic tính điểm
 
 Để đảm bảo logic tính điểm Big Five trên client (TypeScript) hoạt động chính xác như logic gốc (Python), các kịch bản kiểm thử đã được thiết lập. Cấu trúc các kịch bản trong `scripts/score_verifier.ts` được tóm tắt trong thuật toán #ref(<algo_score_verifier_appendix>).
 
@@ -316,5 +312,31 @@ const scenarios = [
 ```,
 [Minh họa các kịch bản kiểm thử trong `score_verifier.ts`],
 <algo_score_verifier_appendix>
+)
+
+=== Kịch bản kiểm chứng độ tương đồng ngữ nghĩa
+Kịch bản `scripts/demo_semantic_comparison.ts` được sử dụng để kiểm chứng giả thuyết RQ4. Script so sánh các cặp người dùng với các nhóm sở thích (themes) khác nhau bằng cả tiếng Anh và tiếng Việt để đánh giá khả năng của mô hình trong việc nhận diện sự tương đồng về ngữ nghĩa.
+
+#outline_algo(
+```ts
+// Cấu trúc dữ liệu người dùng trong script
+const users = [
+  { name: 'User 1 (EN Outdoor)', hobbies: ['Hiking', 'Camping', 'Mountain Biking'] },
+  { name: 'User 2 (VI Outdoor)', hobbies: ['Leo núi', 'Cắm trại', 'Chụp ảnh thiên nhiên'] },
+  { name: 'User 3 (EN Creative)', hobbies: ['Painting', 'Digital Art', 'Reading Novels'] },
+  { name: 'User 4 (VI Creative)', hobbies: ['Vẽ tranh', 'Đọc tiểu thuyết', 'Chơi piano'] },
+  { name: 'User 5 (EN Tech)', hobbies: ['Programming', 'Building PCs', 'Sci-Fi Movies'] },
+  { name: 'User 6 (VI Foodie)', hobbies: ['Nấu ăn', 'Làm bánh', 'Xem phim Hàn Quốc'] },
+];
+
+// Vòng lặp so sánh tất cả các cặp
+for (let i = 0; i < users.length; i++) {
+  for (let j = i + 1; j < users.length; j++) {
+    // ... tính toán và in ra độ tương đồng
+  }
+}
+```,
+[Minh họa các kịch bản trong `demo_semantic_comparison.ts`],
+<algo_semantic_comparison_appendix>
 )
 

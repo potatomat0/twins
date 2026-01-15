@@ -19,7 +19,9 @@ Chương này trình bày các thực nghiệm được tiến hành để đán
 
 - *RQ3: Quy trình (pipeline) xử lý trên thiết bị và mã hoá dữ liệu ảnh hưởng như thế nào đến hiệu năng của ứng dụng?* Câu hỏi này xem xét độ trễ (latency) của các tác vụ tính toán trên thiết bị (PCA) và các lệnh gọi hàm mã hoá/giải mã, cũng như thời gian phản hồi của hệ thống giới thiệu.
 
-- *RQ4: Kiến trúc hệ thống có thực sự bảo vệ được quyền riêng tư của người dùng theo thiết kế không?* Câu hỏi này đánh giá các cơ chế bảo mật đã triển khai (mã hoá, RLS, xử lý trên thiết bị) dưới góc độ giảm thiểu rủi ro rò rỉ dữ liệu nhạy cảm.
+- *RQ4: Mô hình nhúng ngữ nghĩa có hiệu quả trong việc xác định sự tương đồng về sở thích, ngay cả khi khác biệt về ngôn ngữ không?*
+
+- *RQ5: Kiến trúc hệ thống có thực sự bảo vệ được quyền riêng tư của người dùng theo thiết kế không?* Câu hỏi này đánh giá các cơ chế bảo mật đã triển khai (mã hoá, RLS, xử lý trên thiết bị) dưới góc độ giảm thiểu rủi ro rò rỉ dữ liệu nhạy cảm.
 
 == Thiết lập thực nghiệm
 
@@ -42,46 +44,19 @@ Thực nghiệm sử dụng hai tập người dùng chính:
 
 === RQ1: Hiệu quả của mô hình PCA-4 và độ tương đồng cosine
 
-Để trả lời câu hỏi này, một thực nghiệm kiểm chứng toàn trình (end-to-end) được thiết lập thông qua kịch bản `scripts/verify_similarity_pipeline.ts`. Thực nghiệm bắt đầu từ dữ liệu thô của bài trắc nghiệm tính cách cho đến bước so khớp cuối cùng trên cơ sở dữ liệu.
+Để trả lời câu hỏi này, một kịch bản thực nghiệm (`scripts/pca_worst_best_case.ts`) đã được thiết lập để đánh giá khả năng phân biệt của mô hình trong các kịch bản khác nhau, từ đó kiểm chứng giả thuyết RQ1.
 
-*Bước 1: Giả lập kết quả trắc nghiệm Big Five*
+*Phân tích kịch bản:*
+Kịch bản này tạo ra một bộ 25 câu hỏi ngẫu nhiên và sau đó áp dụng các mẫu trả lời khác nhau để mô phỏng các tình huống từ tương đồng tuyệt đối đến đối lập hoàn toàn.
 
-Hai hồ sơ $U_A$ (điểm trung bình) và $U_B$ (lệch nhẹ 1%) được khởi tạo với bộ điểm chuẩn hóa (thang 0-1) như sau:
-$ U_A = [0.5, 0.5, 0.5, 0.5, 0.5] $
-$ U_B = [0.51, 0.49, 0.5, 0.5, 0.5] $
+1.  *Trường hợp tốt nhất (Tương đồng tuyệt đối):* Hai người dùng có cùng một mẫu trả lời. Kết quả cho thấy điểm Big Five chuẩn hóa, vector PCA-4 và điểm tương đồng cosine cuối cùng đều giống hệt nhau, đạt giá trị tuyệt đối là *1.0*. Điều này xác nhận rằng khi hai hồ sơ giống nhau, mô hình hoạt động chính xác.
 
-*Bước 2: Chuyển đổi PCA-4 trên thiết bị*
+2.  *Trường hợp tệ nhất (Đối lập hoàn toàn):* Một người dùng có câu trả lời cực đoan (toàn 1 và 5 tùy theo hướng câu hỏi), trong khi người kia có câu trả lời đối lập hoàn toàn. Kết quả thực nghiệm cho thấy điểm tương đồng cosine là một số âm lớn (*-0.9717*). Giá trị này cho thấy hai vector PCA đang chỉ về hai hướng gần như đối nghịch nhau trong không gian đặc trưng. Khi được chuẩn hóa về thang điểm 0-1 (thang điểm mà người dùng cuối nhìn thấy), điểm số này trở nên rất gần 0 (*0.0141*), thể hiện chính xác rằng không có sự tương đồng.
 
-Sử dụng logic nghiệp vụ tại `@services/pcaEvaluator.ts`, các vector Big Five được chiếu vào không gian 4 chiều thu gọn:
-$ V_A = [0.1811, -0.0320, -0.3292, -0.1417] $
-$ V_B = [0.1833, -0.0419, -0.3226, -0.1483] $
+3.  *Trường hợp thực tế (Gần tương đồng):* Một kịch bản thực tế hơn được mô phỏng khi hai người dùng có mẫu trả lời gần giống nhau nhưng lệch đi một bậc (ví dụ: mẫu `5,4,3,2` so với `4,3,2,1`). Kết quả cho thấy điểm tương đồng cosine vẫn ở mức rất cao (*0.9545*), nhưng không còn là tuyệt đối. Điều này chứng tỏ mô hình có độ nhạy tốt, có thể nhận ra sự khác biệt nhỏ trong khi vẫn đánh giá hai người dùng này là rất tương đồng.
 
-*Bước 3: Mã hoá và Lưu trữ*
-
-Kịch bản gọi hàm thực thi biên `score-crypto` để mã hoá các bộ điểm này bằng AES-256-GCM, sau đó thực hiện lệnh `upsert` vào bảng `public.profiles`. Quá trình này mô phỏng chính xác luồng đăng ký của một người dùng thực tế trong hệ thống.
-
-*Bước 4: So khớp trên Cơ sở dữ liệu*
-
-Sau khi dữ liệu đã được lưu trữ, truy vấn độ tương đồng cosine được thực hiện trực tiếp trên không gian vector PCA-4:
-
-#figure(
-  ```sql
--- Kiểm chứng độ tương đồng cosine thực tế từ cơ sở dữ liệu
-select 
-  1 - (pca_a <=> pca_b) as similarity
-from (
-  select 
-    vector(array[0.1811, -0.0320, -0.3292, -0.1417]) as pca_a,
-    vector(array[0.1833, -0.0419, -0.3226, -0.1483]) as pca_b
-) as test;
-  ```,
-  caption: [Truy vấn kiểm chứng độ tương đồng trên dữ liệu thực nghiệm],
-) <fig_rq1_sql>
-
-*Kết quả*:
-$ text("Cosine Similarity") (V_A, V_B) approx 0.9994 $
-
-*Phân tích*: Kết quả thực nghiệm đạt mức xấp xỉ tuyệt đối (99.94%), xác nhận giả thuyết của RQ1. Mặc dù dữ liệu đã được giảm chiều và nén, mô hình PCA-4 vẫn bảo toàn được các đặc trưng quan trọng để nhận diện sự tương đồng. Khi $U_A$ thực hiện tìm kiếm, $U_B$ luôn xuất hiện ở vị trí ưu tiên cao nhất, khẳng định tính chính xác của lõi thuật toán giới thiệu.
+*Kết luận cho RQ1:*
+Các kết quả thực nghiệm trên đã xác nhận giả thuyết của RQ1. Mô hình chuyển đổi PCA-4 kết hợp với độ tương đồng cosine đã chứng tỏ khả năng phân biệt hiệu quả giữa các hồ sơ tính cách. Nó không chỉ xác định chính xác các trường hợp tương đồng và đối lập tuyệt đối mà còn có khả năng lượng hóa mức độ tương đồng cho các trường hợp gần giống nhau trong thực tế.
 
 === RQ2: Đánh giá hệ thống giới thiệu lai
 
@@ -115,7 +90,20 @@ $ text("Cosine Similarity") (V_A, V_B) approx 0.9994 $
 
 *Phân tích*: Độ trễ lớn nhất tập trung vào hàm `embed`, do phải thực hiện lệnh gọi API bên ngoài tới mô hình Jina và xử lý vector 384 chiều. Hàm `recommend-users` cũng có độ trễ trên 2 giây vì phải tính toán độ tương đồng trên tập ứng viên lớn. Các tác vụ này cho thấy nhu cầu tối ưu hóa bằng bộ nhớ đệm (caching) hoặc thực hiện tính toán bất đồng bộ trong các phiên bản tương lai. Độ trễ mã hoá `score-crypto` ổn định ở mức ~1 giây, phù hợp cho các quy trình tạo hồ sơ. Độ trễ của các tác vụ tính toán thuần túy trên thiết bị khách (như nhân ma trận PCA) là cực thấp (dưới 5ms), không gây ảnh hưởng đến trải nghiệm người dùng.
 
-=== RQ4: Đánh giá hiệu quả bảo vệ quyền riêng tư
+=== RQ4: Hiệu quả của mô hình nhúng ngữ nghĩa trong việc so khớp sở thích
+
+Để kiểm chứng khả năng của mô hình trong việc so khớp sở thích một cách có ý nghĩa, kịch bản `scripts/demo_semantic_comparison.ts` được thiết lập. Kịch bản này so sánh 15 cặp duy nhất từ 6 người dùng giả lập với các chủ đề sở thích khác nhau (Outdoor, Creative, Tech, Foodie) và sử dụng cả tiếng Anh lẫn tiếng Việt.
+
+*Phân tích kết quả:*
+Kết quả thực nghiệm cho thấy khả năng phân biệt rõ rệt của mô hình:
+- *Tương đồng cao (trên 0.80):* Các cặp có cùng chủ đề nhưng khác ngôn ngữ (ví dụ: `EN Outdoor` và `VI Outdoor`) đạt điểm tương đồng cao nhất (*0.8068*), chứng tỏ mô hình hiểu được ngữ nghĩa thay vì chỉ so khớp từ khóa.
+- *Tương đồng trung bình (0.60 - 0.80):* Các cặp có chủ đề liên quan một cách hợp lý (ví dụ: `Creative` và `Tech`) có điểm số ở mức trung bình.
+- *Tương đồng thấp (dưới 0.55):* Các cặp có chủ đề hoàn toàn không liên quan (ví dụ: `Outdoor` và `Foodie`, hoặc `Tech` và `Foodie`) nhận điểm số thấp nhất (*0.4280*).
+
+*Kết luận cho RQ4:*
+Dải điểm số rộng (từ `0.42` đến `0.81`) cho thấy mô hình nhúng ngữ nghĩa hoạt động hiệu quả. Nó không chỉ nhận diện chính xác các sở thích tương đồng về mặt ngữ nghĩa bất chấp rào cản ngôn ngữ mà còn tạo ra một thang đo chênh lệch đủ lớn để phân biệt các mức độ liên quan khác nhau, từ đó giúp hệ thống xếp hạng các ứng viên một cách có ý nghĩa.
+
+=== RQ5: Đánh giá hiệu quả bảo vệ quyền riêng tư
 
 Việc đánh giá này mang tính định tính, dựa trên kiến trúc đã triển khai.
 
