@@ -25,6 +25,8 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
   const email = route.params?.email ?? '';
   const ageGroup = route.params?.ageGroup ?? '';
   const gender = route.params?.gender ?? '';
+  const origin = route.params?.origin ?? 'onboarding';
+  const isSettingsFlow = origin === 'settings';
   const { width: windowWidth } = useWindowDimensions();
   const scores = route.params?.scores ?? {
     'Extraversion': 0.5,
@@ -101,39 +103,50 @@ const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
             })}
             <View style={{ height: 12 }} />
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Button
-                title={t('results.screen.startOver')}
-                variant="neutral"
-                onPress={() => setConfirmReset(true)}
-              />
-              <Button
-                title={t('results.screen.continue')}
-                onPress={() =>
-                  navigation.navigate('Character' as any, {
-                    username,
-                    email,
-                    ageGroup,
-                    gender,
-                    scores,
-                    pcaFingerprint,
-                  })
-                }
-              />
+              {isSettingsFlow ? (
+                <Button
+                  title={t('results.screen.backToSettings')}
+                  onPress={() => navigation.navigate('Dashboard' as any, { screen: 'Settings' })}
+                />
+              ) : (
+                <>
+                  <Button
+                    title={t('results.screen.startOver')}
+                    variant="neutral"
+                    onPress={() => setConfirmReset(true)}
+                  />
+                  <Button
+                    title={t('results.screen.continue')}
+                    onPress={() =>
+                      navigation.navigate('Character' as any, {
+                        username,
+                        email,
+                        ageGroup,
+                        gender,
+                        scores,
+                        pcaFingerprint,
+                      })
+                    }
+                  />
+                </>
+              )}
             </View>
           </Card>
         </ScrollView>
-        <NotificationModal
-          visible={confirmReset}
-          title={t('results.screen.confirmTitle')}
-          message={t('results.screen.confirmMessage')}
-          primaryText={t('results.screen.confirmLeave')}
-          onPrimary={() => { setConfirmReset(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
-          secondaryText={t('results.screen.confirmStay')}
-          onSecondary={() => setConfirmReset(false)}
-          onRequestClose={() => setConfirmReset(false)}
-          primaryVariant="danger"
-          secondaryVariant="accent"
-        />
+        {!isSettingsFlow ? (
+          <NotificationModal
+            visible={confirmReset}
+            title={t('results.screen.confirmTitle')}
+            message={t('results.screen.confirmMessage')}
+            primaryText={t('results.screen.confirmLeave')}
+            onPrimary={() => { setConfirmReset(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
+            secondaryText={t('results.screen.confirmStay')}
+            onSecondary={() => setConfirmReset(false)}
+            onRequestClose={() => setConfirmReset(false)}
+            primaryVariant="danger"
+            secondaryVariant="accent"
+          />
+        ) : null}
       </SafeAreaView>
     </KeyboardDismissable>
   );

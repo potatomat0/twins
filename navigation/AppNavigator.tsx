@@ -33,7 +33,13 @@ export type RootStackParamList = {
   QuizIntro: { email?: string } | undefined;
   Registration: { email?: string } | undefined;
   QuizPrimer: { username: string; email: string; ageGroup: string; gender: string };
-  Questionnaire: { username: string; email: string; ageGroup: string; gender: string } | undefined;
+  Questionnaire: {
+    username: string;
+    email: string;
+    ageGroup: string;
+    gender: string;
+    origin?: 'onboarding' | 'settings';
+  } | undefined;
   Results: {
     username: string;
     email: string;
@@ -41,6 +47,7 @@ export type RootStackParamList = {
     gender: string;
     scores: Record<string, number>;
     pcaFingerprint?: PcaFingerprint;
+    origin?: 'onboarding' | 'settings';
   } | undefined;
   Character: {
     username: string;

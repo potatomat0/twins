@@ -159,6 +159,12 @@ export const translations: Record<Locale, TranslationDictionary> = {
         leave: 'Leave',
         stay: 'Stay',
       },
+      confirmSettings: {
+        title: 'Leave questionnaire?',
+        message: 'If you go back to Settings now, you will lose all your progress.',
+        leave: 'Leave',
+        stay: 'Stay',
+      },
       scale: {
         disagree: 'Disagree',
         slightlyDisagree: 'Slightly Disagree',
@@ -322,6 +328,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
         strengthEntry: '• {factor}: {value}',
         startOver: 'Start Over',
         continue: 'Continue',
+        backToSettings: 'Back to Settings',
         confirmTitle: 'Start over?',
         confirmMessage: 'If you go to Login now, you will lose this result.',
         confirmLeave: 'Leave',
@@ -638,6 +645,12 @@ export const translations: Record<Locale, TranslationDictionary> = {
         leave: '終了',
         stay: '続ける',
       },
+      confirmSettings: {
+        title: '診断を終了しますか？',
+        message: '今設定に戻ると、すべての進捗が失われます。',
+        leave: '終了',
+        stay: '続ける',
+      },
       scale: {
         disagree: 'まったくそう思わない（Disagree）',
         slightlyDisagree: 'あまりそう思わない（Slightly Disagree）',
@@ -801,6 +814,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
         strengthEntry: '• {factor}: {value}',
         startOver: '最初から',
         continue: '続ける',
+        backToSettings: '設定に戻る',
         confirmTitle: '最初からやり直しますか？',
         confirmMessage: '今ログインに戻ると、この結果が失われます。',
         confirmLeave: '終了',
@@ -1117,6 +1131,12 @@ export const translations: Record<Locale, TranslationDictionary> = {
         leave: 'Thoát',
         stay: 'Ở lại',
       },
+      confirmSettings: {
+        title: 'Thoát khỏi bảng câu hỏi?',
+        message: 'Nếu bạn quay lại Cài đặt ngay, bạn sẽ mất toàn bộ tiến trình.',
+        leave: 'Thoát',
+        stay: 'Ở lại',
+      },
       scale: {
         disagree: 'Không đồng ý',
         slightlyDisagree: 'Hơi không đồng ý',
@@ -1280,6 +1300,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
         strengthEntry: '• {factor}: {value}',
         startOver: 'Bắt đầu lại',
         continue: 'Tiếp tục',
+        backToSettings: 'Về Cài đặt',
         confirmTitle: 'Bắt đầu lại?',
         confirmMessage: 'Nếu bạn quay lại Đăng nhập ngay, bạn sẽ mất kết quả này.',
         confirmLeave: 'Thoát',

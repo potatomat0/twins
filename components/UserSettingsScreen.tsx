@@ -606,7 +606,19 @@ const UserSettingsScreen: React.FC = () => {
             </View>
           )}
           <View style={{ height: 12 }} />
-          <Button title={t('settings.retryQuiz')} variant="neutral" onPress={() => navigation.navigate('QuizIntro' as any)} />
+          <Button
+            title={t('settings.retryQuiz')}
+            variant="neutral"
+            onPress={() =>
+              navigation.navigate('Questionnaire' as any, {
+                username: profile?.username ?? user?.user_metadata?.username ?? '',
+                email: user?.email ?? '',
+                ageGroup: profile?.age_group ?? user?.user_metadata?.age_group ?? '',
+                gender: profile?.gender ?? user?.user_metadata?.gender ?? '',
+                origin: 'settings',
+              })
+            }
+          />
         </Accordion>
 
         <Accordion
