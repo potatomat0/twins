@@ -96,6 +96,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
       questionnaire: 'We found unfinished questionnaire progress. Resume the quiz?',
       registration: 'We saved your profile details. Pick up registration again?',
       character: 'We paused on your character summary. Continue?',
+      step2Intro: 'We paused on the quick yes/no intro. Continue?',
+      step2Questionnaire: 'We found unfinished yes/no answers. Resume Step 2?',
+      step2Results: 'We paused on your Step 2 summary. Continue?',
       createAccount: 'We saved your account setup progress. Finish creating your account?',
       resume: 'Resume',
       dismiss: 'Start over',
@@ -131,6 +134,18 @@ export const translations: Record<Locale, TranslationDictionary> = {
       begin: 'Start quiz',
       back: 'Back',
     },
+    step2Intro: {
+      badge: 'Step 2 • Quick yes/no',
+      heading: 'A few more quick signals',
+      message: 'Answer 30 quick prompts so we can fine-tune your match profile.',
+      points: {
+        topics: 'Covers food, travel, movies, fashion, music, and relationships.',
+        pace: 'Yes/no only, takes about a minute.',
+        privacy: 'We store a simple vector for matching.',
+      },
+      continue: 'Begin Step 2',
+      back: 'Back',
+    },
     questionnaire: {
       title: 'Personality Questionnaire',
       buttons: {
@@ -151,6 +166,38 @@ export const translations: Record<Locale, TranslationDictionary> = {
         slightlyAgree: 'Slightly Agree',
         agree: 'Agree',
       },
+    },
+    step2: {
+      title: 'Quick Preferences',
+      buttons: {
+        previous: 'Previous',
+        next: 'Next',
+        finish: 'Continue',
+      },
+      confirm: {
+        title: 'Leave Step 2?',
+        message: 'If you go to Login now, you will lose all your progress.',
+        leave: 'Leave',
+        stay: 'Stay',
+      },
+      scale: {
+        yes: 'Yes',
+        no: 'No',
+      },
+    },
+    step2Results: {
+      title: 'Step 2 Results',
+      subtitle: 'Your quick preferences snapshot',
+      summaryAll: 'You chose yes across all categories.',
+      summaryNone: "You didn't choose yes in any category.",
+      summarySome: 'You chose yes in: {categories}.',
+      back: 'Back',
+      continue: 'Continue',
+      startOver: 'Start over',
+      confirmTitle: 'Start over?',
+      confirmMessage: 'If you go to Login now, you will lose all your progress.',
+      confirmLeave: 'Leave',
+      confirmStay: 'Stay',
     },
     registration: {
       title: 'Welcome to Twins',
@@ -306,7 +353,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
     character: {
       title: 'Your character match',
       goBack: 'Go back',
-      createAccount: 'Create your account',
+      createAccount: 'Continue to Step 2',
       confirm: {
         title: 'Leave registration?',
         message: 'If you go to Login now, you will lose all your progress.',
@@ -528,6 +575,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
       questionnaire: '未回答の質問があります。診断を再開しますか？',
       registration: 'プロフィール入力が途中です。再開しますか？',
       character: 'キャラクター結果の確認が途中です。続けますか？',
+      step2Intro: 'ステップ2の説明が途中です。続けますか？',
+      step2Questionnaire: '未回答のはい/いいえ質問があります。ステップ2を再開しますか？',
+      step2Results: 'ステップ2の結果画面が途中です。続けますか？',
       createAccount: 'アカウント作成が途中です。続けますか？',
       resume: '再開する',
       dismiss: '最初からやり直す',
@@ -563,6 +613,18 @@ export const translations: Record<Locale, TranslationDictionary> = {
       begin: '診断開始',
       back: '戻る',
     },
+    step2Intro: {
+      badge: 'ステップ2・クイック質問',
+      heading: 'もう少しだけ教えてください',
+      message: '30個のはい/いいえで、マッチの精度を高めます。',
+      points: {
+        topics: '食べ物・旅行・映画・ファッション・音楽・恋愛について',
+        pace: 'はい/いいえだけ、約1分',
+        privacy: 'シンプルなベクトルとして保存します',
+      },
+      continue: 'ステップ2を開始',
+      back: '戻る',
+    },
     questionnaire: {
       title: '性格診断',
       buttons: {
@@ -583,6 +645,38 @@ export const translations: Record<Locale, TranslationDictionary> = {
         slightlyAgree: 'ややそう思う（Slightly Agree）',
         agree: 'とてもそう思う（Agree）',
       },
+    },
+    step2: {
+      title: 'クイック好み',
+      buttons: {
+        previous: '前へ',
+        next: '次へ',
+        finish: '続ける',
+      },
+      confirm: {
+        title: 'ステップ2を終了しますか？',
+        message: '今ログインに戻ると、すべての進捗が失われます。',
+        leave: '終了',
+        stay: '続ける',
+      },
+      scale: {
+        yes: 'はい',
+        no: 'いいえ',
+      },
+    },
+    step2Results: {
+      title: 'ステップ2の結果',
+      subtitle: 'クイック好みのスナップショット',
+      summaryAll: 'すべてのカテゴリーで「はい」を選びました。',
+      summaryNone: '「はい」を選んだカテゴリーはありません。',
+      summarySome: '「はい」を選んだカテゴリー: {categories}',
+      back: '戻る',
+      continue: '続ける',
+      startOver: '最初からやり直す',
+      confirmTitle: '最初からやり直しますか？',
+      confirmMessage: '今ログインに戻ると、すべての進捗が失われます。',
+      confirmLeave: '終了',
+      confirmStay: '続ける',
     },
     registration: {
       title: 'Twinsへようこそ',
@@ -738,7 +832,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
     character: {
       title: 'あなたに合うキャラクター',
       goBack: '戻る',
-      createAccount: 'アカウントを作成',
+      createAccount: 'ステップ2へ進む',
       confirm: {
         title: '登録を終了しますか？',
         message: '今ログインに戻ると、すべての進捗が失われます。',
@@ -960,6 +1054,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
       questionnaire: 'Bạn còn đang làm dang dở bài kiểm tra. Tiếp tục nhé?',
       registration: 'Bạn chưa hoàn thành phần thông tin hồ sơ. Tiếp tục chứ?',
       character: 'Bạn đang dở xem phần nhân vật. Muốn xem tiếp không?',
+      step2Intro: 'Bạn đang ở phần giới thiệu Step 2. Tiếp tục chứ?',
+      step2Questionnaire: 'Bạn còn câu hỏi Có/Không chưa trả lời. Tiếp tục Step 2 chứ?',
+      step2Results: 'Bạn đang ở màn kết quả Step 2. Tiếp tục chứ?',
       createAccount: 'Bạn chưa hoàn tất tạo tài khoản. Tiếp tục hoàn thành nhé?',
       resume: 'Tiếp tục',
       dismiss: 'Làm lại từ đầu',
@@ -995,6 +1092,18 @@ export const translations: Record<Locale, TranslationDictionary> = {
       begin: 'Bắt đầu',
       back: 'Quay lại',
     },
+    step2Intro: {
+      badge: 'Bước 2 · Câu hỏi nhanh',
+      heading: 'Thêm vài tín hiệu nhanh',
+      message: 'Trả lời 30 câu Có/Không để tinh chỉnh hồ sơ ghép đôi.',
+      points: {
+        topics: 'Đồ ăn, du lịch, phim ảnh, thời trang, âm nhạc, tình yêu.',
+        pace: 'Chỉ Có/Không, khoảng một phút.',
+        privacy: 'Lưu vector đơn giản để so khớp.',
+      },
+      continue: 'Bắt đầu Bước 2',
+      back: 'Quay lại',
+    },
     questionnaire: {
       title: 'Bảng câu hỏi tính cách',
       buttons: {
@@ -1015,6 +1124,38 @@ export const translations: Record<Locale, TranslationDictionary> = {
         slightlyAgree: 'Hơi đồng ý',
         agree: 'Đồng ý',
       },
+    },
+    step2: {
+      title: 'Sở thích nhanh',
+      buttons: {
+        previous: 'Trước',
+        next: 'Tiếp',
+        finish: 'Tiếp tục',
+      },
+      confirm: {
+        title: 'Thoát Bước 2?',
+        message: 'Nếu bạn quay lại Đăng nhập ngay, bạn sẽ mất toàn bộ tiến trình.',
+        leave: 'Thoát',
+        stay: 'Ở lại',
+      },
+      scale: {
+        yes: 'Có',
+        no: 'Không',
+      },
+    },
+    step2Results: {
+      title: 'Kết quả Bước 2',
+      subtitle: 'Tóm tắt sở thích nhanh của bạn',
+      summaryAll: 'Bạn chọn Có ở tất cả các danh mục.',
+      summaryNone: 'Bạn không chọn Có ở bất kỳ danh mục nào.',
+      summarySome: 'Bạn chọn Có ở: {categories}.',
+      back: 'Quay lại',
+      continue: 'Tiếp tục',
+      startOver: 'Làm lại từ đầu',
+      confirmTitle: 'Làm lại từ đầu?',
+      confirmMessage: 'Nếu bạn quay lại Đăng nhập ngay, bạn sẽ mất toàn bộ tiến trình.',
+      confirmLeave: 'Thoát',
+      confirmStay: 'Ở lại',
     },
     registration: {
       title: 'Chào mừng đến với Twins',
@@ -1170,7 +1311,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
     character: {
       title: 'Nhân vật phù hợp với bạn',
       goBack: 'Quay lại',
-      createAccount: 'Tạo tài khoản của bạn',
+      createAccount: 'Tiếp tục đến Bước 2',
       confirm: {
         title: 'Thoát khỏi đăng ký?',
         message: 'Nếu bạn quay lại Đăng nhập ngay, bạn sẽ mất toàn bộ tiến trình.',

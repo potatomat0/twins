@@ -5,6 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import RegistrationScreen from '@components/RegistrationScreen';
 import QuestionnaireScreen from '@components/QuestionnaireScreen';
 import ResultsScreen from '@components/ResultsScreen';
+import Step2IntroScreen from '@components/Step2IntroScreen';
+import Step2QuestionnaireScreen from '@components/Step2QuestionnaireScreen';
+import Step2ResultsScreen from '@components/Step2ResultsScreen';
 import CreateAccountScreen from '@components/CreateAccountScreen';
 import LoginScreen from '@components/LoginScreen';
 import SwipeHeader from '@components/common/SwipeHeader';
@@ -47,6 +50,32 @@ export type RootStackParamList = {
     scores: Record<string, number>;
     pcaFingerprint?: PcaFingerprint;
   } | undefined;
+  Step2Intro: {
+    username: string;
+    email: string;
+    ageGroup: string;
+    gender: string;
+    scores: Record<string, number>;
+    pcaFingerprint?: PcaFingerprint;
+  } | undefined;
+  Step2Questionnaire: {
+    username: string;
+    email: string;
+    ageGroup: string;
+    gender: string;
+    scores: Record<string, number>;
+    pcaFingerprint?: PcaFingerprint;
+  } | undefined;
+  Step2Results: {
+    username: string;
+    email: string;
+    ageGroup: string;
+    gender: string;
+    scores: Record<string, number>;
+    pcaFingerprint?: PcaFingerprint;
+    step2Answers?: Record<string, 0 | 1>;
+    step2Vector?: number[];
+  } | undefined;
   CreateAccount: {
     username: string;
     email: string;
@@ -54,6 +83,8 @@ export type RootStackParamList = {
     gender: string;
     scores: Record<string, number>;
     pcaFingerprint?: PcaFingerprint;
+    step2Answers?: Record<string, 0 | 1>;
+    step2Vector?: number[];
   } | undefined;
   ResumePrompt: { destination: ResumeDestination | null } | undefined;
   VerifyEmail: {
@@ -256,6 +287,30 @@ const AppNavigator = () => {
             gestureEnabled: false,
             header: () => <SwipeHeader title="Your Character" onBack={() => navigation.goBack()} />,
           })}
+        />
+        <Stack.Screen
+          name="Step2Intro"
+          component={Step2IntroScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="Step2Questionnaire"
+          component={Step2QuestionnaireScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="Step2Results"
+          component={Step2ResultsScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
         />
         <Stack.Screen
           name="CreateAccount"

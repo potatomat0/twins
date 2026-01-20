@@ -27,3 +27,4 @@
     *   This guarantees 100% notification reliability and prevents "missing notification" issues caused by client/network failures.
 - 2026-01-08: Swipe Performance — Implemented image preloading in `RecommendationContext` to fetch the next 5 user avatars in advance. This eliminates loading spinners on swipe, providing a much smoother user experience in the Explore deck.
 - 2026-01-20: Step 2 Question Bank — Added localized (EN/JA/VI) step-2 question and category text set to prepare the yes/no onboarding flow.
+- 2026-01-20: Step 2 Flow — Wired Step 2 intro + yes/no questionnaire + results screens into onboarding flow with resume support and updated i18n.

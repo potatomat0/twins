@@ -11,6 +11,9 @@ High-level overview of the directories and core files you will touch most often.
   - `components/common/`: Reusable primitives (buttons, modals, dropdowns, etc.).
   - `components/charts/`: SVG/chart renderers (e.g., radar chart).
   - `components/ProfileDetailModal.tsx`: Reusable modal for detailed user profile view (matches, hobbies).
+  - `components/Step2IntroScreen.tsx`: Intro/explanation for Step 2 yes/no prompts.
+  - `components/Step2QuestionnaireScreen.tsx`: Step 2 yes/no questionnaire flow.
+  - `components/Step2ResultsScreen.tsx`: Step 2 results summary visualization.
 - `navigation/`: Stack navigator definitions (`AppNavigator.tsx`).
 - `context/`: React context providers (`ThemeContext`, `LocaleContext`, `AuthContext`).
 - `hooks/`: Custom hooks (`useAppResources`, `useAutoDismissKeyboard`, etc.).
