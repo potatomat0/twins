@@ -1,7 +1,6 @@
 #import "/template.typ" : *
 
 #[
-  #set heading(numbering: "Chương 1.1")
   = Hệ giới thiệu và cơ chế xếp hạng <chuong5>
 ]
 

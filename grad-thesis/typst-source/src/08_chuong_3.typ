@@ -1,7 +1,6 @@
 #import "/template.typ" : *
 
 #[
-  #set heading(numbering: "Chương 1.1")
   = Chuyển đổi dữ liệu tính cách (PCA‑4) <chuong3>
 ]
 

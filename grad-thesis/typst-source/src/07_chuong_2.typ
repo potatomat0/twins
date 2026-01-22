@@ -1,7 +1,6 @@
 #import "/template.typ" : *
 
 #[
-  #set heading(numbering: "Chương 1.1")
   = Tổng quan quy trình hệ thống <chuong2>
 ]
 

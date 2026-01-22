@@ -1,7 +1,6 @@
 #import "/template.typ" : *
 
 #[
-  #set heading(numbering: "Chương 1.1")
   = Bảo mật và mã hoá dữ liệu <chuong4>
 ]
 

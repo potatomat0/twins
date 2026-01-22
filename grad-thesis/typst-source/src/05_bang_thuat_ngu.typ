@@ -1,5 +1,3 @@
-#import "/template.typ": *
-
 #[
   #set heading(numbering: none)
   = Danh mục Thuật ngữ và Chữ viết tắt <bang_thuat_ngu>
