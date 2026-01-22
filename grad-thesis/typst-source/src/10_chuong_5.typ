@@ -4,7 +4,6 @@
   = Hệ giới thiệu và cơ chế xếp hạng <chuong5>
 ]
 
-== Mục tiêu của chương
 
 Chương này mô tả cách hệ giới thiệu kết hợp ba nguồn tín hiệu: tính cách (PCA), hành vi xã giao
 (ELO) và sở thích được nhúng vector (embedding hobbies). Đồng thời, chương giải thích vì sao từng tín hiệu
@@ -43,7 +42,6 @@ chuỗi like/skip khác nhau.
   caption: [Ví dụ ELO phản ánh hành vi xã giao qua chuỗi tương tác],
 ) <fig_elo_behavior>
 
-=== Vai trò của ELO trong hành vi xã giao
 
 Điểm ELO phản ánh mức độ like/skip trong thực tế. Đây là tín hiệu hành vi, không phải kết
 quả tự khai báo. Nó đóng vai trò là một cơ chế hiệu chỉnh, giúp giảm sai lệch giữa những gì
@@ -55,7 +53,6 @@ ELO trong hệ thống là hệ số ẩn, được cập nhật sau mỗi tươ
 800–2000. Mặc dù cập nhật theo kiểu hợp tác dẫn tới lạm phát điểm, mục tiêu chính là gom
 nhóm hành vi thay vì xếp hạng cạnh tranh.
 
-=== Bàn luận về thiết kế ELO
 
 Việc điều chỉnh thuật toán ELO cho bối cảnh mạng xã hội thay vì một trò chơi đối kháng tổng bằng không
 (zero-sum game) là một quyết định thiết kế quan trọng.
@@ -109,7 +106,6 @@ so sánh xuống O(N), thay vì O(N*k^2) nếu mỗi người có k sở thích 
   caption: [Mức độ tương đồng ngữ nghĩa của hai từ được so sánh bằng cosine similarity.],
 ) <fig_semantic_model>
 
-=== Lựa chọn thay thế: TF‑IDF
 
 TF‑IDF là cách biểu diễn văn bản theo trọng số từ khóa @manning2008ir. Điểm mạnh của TF‑IDF
 là đơn giản, dễ giải thích, và chạy nhanh trên thiết bị. Tuy nhiên, TF‑IDF không hiểu ngữ
@@ -123,7 +119,6 @@ TF‑IDF được coi là lựa chọn thay thế tham khảo chứ không phù 
   caption: [TF-IDF vượt trội ở khả năng tìm kiếm từ khoá quan trọng.],
 ) <fig_tfidf_alt>
 
-=== Lựa chọn thay thế: Word2Vec
 
 Word2Vec tạo vector cho từng từ dựa trên ngữ cảnh @mikolov2013efficient. Cách này nắm bắt
 được một phần quan hệ ngữ nghĩa, nhưng vẫn gặp khó khi chuyển sang mức câu hoặc cụm sở
@@ -150,7 +145,6 @@ Hobbies được dùng như một tín hiệu làm mượt, giúp hệ giới th
 mà tính cách không nắm bắt được. Cấu trúc này giảm rủi ro hệ thống chỉ dựa vào một nguồn
 dữ liệu duy nhất, vốn dễ gây thiên lệch hoặc thiếu đa dạng.
 
-=== Bàn luận về trọng số
 
 Việc lựa chọn và phân bổ các trọng số trong công thức giới thiệu tổng hợp (ví dụ: 60% PCA, 15% ELO, 25% Hobbies) là một quy trình cân nhắc kỹ lưỡng nhằm đạt được sự cân bằng giữa tính ổn định dài hạn và các yếu tố ngữ cảnh tức thời. *Xác định tính cách là nền tảng cốt lõi* đóng vai trò quyết định trong việc duy trì một mối quan hệ bền vững, do đó trọng số cho sự tương đồng PCA luôn được thiết lập ở mức ưu tiên cao nhất, thường chiếm trên 50% tổng điểm giới thiệu. Việc đặt trọng số này ở mức chủ đạo giúp hệ thống lọc ra những người dùng có "sóng não" và xu hướng tâm lý tương hợp dựa trên mô hình Big-5, từ đó giảm thiểu rủi ro của các kết nối bề mặt vốn dễ dẫn đến sự ngắt quãng sau một thời gian ngắn tương tác.
 
@@ -158,7 +152,6 @@ Việc lựa chọn và phân bổ các trọng số trong công thức giới t
 
 *Coi sở thích cá nhân là chất xúc tác và cầu nối ngữ cảnh* để tạo ra những chủ đề trò chuyện cụ thể ngay từ giai đoạn đầu của việc kết nối. Với trọng số đáng kể nhưng thấp hơn tính cách, thành phần nhúng ngữ nghĩa của sở thích giúp phá vỡ thế hòa điểm giữa các ứng viên có độ tương đồng PCA ngang nhau, đồng thời cung cấp những giới thiệu mang tính thời điểm và thực tế cao hơn. Điều này cho phép người dùng dễ dàng tìm thấy tiếng nói chung thông qua các hoạt động hoặc đam mê cụ thể, từ đó tạo tiền đề cho việc khám phá sâu hơn về tính cách trong tương lai. Các trọng số này có thể được hiệu chỉnh linh hoạt thông qua các thử nghiệm thực tế hoặc cá nhân hóa cho từng nhóm người dùng, nhưng cấu hình hiện tại được xem là một điểm khởi đầu cân bằng, đảm bảo tính khoa học và hiệu quả của hệ thống giới thiệu.
 
-=== Ví dụ minh họa xếp hạng
 
 Xét người dùng A đang xem giới thiệu, với ba ứng viên B và C. Giả sử hệ thống đang áp dụng trọng số: 50% PCA, 20% ELO proximity, và 30% Hobbies. Các chỉ số tương đồng thành phần như sau:
 

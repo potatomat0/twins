@@ -4,7 +4,6 @@
   = Thực nghiệm và Đánh giá <chuong6>
 ]
 
-== Mục tiêu của chương
 
 Chương này trình bày các thực nghiệm được tiến hành để đánh giá hiệu quả và hiệu năng của hệ thống giới thiệu Twins. Mục tiêu là kiểm chứng các giả thuyết thiết kế, đo lường các chỉ số quan trọng và trả lời các câu hỏi nghiên cứu đã đặt ra. Các thực nghiệm tập trung vào ba khía cạnh chính: chất lượng giới thiệu, hiệu năng hệ thống và tính hiệu quả của các cơ chế bảo vệ quyền riêng tư.
 
@@ -24,14 +23,12 @@ Chương này trình bày các thực nghiệm được tiến hành để đán
 
 == Thiết lập thực nghiệm
 
-=== Môi trường và công cụ
 
 - *Ứng dụng khách (Client)*: Expo Go chạy trên thiết bị mô phỏng, kết nối tới backend Supabase.
 - *Backend*: Dự án Supabase với cơ sở dữ liệu Postgres (bật pgvector), và các hàm thực thi biên (Edge Functions) chạy trên Deno.
 - *Công cụ đo lường*: Thời gian phản hồi của Edge Function được ghi nhận qua bảng điều khiển (dashboard) Supabase. Độ trễ trên thiết bị khách được đo bằng các hàm `console.time` và `console.timeEnd` trong mã nguồn.
 - *Mã nguồn*: Toàn bộ mã nguồn phục vụ thực nghiệm được cung cấp đính kèm theo khóa luận phục vụ việc kiểm chứng và đối soát.
 
-=== Tập dữ liệu
 
 Thực nghiệm sử dụng hai tập người dùng chính:
 
@@ -89,7 +86,7 @@ Các kết quả thực nghiệm trên đã xác nhận giả thuyết của RQ1
 
 *Phân tích*: Độ trễ lớn nhất tập trung vào hàm `embed`, do phải thực hiện lệnh gọi API bên ngoài tới mô hình Jina và xử lý vector 384 chiều. Hàm `recommend-users` cũng có độ trễ trên 2 giây vì phải tính toán độ tương đồng trên tập ứng viên lớn. Các tác vụ này cho thấy nhu cầu tối ưu hóa bằng bộ nhớ đệm (caching) hoặc thực hiện tính toán bất đồng bộ trong các phiên bản tương lai. Độ trễ mã hoá `score-crypto` ổn định ở mức ~1 giây, phù hợp cho các quy trình tạo hồ sơ. Độ trễ của các tác vụ tính toán thuần túy trên thiết bị khách (như nhân ma trận PCA) là cực thấp (dưới 5ms), không gây ảnh hưởng đến trải nghiệm người dùng.
 
-=== RQ4: Hiệu quả của mô hình nhúng ngữ nghĩa trong việc so khớp sở thích
+=== RQ4-5: Ngữ nghĩa sở thích và quyền riêng tư
 
 Để kiểm chứng khả năng của mô hình trong việc so khớp sở thích một cách có ý nghĩa, kịch bản `scripts/demo_semantic_comparison.ts` được thiết lập. Kịch bản này so sánh 15 cặp duy nhất từ 6 người dùng giả lập với các chủ đề sở thích khác nhau (Outdoor, Creative, Tech, Foodie) và sử dụng cả tiếng Anh lẫn tiếng Việt.
 
@@ -102,7 +99,6 @@ Kết quả thực nghiệm cho thấy khả năng phân biệt rõ rệt của 
 *Kết luận cho RQ4:*
 Dải điểm số rộng (từ `0.42` đến `0.81`) cho thấy mô hình nhúng ngữ nghĩa hoạt động hiệu quả. Nó không chỉ nhận diện chính xác các sở thích tương đồng về mặt ngữ nghĩa bất chấp rào cản ngôn ngữ mà còn tạo ra một thang đo chênh lệch đủ lớn để phân biệt các mức độ liên quan khác nhau, từ đó giúp hệ thống xếp hạng các ứng viên một cách có ý nghĩa.
 
-=== RQ5: Đánh giá hiệu quả bảo vệ quyền riêng tư
 
 Việc đánh giá này mang tính định tính, dựa trên kiến trúc đã triển khai.
 
@@ -114,11 +110,9 @@ Việc đánh giá này mang tính định tính, dựa trên kiến trúc đã 
 
 == Thảo luận và Hạn chế
 
-=== Thảo luận
 
 Các kết quả thực nghiệm đã xác nhận các giả thuyết thiết kế ban đầu. Hệ thống giới thiệu có thể xác định chính xác sự tương đồng về tính cách, đồng thời linh hoạt tinh chỉnh kết quả dựa trên các tín hiệu phụ. Hiệu năng của hệ thống ở quy mô hiện tại là chấp nhận được, và kiến trúc bảo mật đã chứng tỏ tính hiệu quả trong việc bảo vệ dữ liệu người dùng.
 
-=== Hạn chế
 
 - *Quy mô dữ liệu nhỏ*: Các thực nghiệm được tiến hành trên một tập dữ liệu giả lập nhỏ. Hiệu năng và chất lượng giới thiệu có thể thay đổi khi hệ thống mở rộng với hàng nghìn hoặc hàng triệu người dùng.
 - *Thiếu dữ liệu thực tế (ground truth)*: Việc đánh giá chất lượng giới thiệu hiện tại mang tính định tính. Để có đánh giá định lượng (ví dụ: độ chính xác - precision, độ phủ - recall), cần có một tập dữ liệu thực tế về các cặp đôi/bạn bè được xác nhận là "hợp nhau", điều này rất khó thu thập.

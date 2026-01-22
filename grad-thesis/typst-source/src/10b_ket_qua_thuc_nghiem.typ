@@ -4,7 +4,6 @@
 
 Phần này trình bày các số liệu định lượng thu được từ các kịch bản kiểm thử tự động trên hệ thống thật. Các phép đo được thực hiện ở hai trạng thái: trước và sau khi áp dụng các kỹ thuật tối ưu hoá cơ sở dữ liệu.
 
-=== 1. Hiệu năng quy trình tạo tài khoản (Upsert Pipeline)
 
 Kịch bản kiểm thử đo độ trễ toàn trình cho việc tạo hồ sơ người dùng mới (bao gồm xác thực, mã hoá 2 lớp và lưu trữ), kết quả được ghi nhận tại #ref(<tab_upsert_latency>):
 
@@ -21,7 +20,6 @@ Kịch bản kiểm thử đo độ trễ toàn trình cho việc tạo hồ sơ
   caption: [Hiệu năng quy trình tạo tài khoản],
 ) <tab_upsert_latency>
 
-=== 2. Phân tích kết quả giới thiệu và Hiệu quả tối ưu hoá
 
 Kịch bản kiểm thử sự thay đổi hiệu năng của hàm `recommend-users` sau khi tối ưu hoá chính sách bảo mật hàng (RLS) và bổ sung chỉ mục (Index) như mô tả tại #ref(<tab_optimize_performance>):
 
@@ -57,7 +55,6 @@ Danh sách 5 người dùng được gợi ý hàng đầu sau tối ưu hoá đ
   caption: [Kết quả xếp hạng thực tế sau khi tối ưu hoá],
 ) <tab_top5_results>
 
-=== 3. Logic cập nhật ELO thực tế
 
 Dựa trên dữ liệu từ script benchmark, sự thay đổi điểm ELO của Viewer (Actor) và đối tượng tương tác (Target) được ghi nhận như sau. Giả sử $R_A = 1500$ (Viewer) và $R_B = 1230$ (Match_PCA), với hệ số $K = 12$:
 

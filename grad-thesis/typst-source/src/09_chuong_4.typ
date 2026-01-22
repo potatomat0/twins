@@ -4,7 +4,6 @@
   = Bảo mật và mã hoá dữ liệu <chuong4>
 ]
 
-== Mục tiêu của chương
 
 Chương này trình bày cách dữ liệu được nhập từ góc độ người dùng, cách dữ liệu được chuyển
 đổi và mã hoá trước khi lưu trữ, cùng với lý do lựa chọn cơ chế AES-256-GCM. Trọng tâm là
@@ -12,7 +11,6 @@ luồng dữ liệu và các tác nhân, không đi sâu vào mã nguồn chi ti
 
 == Tổng quan về cơ chế AES-GCM
 
-=== Nguyên lý cơ bản
 
 
 
@@ -59,7 +57,6 @@ người dùng nhận phải dữ liệu sai lệch hoặc đã bị chỉnh s�
 như tính cách và sở thích, việc đảm bảo tính toàn vẹn quan trọng không kém việc giữ bí
 mật. Vì vậy, AES-GCM phù hợp hơn các chế độ chỉ mã hoá mà không đi kèm xác thực.
 
-=== Đầu vào và đầu ra của AES-GCM
 
 Đầu vào bao gồm dữ liệu gốc (dưới dạng JSON chứa điểm Big Five hoặc danh sách sở thích), khóa bí mật, và một IV
 ngẫu nhiên. Đầu ra bao gồm dữ liệu đã mã hoá (ciphertext) và IV tương ứng. Trong triển khai của đề tài, IV được lưu trữ riêng
@@ -77,7 +74,6 @@ ghi nhận lỗi, ngăn chặn việc trả về dữ liệu sai. Cách lưu tr�
 
 == Dữ liệu đầu vào từ góc nhìn người dùng
 
-=== Trải nghiệm nhập liệu và ranh giới dữ liệu nhạy cảm
 
 Người dùng thực hiện bộ câu hỏi tính cách gồm 25 câu hỏi trong một lượt. Các câu trả lời
 này được xem là dữ liệu nhạy cảm vì có thể dùng để suy diễn đặc trưng tâm lý. Ngay khi người dùng hoàn tất,
@@ -92,7 +88,6 @@ lời gốc cho từng câu hỏi. Việc này giúp giảm thiểu rủi ro rò
   caption: [Luồng giao diện và vị trí tổng hợp điểm Big Five],
 ) <fig_ui_quiz_flow>
 
-=== Chuyển đổi trên thiết bị
 
 Sau khi tổng hợp, điểm Big Five được chuẩn hóa và chuyển đổi sang không gian PCA-4 ngay trên thiết bị người dùng.
 Kết quả PCA là dữ liệu đã giảm chiều, đủ cho mục đích so khớp nhưng không thay thế hoàn toàn được dữ liệu
@@ -101,7 +96,6 @@ số mô hình. Do đó, dữ liệu gốc vẫn cần được mã hoá trướ
 
 == Mã hóa dữ liệu bằng AES-256-GCM
 
-=== Đề xuất AES-GCM
 
 Đề tài đề xuất sử dụng AES-256-GCM làm cơ chế mã hoá chính cho dữ liệu tính cách và
 sở thích. Lý do là dữ liệu có kích thước nhỏ, yêu cầu tốc độ xử lý nhanh và cần khả năng giải mã để
@@ -110,13 +104,11 @@ các hàm thực thi biên (Edge Function). Cơ chế này cũng cho phép lưu 
 đăng nhập lại. Trong phạm vi khóa luận, AES-GCM là lựa chọn tối ưu để cân bằng giữa bảo mật
 và khả năng vận hành thực tế.
 
-=== Lý do chọn AES-GCM
 
 AES-GCM được lựa chọn vì phù hợp với các gói dữ liệu (payload) nhỏ, tốc độ cao, và tích hợp sẵn cơ chế xác thực dữ liệu
 (integrity) cùng lúc với mã hoá @nistel2007gcm. So với RSA hoặc Bcrypt, AES-GCM tiêu tốn ít tài
 nguyên hơn khi mã hoá các chuỗi JSON ngắn, và dễ dàng tích hợp trong môi trường Edge Function.
 
-=== Lựa chọn thay thế: RSA
 
 RSA là thuật toán mã hoá bất đối xứng, thường dùng để trao đổi khóa hoặc ký số @rivest1978rsa.
 Trong bối cảnh dữ liệu tính cách, RSA không phù hợp để mã hoá trực tiếp dữ liệu vì chi phí
@@ -132,7 +124,6 @@ trễ đáng kể khi người dùng cập nhật hồ sơ liên tục.
   caption: [Ví dụ chi phí tính toán khi dùng RSA cho payload nhỏ],
 ) <fig_rsa_alt>
 
-=== Lựa chọn thay thế: Bcrypt/Scrypt
 
 Bcrypt và Scrypt là các hàm băm mật khẩu (password hashing function) @provos1999bcrypt. Ưu điểm của chúng
 là làm chậm các cuộc tấn công dò khóa (brute-force), nhưng nhược điểm là dữ liệu sau khi băm không thể giải mã để lấy lại nội dung gốc. Trong hệ thống Twins,
@@ -146,7 +137,6 @@ Ví dụ, sở thích “chạy bộ” sau khi băm sẽ trở thành một chu
   caption: [So sánh dữ liệu băm và dữ liệu có thể giải mã],
 ) <fig_bcrypt_alt>
 
-=== Lựa chọn thay thế: Homomorphic encryption
 
 Mã hoá đồng hình (Homomorphic encryption) cho phép thực hiện tính toán trực tiếp trên dữ liệu đã mã hoá mà không cần giải mã @gentry2009fully.
 Đây là hướng đi rất mạnh về bảo mật, nhưng chi phí tính toán cực kỳ cao và việc triển khai rất phức tạp. Với
@@ -162,7 +152,6 @@ văn bản thuần, gây trải nghiệm kém mượt mà trên thiết bị di 
   caption: [Minh họa độ phức tạp của mã hoá đồng hình],
 ) <fig_homomorphic_alt>
 
-=== Lựa chọn thay thế: Differential privacy
 
 Sự riêng tư biệt lập (Differential privacy) tập trung vào việc ẩn danh hóa khi công bố các số liệu thống kê @dwork2006dp. Phương pháp
 này phù hợp cho dữ liệu tổng hợp, nhưng không giải quyết được bài toán lưu trữ và giải mã dữ
@@ -178,7 +167,6 @@ bị giảm độ chính xác và khó giải thích.
   caption: [So sánh sự riêng tư biệt lập và mã hoá dữ liệu cá nhân],
 ) <fig_dp_alt>
 
-=== Vai trò của Edge Function và khóa bí mật
 
 Khóa AES chỉ tồn tại ở phía Edge Function (máy chủ biên). Thiết bị người dùng không lưu trữ khóa này, nhằm tránh nguy cơ
 bị trích xuất từ ứng dụng. Đồng thời, cách thiết kế này cho phép người dùng phục hồi dữ liệu
@@ -193,7 +181,6 @@ khôi phục dữ liệu.
   caption: [Nhật ký Edge Function khi mã hoá và giải mã dữ liệu], 
 ) <fig_edge_logs>
 
-=== Lưu trữ và giới hạn truy cập
 
 Cơ sở dữ liệu chỉ lưu trữ dữ liệu đã mã hoá và IV cho Big Five (các trường `b5_cipher`, `b5_iv`). Điều này có nghĩa
 là quản trị viên cơ sở dữ liệu không thể đọc trực tiếp dữ liệu tính cách dưới dạng văn bản thuần. Dữ liệu

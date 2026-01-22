@@ -64,7 +64,6 @@
 
   counter(page).update(0)
   set page(numbering: none)
-  include "src/02_loi_cam_doan.typ"
   include "src/03_loi_cam_on.typ"
 
   show heading.where(level: 1): it => {

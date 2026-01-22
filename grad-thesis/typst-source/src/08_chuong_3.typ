@@ -4,7 +4,6 @@
   = Chuyển đổi dữ liệu tính cách (PCA‑4) <chuong3>
 ]
 
-== Mục tiêu của chương
 
 Chương này trình bày chi tiết quy trình chuyển đổi dữ liệu Big Five sang vector PCA‑4,
 bao gồm cách chuẩn hóa điểm, cách huấn luyện PCA và cách triển khai trên thiết bị. Mục
@@ -19,7 +18,6 @@ về tính tái lập và độ phủ dữ liệu, phù hợp cho bài toán chu
 @john1999bigfive@ashton2007hexaco. Do đó, đồ án chấp nhận giới hạn của mô hình nhưng coi
 Big Five là lựa chọn thực tế nhất để làm nền cho quy trình chuyển đổi dữ liệu.
 
-=== Mô hình Chỉ báo Phân loại Myers-Briggs (MBTI)
 
 MBTI phân loại người dùng theo các cặp đối lập, tạo ra 16 nhóm tính cách. Cách biểu diễn
 này dễ truyền thông nhưng thiên về phân loại rời rạc, trong khi dữ liệu thực tế thường có
@@ -37,7 +35,6 @@ cách MBTI chia nhóm tính cách.
   caption: [Minh họa mô hình MBTI và cách phân nhóm tính cách],
 ) <fig_mbti_overview>
 
-=== Mô hình tính cách HEXACO
 
 HEXACO mở rộng Big Five bằng cách thêm yếu tố Trung thực-Khiêm tốn (Honesty-Humility). Mô hình này có giá trị về
 mặt học thuật, nhưng dữ liệu mở và bộ câu hỏi chuẩn hóa không phổ biến bằng Big Five. Việc
@@ -55,14 +52,12 @@ chính cho đồ án. #ref(<fig_hexaco_overview>) minh họa cấu trúc HEXACO.
 
 == Chuẩn hóa điểm Big Five
 
-=== Thang đo và hướng câu hỏi
 
 Mỗi câu trả lời được chấm theo thang Likert 1–5. Với câu hỏi hướng dương, điểm giữ nguyên
 thứ tự 1→5. Với câu hỏi hướng âm, điểm được đảo chiều. Sau đó các điểm trong cùng một trait
 được cộng lại và chuẩn hóa về thang 0–1. Cách chuẩn hóa này giúp các trait có cùng thang
 đo, phù hợp cho PCA và so khớp cosine.
 
-=== Ví dụ định dạng dữ liệu đầu vào
 
 Sau bước chuẩn hóa, mỗi người dùng có một vector 5 chiều theo thứ tự trait cố định:
 
@@ -74,7 +69,6 @@ Ví dụ một người dùng có thể có:
 
 Đây là dạng dữ liệu đầu vào cho bước PCA.
 
-=== Vì sao chọn PCA‑4 sau khi chuẩn hóa
 
 Chuẩn hóa đưa dữ liệu Big Five về cùng thang đo, giúp mỗi trait đóng góp cân bằng khi so
 khớp và khi học PCA. Tuy vậy, chuẩn hóa không giải quyết vấn đề dư thừa thông tin giữa các
@@ -103,24 +97,20 @@ thông tin mà vẫn đảm bảo kích thước nhỏ gọn.
 
 == Huấn luyện và Trích xuất tham số PCA
 
-=== Nguồn dữ liệu và Thư viện
 Quá trình huấn luyện được thực hiện trong môi trường Jupyter Notebook (`model/pca_evaluator.ipynb`) sử dụng thư viện `scikit-learn` của Python. Cụ thể, lớp `sklearn.decomposition.PCA` được dùng để thực hiện các phép tính. Dữ liệu đầu vào là bộ `big_five_scores.csv` với 300,313 mẫu @automoto2023bigfive, đảm bảo số lượng mẫu đủ lớn để các thành phần chính được tính toán một cách ổn định và đáng tin cậy.
 
 Phân tích Dữ liệu Khám phá (EDA) trong notebook cho thấy chênh lệch trung bình giữa các quốc gia tồn tại nhưng không đủ lớn để cần một mô hình riêng theo vùng. Do đó, PCA được huấn luyện trên toàn bộ tập dữ liệu để nắm bắt phương sai tổng thể.
 
-=== Phương pháp luận: Học không giám sát và Lý do không chia tập Train/Test
 Một điểm quan trọng cần lưu ý là trong quy trình này, toàn bộ dữ liệu đã được sử dụng để huấn luyện mô hình PCA mà không cần phân chia thành tập huấn luyện (train) và tập kiểm thử (test). Lý do là vì bài toán của đồ án không phải là một bài toán dự đoán (học có giám sát) mà là một bài toán biến đổi dữ liệu (học không giám sát).
 
 Mục tiêu của PCA là tìm ra cấu trúc tiềm ẩn và các hướng phương sai lớn nhất của *toàn bộ* phân bố dữ liệu. Việc chia nhỏ dữ liệu sẽ khiến PCA chỉ học được cấu trúc của một phần dữ liệu, dẫn đến các vector thành phần chính được tạo ra có thể không đại diện chính xác cho toàn bộ không gian dữ liệu. Vì vậy, để có được một phép biến đổi ổn định và tổng quát nhất, việc `fit` PCA trên toàn bộ tập dữ liệu là phương pháp luận chính xác cho bài toán này.
 
-=== Trích xuất tham số từ đối tượng PCA
 Sau khi quá trình huấn luyện hoàn tất bằng phương thức `.fit()`, đối tượng PCA từ `scikit-learn` sẽ chứa các tham số toán học cần thiết cho việc biến đổi. Hai thuộc tính quan trọng nhất được trích xuất là:
 - `pca.mean_`: Đây là một vector chứa giá trị trung bình của mỗi chiều (mỗi đặc trưng tính cách) trên toàn bộ tập dữ liệu. Về mặt hình học, nó đại diện cho "tâm" của đám mây dữ liệu. Phép biến đổi PCA bắt đầu bằng việc dịch chuyển toàn bộ dữ liệu sao cho tâm này trở thành gốc tọa độ mới.
 - `pca.components_`: Đây là một ma trận chứa các vector thành phần chính. Mỗi vector là một *unit vector* (đã được chuẩn hóa với độ dài bằng 1) và chỉ ra một hướng trong không gian dữ liệu. Các vector này trực giao với nhau và được sắp xếp theo thứ tự giảm dần của lượng phương sai mà chúng nắm giữ. Đây chính là các "trục" của hệ tọa độ mới sau khi giảm chiều.
 
 Các giá trị này sau đó được sử dụng để triển khai lại logic biến đổi trên thiết bị di động.
 
-=== Công thức chiếu PCA
 
 PCA thực hiện phép chiếu tuyến tính trên dữ liệu đã được trừ đi giá trị trung bình. Với vector đầu vào $x$
 (dài 5), ta có:
@@ -147,20 +137,16 @@ trong đó $mu$ là vector trung bình (mean) và $W$ là ma trận chứa các 
 
 == Triển khai PCA trên thiết bị
 
-=== Quyết định không sử dụng trực tiếp mô hình TFLite
 Mặc dù notebook đã xuất ra một mô hình `pca_evaluator_4d.tflite`, việc tích hợp trực tiếp một mô hình TensorFlow Lite vào ứng dụng React Native (sử dụng Expo) có thể gặp một số thách thức về thư viện và khả năng tương thích, đòi hỏi các thành phần native phức tạp.
 
 Để đảm bảo hiệu suất, giảm sự phụ thuộc vào các thư viện native và tăng tính linh hoạt, đồ án đã chọn một phương pháp hiệu quả hơn: trích xuất trực tiếp các tham số toán học (`mean_` và `components_`) từ đối tượng PCA đã huấn luyện. Các giá trị này sau đó được lưu trữ cố định trong mã nguồn TypeScript của ứng dụng. Một hàm riêng sẽ thực hiện lại phép biến đổi PCA bằng các phép toán cơ bản. Cách tiếp cận này hoàn toàn tương đương về mặt toán học với việc chạy model TFLite nhưng lại đơn giản, minh bạch và dễ bảo trì hơn trong môi trường Expo.
 
-=== Định dạng lưu trữ
 Kết quả PCA‑4 được lưu dưới dạng 4 trường số trong cơ sở dữ liệu: `pca_dim1` đến `pca_dim4`. Việc lưu trữ các giá trị này dưới dạng số thực cho phép máy chủ thực hiện các phép tính tương đồng cosine một cách hiệu quả trong quá trình gợi ý người dùng.
 
-=== Kiểm chứng logic tính điểm trên thiết bị
 Do logic tính điểm Big Five (chuyển đổi 50 câu trả lời thành 5 điểm số) được triển khai lại bằng TypeScript trên ứng dụng, một bước kiểm chứng là tối quan trọng để đảm bảo tính nhất quán với logic gốc trong notebook Python. Vì lý do này, một script kiểm tra tự động (`scripts/score_verifier.ts`) đã được xây dựng.
 
 Script này thực thi một loạt các kịch bản kiểm thử được định nghĩa trước, bao gồm các trường hợp biên (ví dụ: tất cả câu trả lời là "trung lập") và một kịch bản sử dụng dữ liệu giả lập giống hệt trong notebook. Nó so sánh kết quả tính toán của logic TypeScript với kết quả kỳ vọng. Bằng cách này, đồ án đảm bảo rằng dữ liệu đầu vào cho bước chiếu PCA trên thiết bị luôn chính xác và tương đương với môi trường huấn luyện, giúp toàn bộ quy trình có thể tái lập và đáng tin cậy. Một minh họa về cấu trúc của các kịch bản kiểm thử này được trình bày trong Phụ lục.
 
-== Kết luận
 
 PCA là phép biến đổi tuyến tính, có thể giải thích và kiểm soát. Các lựa chọn thay thế
 như nhúng vector học sâu hoặc nhúng ngữ nghĩa (semantic embedding) không phù hợp vì dữ liệu tính cách đã có

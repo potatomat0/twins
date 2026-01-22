@@ -4,7 +4,6 @@
   = Tổng quan quy trình hệ thống <chuong2>
 ]
 
-== Mục tiêu của chương
 
 Chương này trình bày quy trình (pipeline) tổng thể của hệ thống Twins, theo thứ tự từ thu thập dữ liệu
 trên thiết bị, chuyển đổi và bảo mật, đến giới thiệu người dùng. Mục tiêu là mô tả rõ các tác
@@ -15,7 +14,6 @@ tiết hệ giới thiệu và các công thức xếp hạng.
 
 == Các nguồn dữ liệu đầu vào
 
-=== Bộ câu hỏi Big Five và cách lấy mẫu
 
 Hệ thống sử dụng tập câu hỏi Big Five lớn, được tổng hợp từ các bộ câu hỏi chuẩn như IPIP
 50 và các biến thể đã được công bố rộng rãi @goldberg1992ipip. Mỗi lượt làm bài chọn ngẫu
@@ -29,7 +27,6 @@ trait nào và hướng tính điểm (cộng hay trừ). Nội dung câu hỏi 
 cảnh người dùng, nhưng không ảnh hưởng đến mô hình chuyển đổi. Trong Chương 3 sẽ trình bày
 chi tiết cách tính điểm từ thang Likert và quy trình chuẩn hóa.
 
-=== Dữ liệu khảo sát công khai cho PCA
 
 Để huấn luyện PCA, đề tài sử dụng tập dữ liệu Big Five công khai với hơn 300 nghìn mẫu từ
 nhiều quốc gia @automoto2023bigfive. Dữ liệu đã được chuẩn hóa về thang 0-1 cho từng trait,
@@ -37,7 +34,6 @@ phù hợp cho việc ước lượng các thành phần chính. Các kết qu�
 được nêu ở Chương 3. Đây là lợi thế của Big Five: dữ liệu chuẩn hóa, quy mô lớn và đã
 được sử dụng rộng rãi trong nghiên cứu, nên PCA có thể học được cấu trúc phân bố ổn định.
 
-=== Dữ liệu sở thích (hobbies)
 
 Sở thích người dùng được nhập dưới dạng văn bản ngắn. Văn bản này không dùng để lưu trữ
 trực tiếp, mà được chuyển thành vector 384 chiều thông qua mô hình nhúng ngữ nghĩa (semantic
@@ -64,7 +60,6 @@ Các bước chính gồm:
 - Dữ liệu sở thích được nhúng thành vector 384 chiều, mã hoá, và lưu trữ tương tự.
 - Hệ giới thiệu lấy vector PCA, ELO và vector sở thích để tính giới thiệu xếp hạng.
 
-== Đề xuất phân mảnh địa lý trong quy trình giới thiệu
 
 Khi số lượng người dùng tăng lớn, việc so khớp theo tổ hợp từng cặp sẽ làm chi phí tính
 toán tăng nhanh. Một hướng giảm tải là phân mảnh địa lý (geosharding), tức chia người dùng theo vùng địa lý
@@ -78,14 +73,12 @@ thử nghiệm. Khi lượng người dùng đủ lớn và chi phí tính toán
 
 == Mô hình giới thiệu và trọng số trong giới thiệu
 
-=== Điểm tương đồng tính cách (PCA)
 
 Vector PCA-4 được dùng để đo tương đồng giữa hai người dùng bằng cosine similarity.
 Phương pháp này phù hợp vì đo góc giữa hai vector, ít bị ảnh hưởng bởi độ lớn tuyệt
 đối và ổn định khi dữ liệu đã chuẩn hóa @manning2008ir. Công thức cosine similarity sẽ
 được trình bày chi tiết ở Chương 5.
 
-=== ELO từ tương tác like/skip
 
 Hệ thống dùng điểm ELO như một thước đo xã giao, phản ánh mức độ tương tác qua hành vi
 like và skip. Điểm ELO được cập nhật theo kỳ vọng thắng thua trong mô hình Elo gốc, nhưng
@@ -127,14 +120,12 @@ Bên cạnh đó, hệ giới thiệu sử dụng hệ số gần nhau ELO để
 )
 trong đó $sigma = 400$.
 
-=== Embedding sở thích và cosine similarity
 
 Sở thích người dùng được chuyển thành vector 384 chiều thông qua mô hình nhúng ngữ nghĩa.
 Cosine similarity được dùng để đo độ gần về sở thích, thay vì so khớp từ khóa. Cách làm
 này cho phép hai người dùng dùng từ khác nhau nhưng có ý nghĩa gần nhau vẫn được đánh giá
 cao hơn.
 
-=== Trọng số tổng hợp
 
 Giới thiệu xếp hạng cuối cùng được tính theo trọng số của PCA, ELO và hobbies dựa trên cấu hình hệ thống, chi tiết tại #ref(<algo_hybrid_score>):
 
@@ -167,7 +158,6 @@ Kết quả là B sẽ đứng trước C trong danh sách giới thiệu. Sơ �
 
 == Luồng dữ liệu chi tiết theo tác nhân
 
-=== Thiết bị người dùng
 
 Thiết bị thực hiện các bước sau:
 
@@ -176,15 +166,13 @@ Thiết bị thực hiện các bước sau:
 - Gửi dữ liệu thô tới Edge Function để mã hoá.
 - Gửi văn bản sở thích để tạo vector, rồi lưu ciphertext và vector nhúng.
 
-=== Edge Function
 
-Edge Function đảm nhận:
+T?i Edge Function, Edge Function đảm nhận:
 
 - Mã hoá/giải mã Big Five bằng AES-256-GCM.
 - Gọi dịch vụ nhúng để sinh vector sở thích.
 - Trả về ciphertext, iv và vector nhúng cho thiết bị.
 
-=== Cơ sở dữ liệu
 
 Cơ sở dữ liệu lưu trữ:
 

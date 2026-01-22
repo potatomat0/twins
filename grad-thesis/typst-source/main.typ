@@ -14,6 +14,5 @@
 #include "src/10a_chuong_6.typ"
 #include "src/10b_ket_qua_thuc_nghiem.typ"
 #include "src/11_ket_luan_revised.typ"
-#include "src/12_cong_bo_lien_quan_revised.typ"
 #bibliography("ref.bib", style: "ieee")
 #include "src/13_phu_luc_revised.typ"
