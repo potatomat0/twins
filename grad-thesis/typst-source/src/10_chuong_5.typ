@@ -1,16 +1,9 @@
 #import "/template.typ" : *
+== Hệ giới thiệu và cơ chế xếp hạng <chuong3_3>
 
-#[
-  = Hệ giới thiệu và cơ chế xếp hạng <chuong5>
-]
-
-
-Chương này mô tả cách hệ giới thiệu kết hợp ba nguồn tín hiệu: tính cách (PCA), hành vi xã giao
 (ELO) và sở thích được nhúng vector (embedding hobbies). Đồng thời, chương giải thích vì sao từng tín hiệu
 vẫn cần thiết, ngay cả khi người dùng đã khai báo sở thích, và đi sâu vào các luận điểm
 thiết kế đằng sau mỗi thành phần.
-
-== Vì sao vẫn cần tính cách khi đã có sở thích
 
 Sở thích (interests) phản ánh các chủ đề người dùng quan tâm, nhưng không đủ để mô tả mức độ tương hợp
 về cách suy nghĩ và hành vi. Hai người cùng thích “chụp ảnh” có thể khác nhau rõ rệt về
@@ -25,13 +18,39 @@ kết nối có nền tảng vững chắc và chiều sâu. Sở thích đóng 
 tức thời. Việc kết hợp cả hai giúp hệ thống vừa ổn định trong dài hạn, vừa linh hoạt
 trong ngắn hạn.
 
-== Đề xuất thuật toán ELO
+=== Đề xuất thuật toán ELO
 
-Trong hệ thống, ELO được dùng như một tín hiệu hành vi ẩn. ELO không nói người dùng “tốt”
+Trên nền tảng trục ổn định (tính cách) và trục ngữ cảnh (sở thích) đã nêu, hệ thống cần thêm một tín hiệu
+hành vi để tinh chỉnh mức độ phù hợp trong thực tế. Trong hệ thống, ELO được dùng như một tín hiệu hành vi ẩn. ELO không nói người dùng “tốt”
 hơn hay “xấu” hơn, mà phản ánh mức độ xã giao thể hiện qua lượt like/skip. Công thức cập
 nhật dựa trên kỳ vọng thắng thua gốc của Elo @elo1978rating, được điều chỉnh để phù hợp
 với bối cảnh kết nối, nơi lượt like là một tín hiệu hợp tác. Cách cập nhật chi tiết đã
-được mô tả ở #ref(<algo_elo_expect>) và #ref(<algo_elo_prox>). Việc giới hạn điểm trong khoảng 800–2000 giúp tránh
+được mô tả ở #ref(<algo_elo_expect>)
+
+
+#outline_algo(
+  [
+    - Like: $R_a' = text("clamp")(R_a + K(1 - E_a))$, $R_b' = text("clamp")(R_b + K(1 - E_b))$
+    - Skip: $R_a' = text("clamp")(R_a + K(0 - E_a))$, $R_b' = R_b$
+  ],
+  [Quy tắc cập nhật điểm ELO hợp tác],
+  <algo_elo_update>
+)
+
+ và #ref(<algo_elo_prox>). Việc giới hạn điểm trong khoảng 800–2000 giúp tránh
+
+
+#outline_algo(
+  $ E_a = 1 / (1 + 10^((R_b - R_a) / 400)) $,
+  [Tính toán kỳ vọng thắng trong mô hình Elo],
+  <algo_elo_expect>
+)
+
+#outline_algo(
+  $ p = exp(-|Delta R| / sigma) $,
+  [Tính toán độ gần (proximity) ELO],
+  <algo_elo_prox>
+)
 việc điểm bị trôi quá xa và làm giảm tác dụng phân nhóm hành vi.
 
 #ref(<fig_elo_behavior>) minh họa trực quan cách ELO phản ánh hành vi xã giao qua các
@@ -70,7 +89,7 @@ Việc điều chỉnh thuật toán ELO cho bối cảnh mạng xã hội thay 
   phạm vi có ý nghĩa, đảm bảo thành phần ELO proximity trong công thức tổng hợp không trở
   nên quá lớn hoặc quá nhỏ.
 
-== Ngưỡng sử dụng sở thích
+=== Ngưỡng sử dụng sở thích
 
 Sở thích chỉ được dùng khi người dùng nhập đủ số lượng tối thiểu (3 mục). Điều
 này tránh việc dùng dữ liệu quá ít dẫn tới nhiễu hoặc thiên lệch do một sở thích đơn lẻ.
@@ -78,7 +97,7 @@ Khi đủ ngưỡng, vector nhúng (embedding vector) được tạo và dùng �
 về sở thích. Quy tắc ngưỡng này cũng giúp người dùng mới không bị bất lợi nếu chưa kịp
 khai báo đầy đủ sở thích, tạo ra một sân chơi công bằng hơn.
 
-== Đề xuất mô hình ngữ nghĩa (semantic model)
+=== Đề xuất mô hình ngữ nghĩa (semantic model)
 
 Đề tài sử dụng mô hình ngữ nghĩa của Jina (semantic model) để chuyển đổi văn bản sở thích
 thành vector 384 chiều. Lý do chính là khả năng nắm bắt tương đồng ngữ nghĩa thay vì trùng
@@ -133,7 +152,7 @@ Do đó, các mô hình nhúng câu được ưu tiên vì xử lý trực tiế
   caption: [Word2Vec vượt trội trong việc tìm quan hệ ngữ nghĩa giữa các từ.],
 ) <fig_word2vec_alt>
 
-== Công thức xếp hạng tổng hợp
+=== Công thức xếp hạng tổng hợp
 
 Hệ thống tính điểm theo các trọng số đã nêu ở Chương 2. Về bản chất, PCA là trục chính,
 ELO là trục hành vi, và hobbies là trục ngữ nghĩa.
@@ -165,7 +184,7 @@ $ S_C = 0.5 dot 0.90 + 0.2 dot 1.00 + 0.3 dot 0.55 = 0.815 $
 
 Trong kịch bản này, mặc dù C có mức độ xã giao (ELO) tương đồng tuyệt đối với A, nhưng lợi thế về sở thích của B đủ lớn để đẩy B lên vị trí cao hơn trong danh sách giới thiệu. Ví dụ này cho thấy các nguồn tín hiệu có thể phá vỡ thế hòa PCA theo các hướng khác nhau, tạo ra kết quả giới thiệu đa chiều và phù hợp với thực tế tương tác.
 
-== Bảo vệ dữ liệu sở thích và quyền riêng tư
+=== Bảo vệ dữ liệu sở thích và quyền riêng tư
 
 Mặc dù UI có thể hiển thị sở thích đã giải mã, cơ sở dữ liệu không lưu văn bản thuần (plaintext). Điều
 này tránh việc quản trị viên có thể quét hàng loạt sở thích từ bảng dữ liệu. Người dùng

@@ -68,23 +68,13 @@ Mục tiêu của đề tài là xây dựng một quy trình giới thiệu và
 đó dữ liệu gốc được xử lý trên thiết bị, chuyển sang biểu diễn gọn hơn, và chỉ lưu trữ
 trên máy chủ dưới dạng mã hoá. Bên cạnh đó, hệ thống vẫn phải giữ khả năng so khớp và giới thiệu người dùng một cách hiệu quả.
 
-Các mục tiêu chính gồm:
-
-- Xây dựng cơ chế chuyển đổi điểm Big Five sang không gian đặc trưng nhỏ gọn bằng Phân tích Thành phần chính (Principal Component Analysis - PCA) với 4 chiều (PCA-4).
-- Thiết kế cơ chế mã hoá theo Chuẩn mã hóa tiên tiến ở chế độ Galois/Counter (AES-GCM) để bảo vệ dữ liệu tính cách khi lưu trữ.
-- Duy trì khả năng so khớp dựa trên độ tương đồng cosine (cosine similarity) để phục vụ quy trình giới thiệu.
-
+Các mục tiêu chính bao gồm ba hướng then chốt: (1) xây dựng cơ chế chuyển đổi điểm Big Five sang không gian đặc trưng nhỏ gọn bằng Phân tích Thành phần chính (Principal Component Analysis - PCA) với 4 chiều (PCA-4); (2) thiết kế cơ chế mã hoá theo Chuẩn mã hóa tiên tiến ở chế độ Galois/Counter (AES-GCM) để bảo vệ dữ liệu tính cách khi lưu trữ; và (3) duy trì khả năng so khớp dựa trên độ tương đồng cosine (cosine similarity) để phục vụ quy trình giới thiệu.
 
 Đề tài tập trung vào khía cạnh chuyển đổi dữ liệu và bảo mật, không đi sâu vào triển khai
-giao diện hay tối ưu hóa trải nghiệm người dùng. Phạm vi hệ thống bao gồm:
-
-- Thiết bị người dùng thực hiện chấm điểm Big Five và chuyển đổi PCA-4.
-- Một hàm thực thi biên (Edge Function) chịu trách nhiệm mã hoá và giải mã bằng AES-GCM.
-- Cơ sở dữ liệu lưu trữ vector PCA và dữ liệu đã mã hoá (ciphertext) thay vì dữ liệu thô.
-
-Ngoài ra, từ các biểu diễn đã chuyển đổi này, hệ thống giới thiệu sẽ khai thác thêm các nguồn
-dữ liệu đã được nhúng vector (embedding) từ sở thích và tương tác, nhằm tạo ra kết quả giới thiệu có
-ý nghĩa thực tế nhưng vẫn giữ được nguyên tắc bảo mật thông tin cá nhân.
+giao diện hay tối ưu hóa trải nghiệm người dùng. Phạm vi hệ thống vì vậy được giới hạn ở
+việc xử lý trên thiết bị người dùng (chấm đểm Big Five và chuyển đổi PCA-4), một hàm thực
+thi biên (Edge Function) chịu trách nhiệm mã hoá và giải mã bằng AES-GCM, và cơ sở dữ liệu
+lưu trữ vector PCA cùng dữ liệu đã mã hoá (ciphertext) thay vì dữ liệu thô.
 
 
 
@@ -159,12 +149,6 @@ Toàn bộ mã nguồn cốt lõi của ứng dụng, bao gồm quy trình xử 
 
 == Cấu trúc của báo cáo
 
-Phần còn lại của báo cáo được trình bày như sau:
-- @chuong2: Trình bày quy trình tổng thể của hệ thống Twins, từ thu thập dữ liệu đến giới thiệu.
-- @chuong3: Phân tích chi tiết PCA-4, dữ liệu huấn luyện và cách chuyển đổi.
-- @chuong4: Trình bày cơ chế bảo mật và luồng mã hoá/giải mã.
-- @chuong5: Trình bày hệ giới thiệu (PCA, ELO, hobbies) và cách tính trọng số.
-- @chuong6: Thực nghiệm và đánh giá hệ thống.
-- @ketluan: Kết luận và hướng phát triển.
+Phần còn lại của báo cáo được trình bày theo cấu trúc mới: @chuong2 mô tả tổng quan quy trình hệ thống Twins, làm rõ luồng dữ liệu từ thu thập, xử lý đến khâu giới thiệu người dùng. @chuong3 trình bày đề xuất và triển khai, bao gồm chuyển đổi tính cách bằng PCA-4, cơ chế bảo mật dữ liệu và mô hình hệ giới thiệu lai. @chuong4 trình bày hiện thực và đánh giá với các kịch bản thực nghiệm, kết quả đo lường và phân tích hiệu năng. Cuối cùng, @ketluan tổng kết các kết quả đạt được và nêu hướng phát triển tiếp theo.
 
 #pagebreak()

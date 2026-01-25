@@ -1,15 +1,10 @@
 #import "/template.typ" : *
 
 #[
-  = Chuyển đổi dữ liệu tính cách (PCA‑4) <chuong3>
+  = Đề xuất và Triển khai <chuong3>
 ]
 
-
-Chương này trình bày chi tiết quy trình chuyển đổi dữ liệu Big Five sang vector PCA‑4,
-bao gồm cách chuẩn hóa điểm, cách huấn luyện PCA và cách triển khai trên thiết bị. Mục
-đích là làm rõ vì sao PCA‑4 được chọn thay vì PCA‑2/3 hoặc các mô hình nhúng vector khác.
-
-== Big Five trong bối cảnh các mô hình tính cách
+== Chuyển đổi dữ liệu tính cách (PCA‑4) <chuong3_1>
 
 Trong tâm lý học có nhiều khung mô tả tính cách, không có mô hình nào tuyệt đối hoàn hảo.
 Big Five được sử dụng vì đã có lịch sử nghiên cứu dài, hệ thống câu hỏi chuẩn hóa và dữ
@@ -50,7 +45,7 @@ chính cho đồ án. #ref(<fig_hexaco_overview>) minh họa cấu trúc HEXACO.
   caption: [Minh họa cấu trúc 6 yếu tố của HEXACO],
 ) <fig_hexaco_overview>
 
-== Chuẩn hóa điểm Big Five
+=== Chuẩn hóa điểm Big Five
 
 
 Mỗi câu trả lời được chấm theo thang Likert 1–5. Với câu hỏi hướng dương, điểm giữ nguyên
@@ -76,13 +71,19 @@ trait. PCA được dùng để rút gọn chiều và tách các trục phươn
 PCA‑3 làm mất đáng kể thông tin, PCA‑4 là điểm cân bằng tối ưu: giảm chiều từ 5 xuống 4 nhưng vẫn giữ phần lớn phương
 sai, giúp hệ giới thiệu hoạt động ổn định khi đo độ tương đồng cosine.
 
-== Đề xuất PCA‑4
+=== Đề xuất PCA‑4
 
 Đồ án đề xuất PCA‑4 như mức giảm chiều tối ưu cho Big Five trong bối cảnh giới thiệu bạn bè.
 Giảm từ 5 xuống 4 chiều giúp tiết kiệm lưu trữ mà vẫn giữ phần lớn cấu trúc dữ liệu. PCA‑4
 cũng là dạng biểu diễn dễ triển khai trên thiết bị với phép nhân ma trận thuần. Mức giảm
 nhẹ này giúp hạn chế rủi ro mất thông tin so với PCA‑2 hoặc PCA‑3. Ngoài ra, PCA‑4 giữ
 được tính diễn giải tương đối, phù hợp với việc so sánh độ tương đồng cosine ổn định.
+Một điểm quan trọng là vector Big Five 5 chiều tuy đầy đủ về mặt mô tả, nhưng chưa phải
+là định dạng tối ưu cho bài toán so khớp. PCA‑4 đưa dữ liệu về không gian đã được chiếu,
+giúp các thành phần trở nên độc lập hơn và phù hợp với phép đo cosine similarity. Đây cũng
+là cách tiếp cận phổ biến trong ML/NLP khi cần so sánh nhanh các vector đặc trưng, và trong
+ngữ cảnh ứng dụng Twins, phép chiếu này giúp điểm tương đồng ổn định hơn khi so sánh trên
+tập ứng viên lớn.
 #ref(<fig_pca_proposal>) trình bày một minh họa quyết định chọn PCA‑4 dựa trên phương sai.
 
 #figure(
@@ -95,13 +96,14 @@ khi PCA‑4 giữ hơn 90% phương sai dữ liệu gốc. Sự chênh lệch n�
 khả năng phân biệt giữa các người dùng khi so khớp. Vì vậy PCA‑4 được chọn để giảm mất
 thông tin mà vẫn đảm bảo kích thước nhỏ gọn.
 
-== Huấn luyện và Trích xuất tham số PCA
+=== Huấn luyện và Trích xuất tham số PCA
 
 Quá trình huấn luyện được thực hiện trong môi trường Jupyter Notebook (`model/pca_evaluator.ipynb`) sử dụng thư viện `scikit-learn` của Python. Cụ thể, lớp `sklearn.decomposition.PCA` được dùng để thực hiện các phép tính. Dữ liệu đầu vào là bộ `big_five_scores.csv` với 300,313 mẫu @automoto2023bigfive, đảm bảo số lượng mẫu đủ lớn để các thành phần chính được tính toán một cách ổn định và đáng tin cậy.
 
 Phân tích Dữ liệu Khám phá (EDA) trong notebook cho thấy chênh lệch trung bình giữa các quốc gia tồn tại nhưng không đủ lớn để cần một mô hình riêng theo vùng. Do đó, PCA được huấn luyện trên toàn bộ tập dữ liệu để nắm bắt phương sai tổng thể.
 
 Một điểm quan trọng cần lưu ý là trong quy trình này, toàn bộ dữ liệu đã được sử dụng để huấn luyện mô hình PCA mà không cần phân chia thành tập huấn luyện (train) và tập kiểm thử (test). Lý do là vì bài toán của đồ án không phải là một bài toán dự đoán (học có giám sát) mà là một bài toán biến đổi dữ liệu (học không giám sát).
+PCA là một phép toán xác định, chỉ cần hai yếu tố cốt lõi từ tập dữ liệu lớn: vector trung bình và ma trận các thành phần chính. Do đó, việc “fit” trên toàn bộ dữ liệu nhằm trích xuất các tham số này là đủ, thay vì cần đánh giá sai số dự đoán như các mô hình hồi quy hoặc phân loại.
 
 Mục tiêu của PCA là tìm ra cấu trúc tiềm ẩn và các hướng phương sai lớn nhất của *toàn bộ* phân bố dữ liệu. Việc chia nhỏ dữ liệu sẽ khiến PCA chỉ học được cấu trúc của một phần dữ liệu, dẫn đến các vector thành phần chính được tạo ra có thể không đại diện chính xác cho toàn bộ không gian dữ liệu. Vì vậy, để có được một phép biến đổi ổn định và tổng quát nhất, việc `fit` PCA trên toàn bộ tập dữ liệu là phương pháp luận chính xác cho bài toán này.
 
@@ -135,7 +137,7 @@ trong đó $mu$ là vector trung bình (mean) và $W$ là ma trận chứa các 
 )
 
 
-== Triển khai PCA trên thiết bị
+=== Triển khai PCA trên thiết bị
 
 Mặc dù notebook đã xuất ra một mô hình `pca_evaluator_4d.tflite`, việc tích hợp trực tiếp một mô hình TensorFlow Lite vào ứng dụng React Native (sử dụng Expo) có thể gặp một số thách thức về thư viện và khả năng tương thích, đòi hỏi các thành phần native phức tạp.
 
@@ -152,5 +154,3 @@ PCA là phép biến đổi tuyến tính, có thể giải thích và kiểm so
 như nhúng vector học sâu hoặc nhúng ngữ nghĩa (semantic embedding) không phù hợp vì dữ liệu tính cách đã có
 cấu trúc rõ ràng và ít phụ thuộc ngôn ngữ. Ngoài ra, PCA giúp duy trì tính ổn định giữa
 các phiên bản, tránh lệch kết quả do thay đổi mô hình.
-
-#pagebreak()

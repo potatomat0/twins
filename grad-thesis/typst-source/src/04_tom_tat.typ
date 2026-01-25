@@ -9,6 +9,6 @@ Khóa luận tập trung giải quyết bài toán xây dựng hệ thống gi�
 
 #v(0.3cm)
 
-*_Từ khóa:_* _Twins_, _Big-5_, _PCA_, _Quyền riêng tư_, _Hệ thống giới thiệu_, _Mã hóa dữ liệu_
+*_Từ khóa:_* _Mạng xã hội_, _Tâm lý học_, _Big Five_, _PCA_, _Quyền riêng tư_, _Hệ thống giới thiệu_, _Mã hóa dữ liệu_
 
 #pagebreak()

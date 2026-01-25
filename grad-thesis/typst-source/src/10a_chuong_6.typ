@@ -1,7 +1,7 @@
-#import "/template.typ" : *
+﻿#import "/template.typ" : *
 
 #[
-  = Thực nghiệm và Đánh giá <chuong6>
+  = Hiện thực và Đánh giá <chuong4>
 ]
 
 
@@ -20,6 +20,8 @@ Chương này trình bày các thực nghiệm được tiến hành để đán
 - *RQ4: Mô hình nhúng ngữ nghĩa có hiệu quả trong việc xác định sự tương đồng về sở thích, ngay cả khi khác biệt về ngôn ngữ không?*
 
 - *RQ5: Kiến trúc hệ thống có thực sự bảo vệ được quyền riêng tư của người dùng theo thiết kế không?* Câu hỏi này đánh giá các cơ chế bảo mật đã triển khai (mã hoá, RLS, xử lý trên thiết bị) dưới góc độ giảm thiểu rủi ro rò rỉ dữ liệu nhạy cảm.
+
+- *RQ6: Khi chỉ rò rỉ base URL của Edge Functions và kẻ tấn công đoán được cấu trúc payload, liệu có thể suy luận hoặc truy xuất dữ liệu người dùng thông qua các endpoint công khai hay không?* Câu hỏi này tập trung vào nguy cơ rò rỉ gián tiếp qua lớp API.
 
 == Thiết lập thực nghiệm
 
@@ -107,6 +109,18 @@ Việc đánh giá này mang tính định tính, dựa trên kiến trúc đã 
 - *Kiểm soát truy cập*: Dữ liệu chỉ được giải mã thông qua Edge Function `score-crypto` sau khi người dùng đã xác thực. Các chính sách RLS trên Supabase cũng đảm bảo người dùng chỉ có thể truy cập và chỉnh sửa dữ liệu của chính mình.
 
 *Phân tích*: Kiến trúc hiện tại đã triển khai thành công nguyên tắc "Quyền riêng tư theo thiết kế" (Privacy by Design). Rủi ro lớn nhất không nằm ở việc rò rỉ dữ liệu từ DB ở trạng thái nghỉ (at-rest), mà là ở việc lạm dụng quyền truy cập vào các Edge Function hoặc khóa mã hoá bị lộ. Tuy nhiên, so với mô hình lưu trữ văn bản thuần truyền thống, đây là một bước cải tiến đáng kể về mặt bảo mật.
+
+=== RQ6: Kiểm thử suy luận gián tiếp qua Edge Functions
+
+Đề tài xây dựng một kịch bản tấn công gián tiếp (`scripts/demo/penetration_edge_inference.ts`) chỉ sử dụng base URL của Edge Functions và payload đoán trước để gọi `recommend-users` và `embed` mà không có thông tin xác thực. Đây là tình huống phổ biến khi kẻ tấn công thu thập được log hoặc cấu trúc API từ client nhưng không sở hữu token đăng nhập hợp lệ.
+
+*Quy trình thực nghiệm*: Script gửi các yêu cầu POST tối thiểu tới hai endpoint nói trên, không kèm header `Authorization`. Mục tiêu là kiểm tra xem các hàm biên có thể bị khai thác để suy luận dữ liệu khi chỉ biết đường dẫn và hình dạng payload.
+
+*Kết quả quan sát*: Cả hai endpoint đều trả về lỗi *401 Unauthorized* và không trả về dữ liệu người dùng. Điều này chứng tỏ lớp Edge Functions đã chặn yêu cầu ngay từ tầng xác thực, không cho phép truy cập vào dữ liệu hoặc thực thi logic nội bộ khi thiếu token hợp lệ.
+
+*Kết luận cho RQ6*: Khi không có header xác thực hợp lệ, các endpoint edge công khai không để lộ dữ liệu. Điều này làm giảm đáng kể nguy cơ rò rỉ gián tiếp trong trường hợp chỉ biết base URL và cấu trúc payload.
+
+*Liên hệ “bảo mật theo thiết kế”*: Kết quả trên củng cố nguyên tắc “security by design” của hệ thống. Việc bắt buộc xác thực ở lớp biên giúp triệt tiêu kênh suy luận gián tiếp trước khi truy cập DB hoặc mô hình nhúng, từ đó giảm bề mặt tấn công ngay tại lớp API.
 
 == Thảo luận và Hạn chế
 

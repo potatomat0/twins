@@ -76,3 +76,5 @@ $ R_B'' = 1230 $
 *Nhận xét*: Actor bị trừ điểm (~9.9 điểm), Target không bị ảnh hưởng. Đây là cơ chế phạt hành vi lựa chọn khắt khe để cân bằng hệ sinh thái.
 
 *Độ trễ hành động (Warm)*: ~1.0 - 1.7 giây.
+
+#pagebreak()

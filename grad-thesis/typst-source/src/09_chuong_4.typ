@@ -1,24 +1,15 @@
 #import "/template.typ" : *
+== Bảo mật và mã hoá dữ liệu <chuong3_2>
 
-#[
-  = Bảo mật và mã hoá dữ liệu <chuong4>
-]
-
-
-Chương này trình bày cách dữ liệu được nhập từ góc độ người dùng, cách dữ liệu được chuyển
 đổi và mã hoá trước khi lưu trữ, cùng với lý do lựa chọn cơ chế AES-256-GCM. Trọng tâm là
 luồng dữ liệu và các tác nhân, không đi sâu vào mã nguồn chi tiết.
 
-== Tổng quan về cơ chế AES-GCM
+=== Tổng quan về cơ chế AES-GCM
 
 
 
 
-AES là thuật toán mã hoá đối xứng khối, hoạt động trên các khối dữ liệu cố định và cần một khóa
-
-chung cho cả quá trình mã hoá lẫn giải mã. Chế độ GCM (Galois/Counter Mode) kết hợp
-
-giữa mã hoá dạng bộ đếm (counter mode) và cơ chế xác thực dữ liệu.
+AES là thuật toán mã hoá đối xứng khối, hoạt động trên các khối dữ liệu cố định và cần một khóa chung cho cả quá trình mã hoá lẫn giải mã. Chế độ GCM (Galois/Counter Mode) kết hợp giữa mã hoá dạng bộ đếm (counter mode) và cơ chế xác thực dữ liệu.
 
 
 
@@ -72,7 +63,7 @@ ghi nhận lỗi, ngăn chặn việc trả về dữ liệu sai. Cách lưu tr�
   caption: [Định dạng đầu vào/đầu ra của AES-GCM],
 ) <fig_aes_io>
 
-== Dữ liệu đầu vào từ góc nhìn người dùng
+=== Dữ liệu đầu vào từ góc nhìn người dùng
 
 
 Người dùng thực hiện bộ câu hỏi tính cách gồm 25 câu hỏi trong một lượt. Các câu trả lời
@@ -94,7 +85,7 @@ Kết quả PCA là dữ liệu đã giảm chiều, đủ cho mục đích so k
 thô. Tuy nhiên, vì PCA là phép biến đổi tuyến tính, thông tin gốc vẫn có thể bị suy ngược gần đúng nếu biết tham
 số mô hình. Do đó, dữ liệu gốc vẫn cần được mã hoá trước khi lưu trữ.
 
-== Mã hóa dữ liệu bằng AES-256-GCM
+=== Mã hóa dữ liệu bằng AES-256-GCM
 
 
 Đề tài đề xuất sử dụng AES-256-GCM làm cơ chế mã hoá chính cho dữ liệu tính cách và
@@ -195,7 +186,7 @@ lại kết quả cho người dùng.
   caption: [Ví dụ dữ liệu đã mã hoá của Big Five trong bảng profiles],
 ) <fig_cipher_sample>
 
-== Dữ liệu sở thích và mã hóa
+=== Dữ liệu sở thích và mã hóa
 
 Sở thích người dùng được nhập dưới dạng văn bản tự do, sau đó được nhúng thành vector 384
 chiều. Dữ liệu văn bản này cũng được mã hoá theo cơ chế AES-GCM tương tự như Big Five. Do đó, giao diện ứng dụng có
@@ -207,5 +198,3 @@ thể hiển thị lại sở thích sau khi giải mã, nhưng cơ sở dữ li
   image("../images/ch4_hobby_flow.png", width: 85%),
   caption: [Luồng mã hoá dữ liệu sở thích và lưu trữ vector nhúng],
 ) <fig_hobby_encrypt>
-
-#pagebreak()
