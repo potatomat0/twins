@@ -56,6 +56,7 @@ const ExploreSwipeScreen: React.FC = () => {
     initialLoading,
     hasMore,
     exhausted,
+    errorMessage,
     filters,
     useHobbies,
     setFilters,
@@ -259,6 +260,14 @@ const ExploreSwipeScreen: React.FC = () => {
           <View style={styles.center}>
             <ActivityIndicator color={toRgb(theme.colors['--brand-primary'])} />
             <Text style={{ color: toRgb(theme.colors['--text-secondary']), marginTop: 8 }}>{t('explore.loadingPool')}</Text>
+          </View>
+        ) : errorMessage ? (
+          <View style={styles.center}>
+            <Text style={{ color: toRgb(theme.colors['--text-primary']), fontSize: 16, fontWeight: '600', textAlign: 'center' }}>
+              {t('alerts.genericError')}
+            </Text>
+            <View style={{ height: 8 }} />
+            <Button title={t('explore.retry')} onPress={loadMore} />
           </View>
         ) : !current ? (
           <View style={styles.center}>

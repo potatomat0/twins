@@ -16,7 +16,7 @@ const ExploreScreen: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { user, profile } = useAuth();
-  const { deck, loading, initialLoading, filters, useHobbies, setFilters, setUseHobbies, reset } = useRecommendations();
+  const { deck, loading, initialLoading, errorMessage, filters, useHobbies, setFilters, setUseHobbies, reset } = useRecommendations();
   const hasEnoughHobbies = !!profile?.hobbies_cipher;
 
   const [selectedUser, setSelectedUser] = useState<SimilarUser | null>(null);
@@ -193,6 +193,15 @@ const ExploreScreen: React.FC = () => {
           </View>
         )}
 
+        {!initialLoading && errorMessage ? (
+          <View style={[styles.errorCard, { backgroundColor: toRgb(theme.colors['--surface']), borderColor: toRgba(theme.colors['--border'], 0.12) }]}>
+            <Text style={{ color: toRgb(theme.colors['--text-primary']), fontWeight: '600', marginBottom: 6 }}>
+              {t('alerts.genericError')}
+            </Text>
+            <Button title={t('explore.retry')} onPress={reset} />
+          </View>
+        ) : null}
+
         {!initialLoading && deck.length > 0 ? (
           <View style={{ gap: 12 }}>
             <Text style={[styles.cardTitle, { color: toRgb(theme.colors['--text-primary']) }]}>
@@ -229,7 +238,7 @@ const ExploreScreen: React.FC = () => {
           </View>
         ) : null}
 
-        {!initialLoading && deck.length === 0 ? (
+        {!initialLoading && deck.length === 0 && !errorMessage ? (
           <Text style={{ color: toRgb(theme.colors['--text-secondary']) }}>{t('explore.noListMatches')}</Text>
         ) : null}
       </ScrollView>
@@ -252,6 +261,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, marginBottom: 12 },
   card: { borderRadius: 12, padding: 12, borderWidth: 1 },
   cardTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  errorCard: { borderRadius: 12, padding: 12, borderWidth: 1 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 8,

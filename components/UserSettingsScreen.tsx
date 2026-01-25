@@ -28,7 +28,7 @@ const UserSettingsScreen: React.FC = () => {
   const { theme, name: themeName, setTheme } = useTheme();
   const { t, setLocale, availableLocales, locale } = useTranslation();
   const navigation = useNavigation<any>();
-  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { user, profile, session, signOut, refreshProfile } = useAuth();
   const [sections, setSections] = useState<Record<string, boolean>>({
     profile: false,
     hobbies: false,
@@ -288,7 +288,10 @@ const UserSettingsScreen: React.FC = () => {
         // 1. Embed
         // Minimal context to keep a single vector (avoid per-hobby matrix comparisons)
         const text = `interests: ${hobbies.join('; ')}`;
-        const { data: embedData, error: embedError } = await supabaseClient.functions.invoke('embed', { body: { text } });
+        const { data: embedData, error: embedError } = await supabaseClient.functions.invoke('embed', {
+          body: { text },
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+        });
         if (!embedError && embedData?.embedding) {
           embedding = embedData.embedding;
         } else if (__DEV__) {
