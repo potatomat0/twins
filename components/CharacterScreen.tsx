@@ -117,14 +117,13 @@ const CharacterScreen: React.FC<Props> = ({ navigation, route }) => {
         <Button
           title={t('character.createAccount')}
           onPress={() =>
-            navigation.navigate('CreateAccount', {
+            navigation.navigate('Step2Intro', {
               username: route.params?.username ?? '',
               email: route.params?.email ?? '',
               ageGroup: route.params?.ageGroup ?? '',
               gender: route.params?.gender ?? '',
               scores: scores,
               pcaFingerprint,
-              // character group will be read by CreateAccount via route and saved
             } as any)
           }
           style={{ alignSelf: 'stretch' }}

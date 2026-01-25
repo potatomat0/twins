@@ -54,12 +54,27 @@ type SimilarUser = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('SUPABASE_URL_REST');
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_ANON_PUBLIC_KEY');
 
-if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error('[recommend-users] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
+  console.error('[recommend-users] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY');
 }
 
-const supabase = SUPABASE_URL && SERVICE_KEY ? createClient(SUPABASE_URL, SERVICE_KEY) : null;
+const supabaseAdmin =
+  SUPABASE_URL && SERVICE_KEY
+    ? createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } })
+    : null;
+const supabaseAuth =
+  SUPABASE_URL && ANON_KEY
+    ? createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } })
+    : null;
+
+function extractBearer(req: Request) {
+  const header = req.headers.get('Authorization') ?? '';
+  if (!header) return null;
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
+}
 
 function json(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {
@@ -116,8 +131,17 @@ serve(async (req) => {
   if (req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
-  if (!supabase) {
+  if (!supabaseAdmin || !supabaseAuth) {
     return json({ error: 'Server not configured' }, { status: 500 });
+  }
+  const token = extractBearer(req);
+  if (!token) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const { data: authData, error: authErr } = await supabaseAuth.auth.getUser(token);
+  if (authErr || !authData?.user?.id) {
+    console.error('[recommend-users]', reqId, 'auth error', authErr);
+    return json({ error: 'Unauthorized' }, { status: 401 });
   }
   let body: RequestBody;
   try {
@@ -132,6 +156,10 @@ serve(async (req) => {
     console.error('[recommend-users]', reqId, 'missing userId');
     return json({ error: 'userId is required' }, { status: 400 });
   }
+  if (userId !== authData.user.id) {
+    console.error('[recommend-users]', reqId, 'userId mismatch', { requested: userId, auth: authData.user.id });
+    return json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   const filters: Filters = body.filters ?? {};
   const useElo = body.useElo ?? true;
@@ -144,35 +172,36 @@ serve(async (req) => {
   const cappedChunkSize = Math.min(chunkSize, 2000);
 
   try {
-    const { data: me, error: meErr } = await supabase
+    const { data: me, error: meErr } = await supabaseAdmin
       .from('profiles')
       .select('id, username, age_group, gender, character_group, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding, hobbies_cipher, hobbies_iv')
       .eq('id', userId)
-      .maybeSingle<ProfileRow>();
-    if (meErr || !me) {
+      .maybeSingle();
+    const meRow = me as ProfileRow | null;
+    if (meErr || !meRow) {
       console.error('[recommend-users]', reqId, 'fetch self error', meErr);
       return json({ error: 'User profile not found' }, { status: 404 });
     }
-    const meVec = buildVector(me);
+    const meVec = buildVector(meRow);
     if (!meVec) {
-      console.error('[recommend-users]', reqId, 'missing pca data for user', userId, 'pca_dim1=', me.pca_dim1);
+      console.error('[recommend-users]', reqId, 'missing pca data for user', userId, 'pca_dim1=', meRow.pca_dim1);
       return json({ error: 'User profile missing PCA data' }, { status: 400 });
     }
-    const meElo = me.elo_rating ?? 1200;
-    const allowElo = useElo && (me.match_allow_elo ?? true);
+    const meElo = meRow.elo_rating ?? 1200;
+    const allowElo = useElo && (meRow.match_allow_elo ?? true);
     
     // Parse hobby embedding if needed
     let meHobbyVec: number[] | null = null;
-    if (useHobbies && me.hobby_embedding) {
+    if (useHobbies && meRow.hobby_embedding) {
       try {
-        meHobbyVec = JSON.parse(me.hobby_embedding);
+        meHobbyVec = JSON.parse(meRow.hobby_embedding);
       } catch {
         // ignore
       }
     }
 
     // Fetch matches to exclude already-matched users
-    const { data: matchRows, error: matchErr } = await supabase
+    const { data: matchRows, error: matchErr } = await supabaseAdmin
       .from('matches')
       .select('user_a, user_b')
       .or(`user_a.eq.${userId},user_b.eq.${userId}`);
@@ -187,7 +216,7 @@ serve(async (req) => {
       console.error('[recommend-users]', reqId, 'match fetch error', matchErr);
     }
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('profiles')
       .select('id, username, age_group, gender, character_group, avatar_url, pca_dim1, pca_dim2, pca_dim3, pca_dim4, elo_rating, match_allow_elo, hobby_embedding, hobbies_cipher, hobbies_iv')
       .neq('id', userId)

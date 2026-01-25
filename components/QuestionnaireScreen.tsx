@@ -21,6 +21,9 @@ import { Svg, Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'reac
 import { Feather } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
 import { useSessionStore } from '@store/sessionStore';
+import { useAuth } from '@context/AuthContext';
+import { encryptScoresRemote } from '@services/scoreCrypto';
+import { upsertProfile } from '@services/supabase';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Questionnaire'>;
 type Route = RouteProp<RootStackParamList, 'Questionnaire'>;
@@ -129,6 +132,7 @@ function generateQuestionSet(): Question[] {
 const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
+  const { user, refreshProfile } = useAuth();
   const { questionnaireDraft, setQuestionnaireDraft, clearQuestionnaireDraft, setResumeTarget } = useSessionStore();
   const hydratedRef = useRef(false);
   const paramsRef = useRef(route.params);
@@ -239,6 +243,29 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
     } catch (error) {
       if (__DEV__) console.warn('[Questionnaire] Failed to compute PCA fingerprint', error);
     }
+    if (route.params?.origin === 'settings' && user?.id) {
+      try {
+        const encrypted = await encryptScoresRemote(normalized);
+        if (!encrypted?.cipher || !encrypted?.iv) {
+          throw new Error('Missing encrypted payload');
+        }
+        const payload: Record<string, any> = {
+          id: user.id,
+          b5_cipher: encrypted.cipher,
+          b5_iv: encrypted.iv,
+        };
+        if (pcaFingerprint) {
+          payload.pca_dim1 = pcaFingerprint[0];
+          payload.pca_dim2 = pcaFingerprint[1];
+          payload.pca_dim3 = pcaFingerprint[2];
+          payload.pca_dim4 = pcaFingerprint[3];
+        }
+        await upsertProfile(payload as any);
+        await refreshProfile();
+      } catch (error) {
+        if (__DEV__) console.warn('[Questionnaire] Failed to save updated scores', error);
+      }
+    }
     clearQuestionnaireDraft();
     navigation.navigate('Results', {
       username: route.params?.username ?? '',
@@ -247,8 +274,9 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
       gender: route.params?.gender ?? '',
       scores: normalized,
       pcaFingerprint: pcaFingerprint ?? undefined,
+      origin: route.params?.origin ?? 'onboarding',
     });
-  }, [answers, questionSet, clearQuestionnaireDraft, navigation, route.params]);
+  }, [answers, questionSet, clearQuestionnaireDraft, navigation, route.params, user?.id, refreshProfile]);
 
   // No incomplete modal needed with gating
 
@@ -414,11 +442,35 @@ const QuestionnaireScreen: React.FC<Props> = ({ navigation, route }) => {
       {/* Back-confirmation */}
       <NotificationModal
         visible={confirmBack}
-        title={t('questionnaire.confirm.title')}
-        message={t('questionnaire.confirm.message')}
-        primaryText={t('questionnaire.confirm.leave')}
-        onPrimary={() => { setConfirmBack(false); navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); }}
-        secondaryText={t('questionnaire.confirm.stay')}
+        title={
+          route.params?.origin === 'settings'
+            ? t('questionnaire.confirmSettings.title')
+            : t('questionnaire.confirm.title')
+        }
+        message={
+          route.params?.origin === 'settings'
+            ? t('questionnaire.confirmSettings.message')
+            : t('questionnaire.confirm.message')
+        }
+        primaryText={
+          route.params?.origin === 'settings'
+            ? t('questionnaire.confirmSettings.leave')
+            : t('questionnaire.confirm.leave')
+        }
+        onPrimary={() => {
+          clearQuestionnaireDraft();
+          setConfirmBack(false);
+          if (route.params?.origin === 'settings') {
+            navigation.navigate('Dashboard' as any, { screen: 'Settings' });
+            return;
+          }
+          navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
+        }}
+        secondaryText={
+          route.params?.origin === 'settings'
+            ? t('questionnaire.confirmSettings.stay')
+            : t('questionnaire.confirm.stay')
+        }
         onSecondary={() => setConfirmBack(false)}
         onRequestClose={() => setConfirmBack(false)}
         primaryVariant="danger"

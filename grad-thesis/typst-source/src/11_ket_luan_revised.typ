@@ -1,15 +1,15 @@
 #import "/template.typ" : *
 
 #[
-  #set heading(numbering: "Chương 1.1")
-  = Kết luận và Hướng phát triển <ketluan>
+  = Kết luận và hướng phát triển <ketluan>
 ]
 
 == Tổng kết kết quả đạt được
 
 Khóa luận đã hoàn thành mục tiêu xây dựng một hệ thống giới thiệu kết bạn thông minh trên nền tảng di động, giải quyết đồng thời hai thách thức lớn về tính tương hợp cá nhân và bảo mật dữ liệu nhạy cảm. Thông qua việc triển khai quy trình xử lý trực tiếp trên thiết bị, đề tài đã chứng minh được tính hiệu quả của mô hình Phân tích Thành phần chính (PCA-4) trong việc giảm chiều dữ liệu Big-5 mà vẫn duy trì được khả năng phân biệt và so khớp cao giữa các người dùng. Hệ thống không chỉ dừng lại ở việc nén dữ liệu mà còn thiết lập một hàng rào bảo mật vững chắc dựa trên kiến trúc "Quyền riêng tư theo thiết kế", sử dụng chuẩn mã hóa AES-256-GCM để đảm bảo dữ liệu gốc luôn được bảo vệ trong suốt quá trình lưu trữ và truyền tải. 
 
-Kết quả thực nghiệm đã khẳng định sự đúng đắn của phương pháp tiếp cận lai khi kết hợp các tín hiệu ổn định từ tính cách với các yếu tố ngữ cảnh như sở thích và hành vi xã giao qua điểm số ELO. Mô hình giới thiệu này không chỉ cung cấp những kết nối có chiều sâu mà còn mang lại sự linh hoạt và phản ánh chân thực xu hướng tương tác của người dùng trong thực tế. Về mặt kỹ thuật, việc tối ưu hóa các hàm thực thi biên và chính sách bảo mật cơ sở dữ liệu đã giúp hệ thống đạt được hiệu năng ổn định, đáp ứng tốt yêu cầu về thời gian phản hồi cho các trải nghiệm mạng xã hội hiện đại. Những đóng góp của đề tài, từ quy trình hiện thực cho đến bộ số liệu minh chứng, đã tạo nên một cơ sở tài liệu kỹ thuật có giá trị tham khảo cho việc ứng dụng AI và mật mã học trên các thiết bị đầu cuối.
+Kết quả thực nghiệm đã khẳng định sự đúng đắn của phương pháp tiếp cận lai khi kết hợp các tín hiệu ổn định từ tính cách với các yếu tố ngữ cảnh như sở thích và hành vi xã giao qua điểm số ELO. Mô hình giới thiệu này không chỉ cung cấp những kết nối có chiều sâu mà còn mang lại sự linh hoạt và phản ánh chân thực xu hướng tương tác của người dùng trong thực tế. Về mặt kỹ thuật, việc tối ưu hóa các hàm thực thi biên và chính sách bảo mật cơ sở dữ liệu đã giúp hệ thống đạt được hiệu năng ổn định, đáp ứng tốt yêu cầu về thời gian phản hồi cho các trải nghiệm mạng xã hội hiện đại. Những đóng góp của đề tài, từ quy trình hiện thực cho đến bộ số liệu minh chứng, đã tạo nên một cơ sở tài liệu kỹ thuật có giá trị tham khảo cho việc ứng dụng AI và mật mã học trên các thiết
+ bị đầu cuối.
 
 == Hạn chế và hướng phát triển tương lai
 

@@ -302,6 +302,10 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
     const fallbackScores = (base as any)?.scores ?? draftRef.current?.params?.scores ?? {};
     const fallbackPca =
       (base as any)?.pcaFingerprint ?? draftRef.current?.params?.pcaFingerprint ?? pcaFingerprint;
+    const fallbackStep2Answers =
+      (base as any)?.step2Answers ?? draftRef.current?.params?.step2Answers ?? undefined;
+    const fallbackStep2Vector =
+      (base as any)?.step2Vector ?? draftRef.current?.params?.step2Vector ?? undefined;
     const resumeParams: RootStackParamList['CreateAccount'] = {
       ...(base as object),
       username,
@@ -310,6 +314,8 @@ const CreateAccountScreen: React.FC<Props> = ({ navigation, route }) => {
       gender,
       scores: fallbackScores,
       pcaFingerprint: fallbackPca,
+      step2Answers: fallbackStep2Answers,
+      step2Vector: fallbackStep2Vector,
     } as RootStackParamList['CreateAccount'];
     setCreateAccountDraft({
       params: resumeParams,

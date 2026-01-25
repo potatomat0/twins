@@ -1,22 +1,35 @@
 #import "/template.typ" : *
 
 #[
-  #set heading(numbering: "Chương 1.1")
-  = Tổng quan quy trình hệ thống <chuong2>
+  = Tổng quan hệ thống <chuong2>
 ]
 
-== Mục tiêu của chương
+Chương này trình bày quy trình (pipeline) tổng thể của hệ thống Twins, theo thứ
+tự từ thu thập dữ liệu trên thiết bị, chuyển đổi và bảo mật, đến giới thiệu người dùng.
+Mục tiêu là mô tả rõ các tác nhân tham gia, dữ liệu vào ra ở mỗi bước và cách các điểm
+số được kết hợp thành một giới thiệu xếp hạng cuối cùng. Các chương sau sẽ đi sâu vào
+từng thành phần. Trong đó, Chương 3 trình bày đề xuất và triển khai, bao gồm chuyển
+đổi PCA-4, bảo mật dữ liệu và cơ chế giới thiệu lai. Chương 4 trình bày hiện thực
+và đánh giá với các thực nghiệm đo lường hiệu năng và chất lượng giới
+thiệu. Chương 5 tổng kết và nêu hướng phát triển tiếp theo.
 
-Chương này trình bày quy trình (pipeline) tổng thể của hệ thống Twins, theo thứ tự từ thu thập dữ liệu
-trên thiết bị, chuyển đổi và bảo mật, đến giới thiệu người dùng. Mục tiêu là mô tả rõ các tác
-nhân tham gia, dữ liệu vào ra ở mỗi bước và cách các điểm số được kết hợp thành một giới thiệu
-xếp hạng cuối cùng. Các chương sau sẽ đi sâu vào từng thành phần.
-Trong đó, Chương 4 tập trung vào bảo mật và mã hoá dữ liệu, còn Chương 5 trình bày chi
-tiết hệ giới thiệu và các công thức xếp hạng.
+Về mặt bài toán thực tế, một hệ thống kết nối người dùng phải đồng thời đáp ứng
+hai yêu cầu kinh doanh quan trọng: (1) gợi ý đủ chính xác để người dùng cảm thấy “đúng người, đúng nhuầu”,
+và (2) bảo vệ dữ liệu nhạy cảm để tạo niềm tin khi sử dụng. Nếu chỉ dựa vào thông
+tin bề mặt, chất lượng kết nối sẽ thấp; nếu xử lý dữ liệu thô một cách lỏng lẻ, rủi ro
+rò rỉ sẽ cao.
+
+Vì vậy, quy trình (pipeline) của Twins được thiết kế theo hướng “bảo mật theo thiết kế”: dữ liệu được mã hoá/giải
+mã có kiểm soát, chỉ dùng các biểu diễn đã mã hoá hoặc đã rút gọn để tính tương đồng, tránh
+để lộ nội dung gốc. Về mặt kỹ thuật, hệ thống sử dụng encoding (PCA-4 cho tính cách, embedding cho sở thích) và so sánh bằng cosine similarity để đảm bảo tính nhất quán khi
+đo mức độ tương đồng trong không gian vector, đồng thời vẫn giữ được riêng tư nhờ lớp mã hoá tại Edge Functions.
+
+Quy trình này không chỉ dựa trên tính cách, mà còn kết hợp thêm tín hiệu hành vi (ELO) và tín hiệu ngữ nghĩa (Hobbies). ELO phản ánh mức độ tương tác và sự “hợp nhịp” trong quá trình sử dụng, còn Hobbies cho phép người dùng tự do khai báo sở thích và được chuyển thành vector ngữ nghĩa để so khớp mềm. Nhờ đó, hệ thống có thể vừa giữ được độ ổn định của tính cách, vừa linh hoạt điều chỉnh theo hành vi và nội dung quan tâm thực tế.
+
+Các đoạn sau sẽ lần lượt làm rõ nguồn dữ liệu đầu vào, cấu trúc pipeline, và cách ba tín hiệu này được kết hợp thành điểm xếp hạng cuối cùng, đồng thời duy trì các nguyên tắc bảo mật xuyên suốt toàn bộ quy trình.
 
 == Các nguồn dữ liệu đầu vào
 
-=== Bộ câu hỏi Big Five và cách lấy mẫu
 
 Hệ thống sử dụng tập câu hỏi Big Five lớn, được tổng hợp từ các bộ câu hỏi chuẩn như IPIP
 50 và các biến thể đã được công bố rộng rãi @goldberg1992ipip. Mỗi lượt làm bài chọn ngẫu
@@ -26,26 +39,27 @@ mà chỉ phụ thuộc vào hướng (key) và trait của câu hỏi.
 
 Cách lấy mẫu này giúp giảm thời gian làm bài, đồng thời vẫn giữ được cấu trúc cân bằng
 giữa các trait. Trên thực tế, hệ thống chỉ cần biết hai thông tin cho mỗi câu: thuộc tính
-trait nào và hướng tính điểm (cộng hay trừ). Nội dung câu hỏi được giữ để đảm bảo ngữ
-cảnh người dùng, nhưng không ảnh hưởng đến mô hình chuyển đổi. Trong Chương 3 sẽ trình bày
-chi tiết cách tính điểm từ thang Likert và quy trình chuẩn hóa.
-
-=== Dữ liệu khảo sát công khai cho PCA
+trait nào và hướng tính điểm (cộng hay trừ). Nội dung câu hỏi được giữ để bảo ngữ cảnh người dùng,
+nhưng không ảnh hưởng đến mô hình chuyển đổi. Chi tiết cách tính điểm từ thang Likert và
+quy trình chuẩn hóa được trình bày tại @chuong3_1.
 
 Để huấn luyện PCA, đề tài sử dụng tập dữ liệu Big Five công khai với hơn 300 nghìn mẫu từ
 nhiều quốc gia @automoto2023bigfive. Dữ liệu đã được chuẩn hóa về thang 0-1 cho từng trait,
 phù hợp cho việc ước lượng các thành phần chính. Các kết quả giải thích phương sai sẽ
-được nêu ở Chương 3. Đây là lợi thế của Big Five: dữ liệu chuẩn hóa, quy mô lớn và đã
+được nêu ở @chuong3_1. Đây là lợi thế của Big Five: dữ liệu chuẩn hóa, quy mô lớn và đã
 được sử dụng rộng rãi trong nghiên cứu, nên PCA có thể học được cấu trúc phân bố ổn định.
 
-=== Dữ liệu sở thích (hobbies)
+Bên cạnh đó, dữ liệu tính cách gốc vẫn cần được mã hoá bằng AES-256-GCM thông qua Edge Function
+trước khi lưu trữ; cơ chế này được mô tả tại @chuong3_2.
+
+
 
 Sở thích người dùng được nhập dưới dạng văn bản ngắn. Văn bản này không dùng để lưu trữ
 trực tiếp, mà được chuyển thành vector 384 chiều thông qua mô hình nhúng ngữ nghĩa (semantic
 embedding) từ Jina. Lý do dùng phương pháp nhúng là để so khớp nội dung sở thích theo ngữ nghĩa thay
 vì so khớp từ khóa đơn thuần. Cách làm này cho phép các sở thích có nghĩa gần nhau (ví dụ
 “chạy bộ” và “jogging”) vẫn được đánh giá tương đồng. Chi tiết quy trình nhúng và
-luồng mã hoá dữ liệu sở thích sẽ được mô tả ở Chương 5.
+luồng mã hoá dữ liệu sở thích sẽ được mô tả ở @chuong3_3.
 
 == Tổng quan quy trình và tác nhân
 
@@ -65,7 +79,6 @@ Các bước chính gồm:
 - Dữ liệu sở thích được nhúng thành vector 384 chiều, mã hoá, và lưu trữ tương tự.
 - Hệ giới thiệu lấy vector PCA, ELO và vector sở thích để tính giới thiệu xếp hạng.
 
-== Đề xuất phân mảnh địa lý trong quy trình giới thiệu
 
 Khi số lượng người dùng tăng lớn, việc so khớp theo tổ hợp từng cặp sẽ làm chi phí tính
 toán tăng nhanh. Một hướng giảm tải là phân mảnh địa lý (geosharding), tức chia người dùng theo vùng địa lý
@@ -79,14 +92,12 @@ thử nghiệm. Khi lượng người dùng đủ lớn và chi phí tính toán
 
 == Mô hình giới thiệu và trọng số trong giới thiệu
 
-=== Điểm tương đồng tính cách (PCA)
 
 Vector PCA-4 được dùng để đo tương đồng giữa hai người dùng bằng cosine similarity.
 Phương pháp này phù hợp vì đo góc giữa hai vector, ít bị ảnh hưởng bởi độ lớn tuyệt
 đối và ổn định khi dữ liệu đã chuẩn hóa @manning2008ir. Công thức cosine similarity sẽ
 được trình bày chi tiết ở Chương 5.
 
-=== ELO từ tương tác like/skip
 
 Hệ thống dùng điểm ELO như một thước đo xã giao, phản ánh mức độ tương tác qua hành vi
 like và skip. Điểm ELO được cập nhật theo kỳ vọng thắng thua trong mô hình Elo gốc, nhưng
@@ -103,39 +114,20 @@ lạm phát điểm ELO theo thời gian, vì lượt “like” làm cả hai p
 ưu tiên gặp nhau hơn.
 
 Trong công thức gốc, kỳ vọng thắng được tính bởi:
-#outline_algo(
-  $ E_a = 1 / (1 + 10^((R_b - R_a) / 400)) $,
-  [Tính toán kỳ vọng thắng trong mô hình Elo],
-  <algo_elo_expect>
-)
 Sau đó cập nhật theo $R_a' = R_a + K (S_a - E_a)$. Trong Twins, kết quả like được coi là
 một tín hiệu hợp tác nên cả hai phía tăng nhẹ, còn skip chỉ trừ phía chủ động. Cụ thể,
 với K=12 và được giới hạn trong [800, 2000], quy tắc cập nhật được chi tiết tại #ref(<algo_elo_update>):
 
-#outline_algo(
-  [
-    - Like: $R_a' = text("clamp")(R_a + K(1 - E_a))$, $R_b' = text("clamp")(R_b + K(1 - E_b))$
-    - Skip: $R_a' = text("clamp")(R_a + K(0 - E_a))$, $R_b' = R_b$
-  ],
-  [Quy tắc cập nhật điểm ELO hợp tác],
-  <algo_elo_update>
-)
 Bên cạnh đó, hệ giới thiệu sử dụng hệ số gần nhau ELO để ưu tiên mức xã giao tương đồng, được tính theo công thức tại #ref(<algo_elo_prox>):
-#outline_algo(
-  $ p = exp(-|Delta R| / sigma) $,
-  [Tính toán độ gần (proximity) ELO],
-  <algo_elo_prox>
-)
 trong đó $sigma = 400$.
 
-=== Embedding sở thích và cosine similarity
 
-Sở thích người dùng được chuyển thành vector 384 chiều thông qua mô hình nhúng ngữ nghĩa.
+Sở thích người dùng được nhập dưới dạng văn bản ngắn. Văn bản này không dùng để lưu trữ
+trực tiếp, mà được chuyển thành vector 384 chiều thông qua mô hình nhúng ngữ nghĩa.
 Cosine similarity được dùng để đo độ gần về sở thích, thay vì so khớp từ khóa. Cách làm
 này cho phép hai người dùng dùng từ khác nhau nhưng có ý nghĩa gần nhau vẫn được đánh giá
 cao hơn.
 
-=== Trọng số tổng hợp
 
 Giới thiệu xếp hạng cuối cùng được tính theo trọng số của PCA, ELO và hobbies dựa trên cấu hình hệ thống, chi tiết tại #ref(<algo_hybrid_score>):
 
@@ -168,32 +160,15 @@ Kết quả là B sẽ đứng trước C trong danh sách giới thiệu. Sơ �
 
 == Luồng dữ liệu chi tiết theo tác nhân
 
-=== Thiết bị người dùng
+Quy trình xử lý dữ liệu được phân chia rõ ràng theo trách nhiệm của từng tác nhân trong hệ thống.
 
-Thiết bị thực hiện các bước sau:
+*Thiết bị người dùng* đóng vai trò là điểm khởi đầu của luồng dữ liệu. Tại đây, ứng dụng thu thập câu trả lời trắc nghiệm, thực hiện chấm điểm Big Five, sau đó chuẩn hóa và áp dụng phép chiếu PCA-4 để tạo ra vector đặc trưng. Dữ liệu Big Five gốc cùng với văn bản sở thích thô sau đó được gửi an toàn đến các Edge Function để xử lý ở bước tiếp theo.
 
-- Thu thập câu trả lời và chấm điểm Big Five.
-- Chuẩn hóa và chuyển đổi PCA-4.
-- Gửi dữ liệu thô tới Edge Function để mã hoá.
-- Gửi văn bản sở thích để tạo vector, rồi lưu ciphertext và vector nhúng.
+*Edge Function* hoạt động như một lớp trung gian an toàn, đảm nhận các tác vụ nhạy cảm. Nó nhận dữ liệu từ thiết bị, tiến hành mã hoá cả điểm Big Five và sở thích bằng thuật toán AES-256-GCM, đồng thời gọi dịch vụ ngoài để chuyển đổi văn bản sở thích thành vector nhúng ngữ nghĩa. Sau khi xử lý, hàm sẽ trả về các giá trị đã được mã hoá (ciphertext, iv) và vector nhúng cho thiết bị.
 
-=== Edge Function
+*Cơ sở dữ liệu* là nơi lưu trữ cuối cùng và được thiết kế theo nguyên tắc "bảo mật theo thiết kế". Nó chỉ chứa các biểu diễn an toàn của dữ liệu, bao gồm vector PCA-4 (dưới các trường `pca_dim1` đến `pca_dim4`) phục vụ cho việc so khớp, cùng với dữ liệu đã mã hoá và vector khởi tạo (`b5_cipher`, `b5_iv`) cho cả Big Five và sở thích. Dữ liệu gốc dưới dạng văn bản thuần không bao giờ được lưu trữ trực tiếp trên cơ sở dữ liệu.
 
-Edge Function đảm nhận:
-
-- Mã hoá/giải mã Big Five bằng AES-256-GCM.
-- Gọi dịch vụ nhúng để sinh vector sở thích.
-- Trả về ciphertext, iv và vector nhúng cho thiết bị.
-
-=== Cơ sở dữ liệu
-
-Cơ sở dữ liệu lưu trữ:
-
-- Vector PCA (pca_dim1..4).
-- Ciphertext và iv cho Big Five (b5_cipher, b5_iv).
-- Ciphertext cho hobbies và vector nhúng.
-
-Luồng dữ liệu được ghi nhận qua nhật ký hệ thống tại #ref(<fig_dataflow_sequence>):
+Luồng tương tác này được minh họa qua nhật ký hệ thống thực tế tại #ref(<fig_dataflow_sequence>):
 
 #figure(
   image("../images/ch4_edge_logs.png", width: 90%),

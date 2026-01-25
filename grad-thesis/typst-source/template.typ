@@ -50,11 +50,11 @@
 #let project(title: "", authors: (), body) = {
   // Set the document's basic properties.
   set document(author: authors.map(a => a.name), title: title)
-  set page(paper: "a4", margin: (top: 2.5cm, bottom: 3cm, left: 3cm, right: 2cm))
-  set par(justify: true)
+  set page(paper: "a4", margin: (top: 3cm, bottom: 3.5cm, left: 3.5cm, right: 2cm))
+  set par(justify: true, leading: 1em, spacing: 1.5em)
+  set text(font: "Times New Roman", lang: "vi", size: 13pt)
 
   // ================= Trang Bia =====================
-  set text(font: "Times New Roman", lang: "vi", size: 13pt)
   trang_bia(title, authors)
   trang_phu_bia(title, authors)
   pagebreak()
@@ -62,32 +62,35 @@
   pagebreak()
   // =================================================
 
-  set text(font: "New Computer Modern", lang: "vi", size: 13pt)
   counter(page).update(0)
-  set page(numbering: "i")
-  include "src/02_loi_cam_doan.typ"
+  set page(numbering: none)
   include "src/03_loi_cam_on.typ"
-  include "src/04_tom_tat.typ"
 
-  show heading.where(level: 1): it => [
-    #counter(figure.where(kind: image)).update(0)
-    #counter(figure.where(kind: table)).update(0)
-    #counter(figure.where(kind: "algo")).update(0)
-
-    #pagebreak(weak: true)
-    #if (not str(counter(heading).display()).starts-with("Chương")) {
-      text(35pt, it)
+  show heading.where(level: 1): it => {
+    counter(figure.where(kind: image)).update(0)
+    counter(figure.where(kind: table)).update(0)
+    counter(figure.where(kind: "algo")).update(0)
+    set text(size: 14pt, weight: "bold")
+    if it.numbering == none {
+      it.body
     } else {
-      block([
-        #set par(first-line-indent: 0pt)
-        #text(35pt, counter(heading).display())
-
-        #text(35pt, it.body)
-
-        #v(1cm)
-      ])
+      let number = numbering(it.numbering, ..counter(heading).at(it.location()))
+      [Chương #number #it.body]
     }
-  ]
+  }
+  show heading.where(level: 2): it => {
+    set text(size: 13pt, weight: "bold")
+    block(inset: (left: 1em), it)
+  }
+  show heading.where(level: 3): it => {
+    set text(size: 13pt, weight: "bold")
+    block(inset: (left: 2em), it)
+  }
+  show heading.where(level: 4): it => {
+    set text(size: 13pt, weight: "bold")
+    block(inset: (left: 3em), it)
+  }
+  set heading(numbering: (..nums) => nums.pos().map(str).join("."))
 
   // ================= Muc Luc =====================
   {
@@ -97,9 +100,9 @@
         {
           if (it.element.numbering != none) {
             let number = numbering(it.element.numbering, ..counter(heading).at(it.element.location()))
-            box(width: 5em, number) + ". "
+            box(width: 6em, "Chương " + number + ".") + " "
           }
-          link(it.element.location())[#it.element.body ]
+          link(it.element.location())[#it.element.body]
           box(width: 1fr, it.fill)
           h(3pt)
           link(it.element.location())[#it.page()]
@@ -111,7 +114,7 @@
       h(1.5em)
       if (it.element.numbering != none) {
         let number = numbering(it.element.numbering, ..counter(heading).at(it.element.location()))
-        box(width: 1.7em, number)
+        box(width: 1.9em, number + ".")
       }
       link(it.element.location())[ #it.element.body ]
       box(width: 1fr, it.fill)
@@ -123,7 +126,7 @@
       h(3.6em)
       if (it.element.numbering != none) {
         let number = numbering(it.element.numbering, ..counter(heading).at(it.element.location()))
-        box(width: 2.4em, number)
+        box(width: 2.7em, number + ".")
       }
       link(it.element.location())[ #it.element.body ]
       box(width: 1fr, it.fill)
@@ -173,10 +176,15 @@
     pagebreak()
   }
 
-  set par(first-line-indent: (amount: 1.5em, all: true), leading: 0.8em, spacing: 1.5em)
+  include "src/05_bang_thuat_ngu.typ"
+  pagebreak()
+  set par(first-line-indent: (amount: 1.5em, all: true), leading: 1em, spacing: 1.5em)
+  counter(page).update(1)
+  set page(numbering: "1", number-align: center)
+  include "src/04_tom_tat.typ"
   set block(spacing: 1.2em)
   set list(indent: 0.8em)
-  show heading: set block(spacing: 1.5em)
+  show heading: set block(spacing: 1.2em)
   show link: set text(fill: rgb("#0028d9"))
   show ref: it => {
     if it.element == none {
@@ -192,6 +200,7 @@
   }
   set figure.caption(separator: [ --- ])
   set figure(gap: 3pt, numbering: heading_numbering)
+  show figure: set block(spacing: 1.5em)
 
   show figure.where(kind: image): set figure(gap: 15pt, numbering: heading_numbering)
 

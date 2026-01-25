@@ -29,6 +29,12 @@ const ResumePromptScreen: React.FC = () => {
         ? 'resumePrompt.registration'
         : screen === 'Character'
         ? 'resumePrompt.character'
+        : screen === 'Step2Intro'
+        ? 'resumePrompt.step2Intro'
+        : screen === 'Step2Questionnaire'
+        ? 'resumePrompt.step2Questionnaire'
+        : screen === 'Step2Results'
+        ? 'resumePrompt.step2Results'
         : screen === 'CreateAccount'
         ? 'resumePrompt.createAccount'
         : 'resumePrompt.questionnaire';

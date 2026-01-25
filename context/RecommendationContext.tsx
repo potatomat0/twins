@@ -29,6 +29,7 @@ type RecommendationState = {
   initialLoading: boolean;
   hasMore: boolean;
   exhausted: boolean;
+  errorMessage: string | null;
   filters: Filters;
   useHobbies: boolean;
   setFilters: (f: Filters) => void;
@@ -41,13 +42,14 @@ type RecommendationState = {
 const RecommendationContext = createContext<RecommendationState | null>(null);
 
 export const RecommendationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   const [deck, setDeck] = useState<SimilarUser[]>([]);
   const [shownIds, setShownIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [exhausted, setExhausted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({ ageGroups: [], genders: [], archetype: 'most' });
   const [useHobbies, setUseHobbies] = useState(false);
 
@@ -73,6 +75,7 @@ export const RecommendationProvider: React.FC<{ children: React.ReactNode }> = (
           useElo,
           useHobbies: useHobbies && hasEnoughHobbies,
         },
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
       });
       if (fnErr) throw fnErr;
       const users = (data?.users ?? []) as SimilarUser[];
@@ -91,13 +94,16 @@ export const RecommendationProvider: React.FC<{ children: React.ReactNode }> = (
       
       setHasMore(data?.hasMore ?? false);
       setExhausted(data?.exhausted ?? false);
+      setErrorMessage(null);
     } catch (err) {
       console.error('[recommendations] loadMore error', err);
+      const message = err instanceof Error ? err.message : 'Failed to load recommendations';
+      setErrorMessage(message);
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [user?.id, loading, exhausted, deck.length, filters, useElo, useHobbies, hasEnoughHobbies, shownIds]);
+  }, [user?.id, session?.access_token, loading, exhausted, deck.length, filters, useElo, useHobbies, hasEnoughHobbies, shownIds]);
 
   const removeCard = useCallback(
     (userId: string) => {
@@ -136,6 +142,7 @@ export const RecommendationProvider: React.FC<{ children: React.ReactNode }> = (
       initialLoading,
       hasMore,
       exhausted,
+      errorMessage,
       filters,
       useHobbies,
       setFilters,
@@ -144,7 +151,7 @@ export const RecommendationProvider: React.FC<{ children: React.ReactNode }> = (
       removeCard,
       reset,
     }),
-    [deck, loading, initialLoading, hasMore, exhausted, filters, useHobbies, loadMore, removeCard, reset],
+    [deck, loading, initialLoading, hasMore, exhausted, errorMessage, filters, useHobbies, loadMore, removeCard, reset],
   );
 
   return <RecommendationContext.Provider value={value}>{children}</RecommendationContext.Provider>;

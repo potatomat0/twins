@@ -1,9 +1,11 @@
-#import "/template.typ" : *
+﻿#import "/template.typ" : *
 
 #[
   #set heading(numbering: none, supplement: [Phụ lục])
-  = Phụ lục <phuluc>
+  = PHỤ LỤC <phuluc>
 ]
+
+#align(center, text(14pt, weight: "bold", [PHỤ LỤC]))
 
 #set heading(numbering: (..nums) => {
   nums = nums.pos()
@@ -246,6 +248,33 @@ async function benchmark() {
 ```,
 [Kịch bản đo hiệu năng chi tiết],
 <algo_benchmark_script_appendix>
+)
+
+=== Kịch bản kiểm thử suy luận gián tiếp qua Edge Functions
+
+Kịch bản `scripts/demo/penetration_edge_inference.ts` mô phỏng tình huống kẻ tấn công chỉ biết base URL của Edge Functions và đoán được payload, từ đó thử gọi các endpoint công khai mà không kèm thông tin xác thực.
+
+#outline_algo(
+```ts
+// 1. Xây dựng base URL của edge
+const EDGE_BASE = `${SUPABASE_URL}/functions/v1`;
+
+// 2. Gửi payload đoán trước tới recommend-users
+await fetch(`${EDGE_BASE}/recommend-users`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ userId: '0000...', pageSize: 5, useElo: true, useHobbies: true }),
+});
+
+// 3. Gửi payload đoán trước tới embed
+await fetch(`${EDGE_BASE}/embed`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ text: 'Hiking, Anime' }),
+});
+```,
+[Kịch bản kiểm thử suy luận gián tiếp qua Edge Functions],
+<algo_penetration_edge_inference>
 )
 
 === Kỹ thuật tối ưu hóa cơ sở dữ liệu
